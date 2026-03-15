@@ -1,4 +1,4 @@
-# Mika+ScreenSnap
+# Mika+ScreenSnap v3.1.0
 
 A lightweight macOS menubar screenshot tool with a professional annotation editor and power features. Capture your screen, annotate it with 11 tools, extract text via OCR, pick colors, measure pixels, pin screenshots, and manage your history — all without leaving your workflow.
 
