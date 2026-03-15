@@ -63,4 +63,4 @@ Sources/
 
 ## License
 
-All rights reserved.
+[MIT](LICENSE)
