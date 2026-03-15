@@ -16,6 +16,7 @@ final class AnnotationEditorWindowController {
     private let store = AnnotationStore()
     private var canvasView: AnnotationCanvasView?
     private var keyMonitor: Any?
+    weak var appState: AppState?
 
     init(image: NSImage) {
         self.baseImage = image
@@ -57,7 +58,9 @@ final class AnnotationEditorWindowController {
         // Toolbar (SwiftUI)
         let toolbarView = AnnotationToolbarView(
             store: store,
-            onToolChanged: { [weak self] in self?.canvasView?.toolChanged() }
+            onToolChanged: { [weak self] in self?.canvasView?.toolChanged() },
+            onExtractText: { [weak self] in self?.startOCRSelection() },
+            onPin: { [weak self] in self?.pinScreenshot() }
         )
         let toolbarHosting = NSHostingView(rootView: toolbarView)
         toolbarHosting.translatesAutoresizingMaskIntoConstraints = false
@@ -79,7 +82,8 @@ final class AnnotationEditorWindowController {
             onCopy: { [weak self] in self?.copyToClipboard() },
             onSave: { [weak self] in self?.save() },
             onSaveAs: { [weak self] in self?.saveAs() },
-            onDiscard: { [weak self] in self?.discard() }
+            onDiscard: { [weak self] in self?.discard() },
+            onPin: { [weak self] in self?.pinScreenshot() }
         )
         let bottomBarHosting = NSHostingView(rootView: bottomBarView)
         bottomBarHosting.translatesAutoresizingMaskIntoConstraints = false
@@ -192,8 +196,14 @@ final class AnnotationEditorWindowController {
             return true
         }
 
-        // Escape — close (with confirm if unsaved)
+        // Escape — cancel OCR selection or close
         if event.keyCode == 53 {
+            if canvasView?.isOCRSelectionMode == true {
+                canvasView?.isOCRSelectionMode = false
+                canvasView?.needsDisplay = true
+                return true
+            }
+
             if store.annotations.isEmpty {
                 // Quick capture: copy original to clipboard and close
                 ClipboardManager.copyToClipboard(baseImage)
@@ -211,7 +221,7 @@ final class AnnotationEditorWindowController {
             let toolMap: [String: DrawingToolType] = [
                 "v": .select, "a": .arrow, "r": .rectangle, "e": .ellipse,
                 "l": .line, "f": .freehand, "t": .text, "h": .highlight,
-                "b": .blur, "x": .pixelate,
+                "b": .blur, "x": .pixelate, "m": .measure,
             ]
             if let tool = toolMap[char] {
                 store.selectedTool = tool
@@ -221,6 +231,58 @@ final class AnnotationEditorWindowController {
         }
 
         return false
+    }
+
+    // MARK: - OCR in Editor
+
+    private func startOCRSelection() {
+        guard let canvasView else { return }
+        canvasView.isOCRSelectionMode = true
+        canvasView.onOCRSelection = { [weak self] rect in
+            self?.performOCROnRegion(rect)
+        }
+        canvasView.needsDisplay = true
+    }
+
+    private func performOCROnRegion(_ rect: CGRect) {
+        guard let cgBase = baseImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+
+        // Clamp rect to image bounds
+        let imageBounds = CGRect(x: 0, y: 0, width: cgBase.width, height: cgBase.height)
+        let clampedRect = rect.intersection(imageBounds)
+        guard !clampedRect.isNull, clampedRect.width > 0, clampedRect.height > 0 else { return }
+
+        guard let cropped = cgBase.cropping(to: clampedRect) else { return }
+
+        Task {
+            do {
+                let text = try await OCREngine.recognizeText(in: cropped)
+                if !text.isEmpty {
+                    let resultPanel = OCRResultPanel(text: text)
+                    resultPanel.makeKeyAndOrderFront(nil)
+                }
+            } catch {
+                print("OCR failed: \(error)")
+            }
+        }
+    }
+
+    // MARK: - Pin
+
+    private func pinScreenshot() {
+        guard let appState else { return }
+
+        let finalImage: NSImage
+        if store.annotations.isEmpty {
+            finalImage = baseImage
+        } else {
+            guard let rendered = AnnotationRenderer.renderFinalImage(
+                baseImage: baseImage, annotations: store.annotations
+            ) else { return }
+            finalImage = rendered
+        }
+
+        _ = PinnedScreenshotManager.pinImage(finalImage, appState: appState)
     }
 
     // MARK: - Actions

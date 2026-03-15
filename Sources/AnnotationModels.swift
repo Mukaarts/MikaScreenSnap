@@ -62,6 +62,7 @@ enum DrawingToolType: String, CaseIterable, Identifiable, Sendable {
     case highlight
     case blur
     case pixelate
+    case measure
 
     var id: String { rawValue }
 
@@ -77,6 +78,7 @@ enum DrawingToolType: String, CaseIterable, Identifiable, Sendable {
         case .highlight: return "highlighter"
         case .blur:      return "eye.slash"
         case .pixelate:  return "squareshape.split.3x3"
+        case .measure:   return "ruler"
         }
     }
 
@@ -92,6 +94,7 @@ enum DrawingToolType: String, CaseIterable, Identifiable, Sendable {
         case .highlight: return "Highlight"
         case .blur:      return "Blur"
         case .pixelate:  return "Pixelate"
+        case .measure:   return "Measure"
         }
     }
 }

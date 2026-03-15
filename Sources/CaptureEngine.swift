@@ -4,6 +4,8 @@ import AppKit
 @MainActor
 final class CaptureEngine {
     private var areaSelectionPanels: [AreaSelectionPanel] = []
+    private var colorLoupeController: ColorLoupeController?
+    private var measurementController: MeasurementOverlayController?
 
     func captureFullScreen(appState: AppState?) async {
         do {
@@ -127,6 +129,98 @@ final class CaptureEngine {
         areaSelectionPanels.removeAll()
     }
 
+    // MARK: - Text Capture (OCR)
+
+    func startTextCapture(appState: AppState?) {
+        dismissAreaSelection()
+
+        for screen in NSScreen.screens {
+            let panel = AreaSelectionPanel(screen: screen) { [weak self] rect in
+                guard let self else { return }
+                self.dismissAreaSelection()
+
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(100))
+                    await self.captureAreaForOCR(rect: rect, appState: appState)
+                }
+            }
+            panel.makeKeyAndOrderFront(nil)
+            areaSelectionPanels.append(panel)
+        }
+    }
+
+    private func captureAreaForOCR(rect: CGRect, appState: AppState?) async {
+        do {
+            let content = try await SCShareableContent.current
+            guard let display = content.displays.first else { return }
+
+            let ownPID = ProcessInfo.processInfo.processIdentifier
+            let excludedWindows = content.windows.filter { $0.owningApplication?.processID == ownPID }
+
+            let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
+
+            let displayHeight = CGFloat(display.height)
+            let scRect = CGRect(
+                x: rect.origin.x,
+                y: displayHeight - rect.origin.y - rect.height,
+                width: rect.width,
+                height: rect.height
+            )
+
+            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+            let config = SCStreamConfiguration()
+            config.sourceRect = scRect
+            config.width = Int(rect.width * scale)
+            config.height = Int(rect.height * scale)
+            config.showsCursor = false
+
+            let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+
+            // Run OCR
+            let recognizedText = try await OCREngine.recognizeText(in: cgImage)
+
+            if !recognizedText.isEmpty {
+                // Copy to clipboard
+                let pb = NSPasteboard.general
+                pb.clearContents()
+                pb.setString(recognizedText, forType: .string)
+
+                // Show result panel
+                let resultPanel = OCRResultPanel(text: recognizedText)
+                resultPanel.makeKeyAndOrderFront(nil)
+
+                if let sound = NSSound(named: "Tink") {
+                    sound.play()
+                }
+            }
+        } catch {
+            print("Text capture failed: \(error)")
+        }
+    }
+
+    // MARK: - Color Picker
+
+    func startColorPicker(appState: AppState?) {
+        guard let appState else { return }
+
+        let controller = ColorLoupeController()
+        self.colorLoupeController = controller
+
+        controller.start(appState: appState) { [weak self] _ in
+            self?.colorLoupeController = nil
+        }
+    }
+
+    // MARK: - Measurement
+
+    func startMeasurement(appState: AppState?) {
+        let controller = MeasurementOverlayController()
+        self.measurementController = controller
+        controller.start()
+    }
+
+    // MARK: - Post-Capture
+
     private func postCapture(_ image: NSImage, appState: AppState?) {
         appState?.lastCapture = image
 
@@ -135,8 +229,12 @@ final class CaptureEngine {
             sound.play()
         }
 
+        // Auto-save to history
+        appState?.historyManager.autoSave(image)
+
         // Open annotation editor
         let controller = AnnotationEditorWindowController(image: image)
+        controller.appState = appState
         controller.showWindow(nil)
         appState?.annotationEditorController = controller
     }
