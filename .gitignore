@@ -3,3 +3,6 @@
 build/
 .DS_Store
 *~
+installer/*.dmg
+installer/dmg-background.png
+installer/dmg-background@2x.png

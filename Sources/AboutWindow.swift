@@ -60,7 +60,7 @@ struct AboutView: View {
                 .foregroundStyle(Color.MikaPlus.textPrimary)
 
             // Version
-            Text("Version 2026.03.1")
+            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.MikaPlus.textSecondary)
 

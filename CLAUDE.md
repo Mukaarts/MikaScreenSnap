@@ -22,7 +22,8 @@ open "build/Mika+ScreenSnap.app"
 - **Pure Swift Package** — no Xcode project, uses `Package.swift`
 - **Menubar app** — `NSApp.setActivationPolicy(.accessory)` by default, switches to `.regular` when editor/history windows open
 - **Strict concurrency** — `@MainActor` isolation on all UI, `@Observable` for state, `nonisolated(unsafe)` for Carbon callback bridges
-- **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate)
+- **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate), Sparkle (auto-update)
+- **Build pipeline:** `scripts/build.sh` compiles, assembles .app, embeds Sparkle.framework, signs. DMG creation via `scripts/create-dmg.sh` or `scripts/create-dmg-simple.sh`. Notarization via `scripts/notarize.sh`
 
 ## Key Patterns
 
@@ -34,7 +35,7 @@ open "build/Mika+ScreenSnap.app"
 
 ## File Organization
 
-All source files in `Sources/`, tools in `Sources/Tools/`. No subdirectories beyond that. Resources (Info.plist, entitlements) in `Resources/`.
+All source files in `Sources/`, tools in `Sources/Tools/`. No subdirectories beyond that. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
 
 ## Conventions
 
@@ -44,3 +45,6 @@ All source files in `Sources/`, tools in `Sources/Tools/`. No subdirectories bey
 - New DrawingToolType cases need systemImage, label, and keyboard shortcut in AnnotationEditor
 - Window controllers manage activation policy: `.regular` on show, `.accessory` on close (only if no other windows visible)
 - Pinned panels don't count for activation policy decisions
+- Scripts use lowercase `scripts/` directory (not `Scripts/`)
+- Build scripts reference `PROJECT_DIR` relative to script location: `$(cd "$(dirname "$0")/.." && pwd)`
+- Sparkle: `@preconcurrency import Sparkle` for Swift 6.0 concurrency compatibility
