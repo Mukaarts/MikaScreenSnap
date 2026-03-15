@@ -1,142 +1,212 @@
+// AnnotationToolbar.swift
+// MikaScreenSnap
+//
+// Top toolbar for the annotation editor: tool selection, color/stroke pickers, undo/redo.
+// Swift 6.0 strict concurrency, macOS 14+
+
 import SwiftUI
 
 struct AnnotationToolbarView: View {
-    let document: AnnotationDocument
-    let onDone: () -> Void
-    let onSave: () -> Void
+    let store: AnnotationStore
     let onToolChanged: () -> Void
 
-    private let presetColors: [Color] = [.red, .blue, .green, .yellow, .white, .black]
+    private let presetColors: [NSColor] = [
+        .systemRed, .systemBlue, .systemGreen, .yellow, .white, .black,
+    ]
+
+    private let drawingTools: [DrawingToolType] = [
+        .arrow, .rectangle, .ellipse, .line, .freehand,
+    ]
+
+    private let effectTools: [DrawingToolType] = [
+        .highlight, .blur, .pixelate,
+    ]
+
+    private let strokeOptions: [(label: String, width: CGFloat)] = [
+        ("Thin", 2),
+        ("Medium", 4),
+        ("Thick", 6),
+    ]
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Tool selection
-            toolButtons
+        HStack(spacing: 12) {
+            // MARK: Left — Tool groups
+            toolSection
 
-            Divider()
-                .frame(height: 24)
+            Divider().frame(height: 24)
 
-            // Color swatches
-            colorPicker
+            // MARK: Middle — Colors
+            colorSection
 
-            Divider()
-                .frame(height: 24)
+            Divider().frame(height: 24)
 
-            // Line width
-            lineWidthPicker
-
-            Divider()
-                .frame(height: 24)
-
-            // Undo/Redo
-            undoRedoButtons
+            // MARK: Middle — Stroke width
+            strokeSection
 
             Spacer()
 
-            // Done / Save
-            actionButtons
+            // MARK: Right — Undo / Redo
+            undoSection
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .frame(height: 50)
         .background(.ultraThinMaterial)
     }
 
-    private var toolButtons: some View {
+    // MARK: - Tool Section
+
+    private var toolSection: some View {
         HStack(spacing: 4) {
-            ForEach(AnnotationTool.allCases) { tool in
-                Button {
-                    document.selectedTool = tool
-                    onToolChanged()
-                } label: {
-                    Image(systemName: tool.systemImage)
-                        .frame(width: 28, height: 28)
-                }
-                .buttonStyle(.plain)
-                .background(document.selectedTool == tool ? Color.accentColor.opacity(0.3) : Color.clear)
-                .cornerRadius(6)
-                .help(tool.label)
+            // Select
+            toolButton(for: .select)
+
+            verticalDivider
+
+            // Drawing tools
+            ForEach(drawingTools) { tool in
+                toolButton(for: tool)
+            }
+
+            verticalDivider
+
+            // Text tool
+            toolButton(for: .text)
+
+            verticalDivider
+
+            // Effect tools
+            ForEach(effectTools) { tool in
+                toolButton(for: tool)
             }
         }
     }
 
-    private var colorPicker: some View {
+    private func toolButton(for tool: DrawingToolType) -> some View {
+        Button {
+            store.selectedTool = tool
+            onToolChanged()
+        } label: {
+            Image(systemName: tool.systemImage)
+                .frame(width: 28, height: 28)
+        }
+        .buttonStyle(.plain)
+        .background(
+            store.selectedTool == tool
+                ? Color.accentColor.opacity(0.3)
+                : Color.clear
+        )
+        .cornerRadius(6)
+        .help(tool.label)
+    }
+
+    private var verticalDivider: some View {
+        Divider().frame(height: 24)
+    }
+
+    // MARK: - Color Section
+
+    private var colorSection: some View {
         HStack(spacing: 4) {
             ForEach(presetColors, id: \.self) { color in
                 Circle()
-                    .fill(color)
+                    .fill(Color(nsColor: color))
                     .frame(width: 18, height: 18)
                     .overlay(
                         Circle()
-                            .stroke(isSelected(color) ? Color.primary : Color.clear, lineWidth: 2)
+                            .stroke(
+                                isColorSelected(color)
+                                    ? Color.blue
+                                    : Color.clear,
+                                lineWidth: 2
+                            )
+                            .padding(-2)
                     )
                     .onTapGesture {
-                        document.currentColor = NSColor(color)
+                        store.currentColor = color
                     }
             }
+
+            // Custom color picker
+            ColorPicker("", selection: customColorBinding)
+                .labelsHidden()
+                .frame(width: 24, height: 24)
+                .help("Custom Color")
         }
     }
 
-    private func isSelected(_ color: Color) -> Bool {
-        NSColor(color).cgColor.components == document.currentColor.cgColor.components
+    private var customColorBinding: Binding<Color> {
+        Binding<Color>(
+            get: { Color(nsColor: store.currentColor) },
+            set: { newColor in
+                store.currentColor = NSColor(newColor)
+            }
+        )
     }
 
-    private var lineWidthPicker: some View {
+    /// Compare colors by their cgColor components, since direct NSColor equality is unreliable.
+    private func isColorSelected(_ color: NSColor) -> Bool {
+        guard let selectedComponents = store.currentColor.cgColor.components,
+              let colorComponents = color.cgColor.components else {
+            return false
+        }
+        guard selectedComponents.count == colorComponents.count else {
+            return false
+        }
+        for (a, b) in zip(selectedComponents, colorComponents) {
+            if abs(a - b) > 0.01 { return false }
+        }
+        return true
+    }
+
+    // MARK: - Stroke Width Section
+
+    private var strokeSection: some View {
         HStack(spacing: 4) {
-            ForEach([
-                (label: "Thin", width: CGFloat(1.5)),
-                (label: "Medium", width: CGFloat(3.0)),
-                (label: "Thick", width: CGFloat(5.0)),
-            ], id: \.label) { option in
+            ForEach(strokeOptions, id: \.label) { option in
                 Button {
-                    document.currentLineWidth = option.width
+                    store.currentStrokeWidth = option.width
                 } label: {
                     RoundedRectangle(cornerRadius: 1)
-                        .frame(width: 20, height: option.width + 1)
+                        .frame(width: 20, height: option.width)
+                        .foregroundStyle(.primary)
                 }
                 .buttonStyle(.plain)
                 .frame(width: 28, height: 28)
-                .background(document.currentLineWidth == option.width ? Color.accentColor.opacity(0.3) : Color.clear)
+                .background(
+                    store.currentStrokeWidth == option.width
+                        ? Color.accentColor.opacity(0.3)
+                        : Color.clear
+                )
                 .cornerRadius(6)
                 .help(option.label)
             }
         }
     }
 
-    private var undoRedoButtons: some View {
+    // MARK: - Undo / Redo Section
+
+    private var undoSection: some View {
         HStack(spacing: 4) {
             Button {
-                document.undo()
+                store.undoManager.undo()
             } label: {
                 Image(systemName: "arrow.uturn.backward")
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
-            .disabled(!document.canUndo)
+            .disabled(!store.undoManager.canUndo)
             .help("Undo (\u{2318}Z)")
 
             Button {
-                document.redo()
+                store.undoManager.redo()
             } label: {
                 Image(systemName: "arrow.uturn.forward")
                     .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
-            .disabled(!document.canRedo)
+            .disabled(!store.undoManager.canRedo)
             .help("Redo (\u{21E7}\u{2318}Z)")
-        }
-    }
-
-    private var actionButtons: some View {
-        HStack(spacing: 8) {
-            Button("Save") {
-                onSave()
-            }
-            .buttonStyle(.bordered)
-
-            Button("Done") {
-                onDone()
-            }
-            .buttonStyle(.borderedProminent)
         }
     }
 }

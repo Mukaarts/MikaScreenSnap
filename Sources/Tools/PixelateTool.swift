@@ -1,0 +1,52 @@
+import AppKit
+
+@MainActor
+final class PixelateTool: DrawingTool {
+    let toolType: DrawingToolType = .pixelate
+    var cursor: NSCursor { .crosshair }
+
+    private var startPoint: CGPoint?
+    private var currentPoint: CGPoint?
+
+    func mouseDown(at point: CGPoint, modifiers: NSEvent.ModifierFlags, canvas: AnnotationCanvasView) {
+        startPoint = point
+        currentPoint = point
+    }
+
+    func mouseDragged(to point: CGPoint, modifiers: NSEvent.ModifierFlags, canvas: AnnotationCanvasView) {
+        currentPoint = point
+        canvas.needsDisplay = true
+    }
+
+    func mouseUp(at point: CGPoint, modifiers: NSEvent.ModifierFlags, canvas: AnnotationCanvasView) {
+        guard let start = startPoint else { return }
+        let rect = makeRect(from: start, to: point)
+        if rect.width > 2 && rect.height > 2 {
+            let annotation = PixelateAnnotation(rect: rect)
+            canvas.store.addAnnotation(annotation)
+        }
+        cancel()
+        canvas.needsDisplay = true
+    }
+
+    func drawPreview(in ctx: CGContext, scale: CGFloat) {
+        guard let start = startPoint, let current = currentPoint else { return }
+        let rect = makeRect(from: start, to: current)
+        ctx.saveGState()
+        ctx.setStrokeColor(NSColor.white.cgColor)
+        ctx.setLineWidth(1.5)
+        ctx.setLineDash(phase: 0, lengths: [6, 4])
+        ctx.stroke(rect)
+        ctx.restoreGState()
+    }
+
+    func cancel() {
+        startPoint = nil
+        currentPoint = nil
+    }
+
+    private func makeRect(from p1: CGPoint, to p2: CGPoint) -> CGRect {
+        CGRect(x: min(p1.x, p2.x), y: min(p1.y, p2.y),
+               width: abs(p1.x - p2.x), height: abs(p1.y - p2.y))
+    }
+}
