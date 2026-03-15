@@ -1,7 +1,7 @@
 // AnnotationToolbar.swift
 // MikaScreenSnap
 //
-// Top toolbar for the annotation editor: tool selection, color/stroke pickers, undo/redo.
+// Top toolbar for the annotation editor: tool selection, color/stroke pickers, undo/redo, actions.
 // Swift 6.0 strict concurrency, macOS 14+
 
 import SwiftUI
@@ -9,6 +9,8 @@ import SwiftUI
 struct AnnotationToolbarView: View {
     let store: AnnotationStore
     let onToolChanged: () -> Void
+    var onExtractText: (() -> Void)? = nil
+    var onPin: (() -> Void)? = nil
 
     private let presetColors: [NSColor] = [
         .systemRed, .systemBlue, .systemGreen, .yellow, .white, .black,
@@ -45,7 +47,11 @@ struct AnnotationToolbarView: View {
 
             Spacer()
 
-            // MARK: Right — Undo / Redo
+            // MARK: Right — Actions & Undo / Redo
+            actionSection
+
+            Divider().frame(height: 24)
+
             undoSection
         }
         .padding(.horizontal, 16)
@@ -79,6 +85,11 @@ struct AnnotationToolbarView: View {
             ForEach(effectTools) { tool in
                 toolButton(for: tool)
             }
+
+            verticalDivider
+
+            // Utility tools
+            toolButton(for: .measure)
         }
     }
 
@@ -180,6 +191,36 @@ struct AnnotationToolbarView: View {
                 )
                 .cornerRadius(6)
                 .help(option.label)
+            }
+        }
+    }
+
+    // MARK: - Action Section
+
+    private var actionSection: some View {
+        HStack(spacing: 4) {
+            if let onExtractText {
+                Button {
+                    onExtractText()
+                } label: {
+                    Image(systemName: "doc.text.viewfinder")
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .cornerRadius(6)
+                .help("Extract Text (OCR)")
+            }
+
+            if let onPin {
+                Button {
+                    onPin()
+                } label: {
+                    Image(systemName: "pin")
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .cornerRadius(6)
+                .help("Pin to Screen")
             }
         }
     }

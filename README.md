@@ -1,6 +1,6 @@
 # Mika+ScreenSnap
 
-A lightweight macOS menubar screenshot tool with a professional annotation editor. Capture your screen, annotate it with 10 tools, and copy or save the result — all without leaving your workflow.
+A lightweight macOS menubar screenshot tool with a professional annotation editor and power features. Capture your screen, annotate it with 11 tools, extract text via OCR, pick colors, measure pixels, pin screenshots, and manage your history — all without leaving your workflow.
 
 ## Features
 
@@ -13,12 +13,35 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
   - **Drawing Tools:** Arrow, Rectangle, Ellipse, Line, Freehand
   - **Text Tool:** Click to place editable text with background pill
   - **Effect Tools:** Highlight (yellow overlay), Blur (Gaussian), Pixelate
+  - **Measurement Tool:** Non-destructive ruler for pixel measurements (not exported)
   - **Selection Tool:** Click to select, drag to move, 8 resize handles, Delete to remove
   - **Shift Constraints:** 45-degree snap (Arrow/Line), square (Rectangle), circle (Ellipse)
   - **Freehand:** Smooth Catmull-Rom curves
   - 6 color presets + custom color picker
   - 3 stroke widths (2/4/6px)
   - Undo / Redo (`Cmd+Z` / `Cmd+Shift+Z`)
+- **OCR Text Extraction**
+  - `Shift+Cmd+6` — select area, text is recognized and copied to clipboard
+  - In-editor: "Extract Text" button → drag region → popover with result
+  - Supports German, English, French
+- **Color Picker**
+  - `Shift+Cmd+7` — magnifying loupe follows cursor with 8x zoom
+  - Click copies HEX to clipboard with toast notification
+  - Shift+Click adds to palette
+  - Color History submenu (last 10 colors)
+- **Measurement Tool**
+  - `Shift+Cmd+8` — fullscreen overlay with point-to-point and rectangle modes
+  - Guide lines, px/pt toggle (Space), coordinates display
+  - Also available as editor tool (`M` key) — non-destructive, not exported
+- **Pin Screenshot**
+  - Float any screenshot as always-on-top panel
+  - Drag to move, scroll wheel for opacity, Shift+drag to resize
+  - Right-click menu: Copy, Save, Edit, Opacity, Close
+  - Persistent across app restarts (max 20)
+- **Auto-Save & History**
+  - Screenshots auto-saved to ~/Pictures/MikaScreenSnap/
+  - History Browser (`Shift+Cmd+H`) with thumbnail grid and search
+  - Configurable: folder, format (PNG/JPEG), quality
 - **Zoom & Pan**
   - `Cmd+=` / `Cmd+-` / `Cmd+0` (fit)
   - Trackpad pinch-to-zoom
@@ -27,9 +50,24 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
   - Copy to clipboard (`Cmd+C`)
   - Save to Desktop (`Cmd+S`)
   - Save As (`Shift+Cmd+S`)
+  - Pin to screen
   - Escape: quick-capture (no annotations) or confirm dialog (with annotations)
 
 ## Keyboard Shortcuts
+
+### Global Hotkeys
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+Cmd+3` | Capture Full Screen |
+| `Ctrl+Shift+Cmd+4` | Capture Area |
+| `Ctrl+Shift+Cmd+5` | Capture Window |
+| `Shift+Cmd+6` | Capture Text (OCR) |
+| `Shift+Cmd+7` | Color Picker |
+| `Shift+Cmd+8` | Measure |
+| `Shift+Cmd+H` | Screenshot History |
+
+### Editor Shortcuts
 
 | Key | Action |
 |-----|--------|
@@ -43,6 +81,7 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 | `H` | Highlight tool |
 | `B` | Blur tool |
 | `X` | Pixelate tool |
+| `M` | Measurement tool |
 | `Cmd+Z` | Undo |
 | `Shift+Cmd+Z` | Redo |
 | `Cmd+C` | Copy & close |
@@ -85,11 +124,24 @@ open "build/Mika+ScreenSnap.app"
 
 ```
 Sources/
-├── MikaScreenSnapApp.swift       # App entry point & menubar
-├── CaptureEngine.swift           # Screenshot capture (ScreenCaptureKit)
-├── HotkeyManager.swift           # Global hotkeys (Carbon)
+├── MikaScreenSnapApp.swift       # App entry point, AppState & menubar
+├── CaptureEngine.swift           # Screenshot capture + OCR/ColorPicker/Measure launchers
+├── HotkeyManager.swift           # 7 global hotkeys (Carbon)
 ├── AreaSelectionOverlay.swift     # Area selection UI
 ├── ClipboardManager.swift        # Clipboard & file save
+├── AppPreferences.swift          # UserDefaults-backed preferences
+├── ScreenshotHistoryManager.swift # Auto-save, thumbnails, history
+├── HistoryBrowserWindow.swift    # History browser window (LazyVGrid)
+├── PreferencesView.swift         # Preferences window
+├── OCREngine.swift               # Vision framework text recognition
+├── OCRResultPanel.swift          # HUD result panel for OCR
+├── ColorPickerEngine.swift       # Pixel sampling & color conversion
+├── ColorLoupePanel.swift         # Magnifying loupe controller
+├── ColorPickerToast.swift        # Toast notification for picked colors
+├── ColorHistoryManager.swift     # Recent colors & palette persistence
+├── MeasurementOverlay.swift      # Fullscreen measurement overlay
+├── PinnedScreenshotPanel.swift   # Floating pinned screenshot panel
+├── PinnedScreenshotManager.swift # Pin persistence & lifecycle
 ├── AnnotationModels.swift        # Annotation protocol, 9 types, AnnotationStore
 ├── DrawingToolProtocol.swift     # DrawingTool protocol
 ├── AnnotationCanvasView.swift    # Drawing canvas with zoom/pan (NSView)
@@ -107,7 +159,8 @@ Sources/
     ├── HighlightTool.swift
     ├── BlurTool.swift
     ├── PixelateTool.swift
-    └── SelectionTool.swift
+    ├── SelectionTool.swift
+    └── MeasurementTool.swift
 ```
 
 ## License

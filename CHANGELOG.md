@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.0.0] - 2026-03-15
+
+### Added
+- **OCR Text Extraction** — select a screen region (`Shift+Cmd+6`) to recognize text via Vision framework; copies to clipboard automatically; HUD result panel with Copy / Copy as Markdown; also available inside the editor via "Extract Text" button with drag-to-select
+- **Color Picker** — screen-wide pixel color picker (`Shift+Cmd+7`) with 8x magnifying loupe, crosshair, and live HEX/RGB/HSL display; click copies HEX to clipboard with toast notification; Shift+click adds to palette; Color History submenu in menubar (last 10 colors)
+- **Measurement Tool** — standalone fullscreen overlay (`Shift+Cmd+8`) and in-editor ruler tool (`M` key); point-to-point and rectangle measurement modes; dashed guide lines; Space toggles px/pt; measurements are non-destructive (not exported)
+- **Pin Screenshot** — float any screenshot as an always-on-top panel; drag to move, scroll wheel for opacity (20-100%), Shift+drag for proportional resize; right-click menu (Copy/Save/Edit/Opacity/Close); double-click to dismiss; persistent across app restarts; Pin button in editor toolbar and bottom bar
+- **Auto-Save & History** — screenshots automatically saved to ~/Pictures/MikaScreenSnap/ (configurable); History Browser (`Shift+Cmd+H`) with thumbnail grid, search by date/filename, context menu; Preferences window with auto-save toggle, folder picker, format selection (PNG/JPEG with quality slider)
+- 4 new global hotkeys: `Shift+Cmd+6` (OCR), `Shift+Cmd+7` (Color Picker), `Shift+Cmd+8` (Measure), `Shift+Cmd+H` (History)
+- Pinned Screenshots and Color History submenus in menubar
+- Preferences window (`Cmd+,`)
+- Vision framework linked for OCR support
+
+### Changed
+- AppState expanded with historyManager, preferences, colorHistory, pinnedPanels
+- CaptureEngine: postCapture now auto-saves to history
+- AnnotationEditor: appState property for Pin/History integration
+- AnnotationToolbar: Extract Text and Pin action buttons added
+- AnnotationBottomBar: Pin button added
+- DrawingToolType: `.measure` case added
+- AnnotationCanvasView: MeasurementTool registered, OCR selection mode with visual feedback
+
 ## [2.0.0] - 2026-03-15
 
 ### Added

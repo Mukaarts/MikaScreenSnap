@@ -1,7 +1,7 @@
 // AnnotationBottomBar.swift
 // MikaScreenSnap
 //
-// Bottom status/action bar for the annotation editor: zoom, dimensions, copy/save/discard.
+// Bottom status/action bar for the annotation editor: zoom, dimensions, copy/save/pin/discard.
 // Swift 6.0 strict concurrency, macOS 14+
 
 import SwiftUI
@@ -14,6 +14,7 @@ struct AnnotationBottomBarView: View {
     let onSave: () -> Void
     let onSaveAs: () -> Void
     let onDiscard: () -> Void
+    var onPin: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -31,6 +32,12 @@ struct AnnotationBottomBarView: View {
             Spacer()
 
             // MARK: Right — Action buttons
+
+            if let onPin {
+                Button { onPin() } label: {
+                    Label("Pin", systemImage: "pin")
+                }
+            }
 
             Button { onCopy() } label: {
                 Label("Copy", systemImage: "doc.on.doc")

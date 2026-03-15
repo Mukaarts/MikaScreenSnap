@@ -43,6 +43,12 @@ final class AnnotationCanvasView: NSView {
     override var acceptsFirstResponder: Bool { true }
     override var isFlipped: Bool { false }
 
+    // OCR selection mode
+    var isOCRSelectionMode: Bool = false
+    private var ocrSelectionStart: CGPoint?
+    private var ocrSelectionCurrent: CGPoint?
+    var onOCRSelection: ((CGRect) -> Void)?
+
     private func setupTools() {
         tools[.select] = SelectionTool()
         tools[.arrow] = ArrowTool()
@@ -54,6 +60,7 @@ final class AnnotationCanvasView: NSView {
         tools[.highlight] = HighlightTool()
         tools[.blur] = BlurTool()
         tools[.pixelate] = PixelateTool()
+        tools[.measure] = MeasurementTool()
     }
 
     /// Install a local event monitor that tracks space bar press/release for pan mode.
@@ -172,6 +179,22 @@ final class AnnotationCanvasView: NSView {
         let fitScale = min(bounds.width / imgSize.width, bounds.height / imgSize.height)
         currentTool?.drawPreview(in: ctx, scale: fitScale * store.zoomLevel)
 
+        // 2e. OCR selection rectangle
+        if isOCRSelectionMode, let start = ocrSelectionStart, let current = ocrSelectionCurrent {
+            let selRect = CGRect(
+                x: min(start.x, current.x), y: min(start.y, current.y),
+                width: abs(current.x - start.x), height: abs(current.y - start.y)
+            )
+            ctx.saveGState()
+            ctx.setStrokeColor(NSColor.systemBlue.cgColor)
+            ctx.setLineWidth(2 / (fitScale * store.zoomLevel))
+            ctx.setLineDash(phase: 0, lengths: [6 / (fitScale * store.zoomLevel), 4 / (fitScale * store.zoomLevel)])
+            ctx.stroke(selRect)
+            ctx.setFillColor(NSColor.systemBlue.withAlphaComponent(0.1).cgColor)
+            ctx.fill(selRect)
+            ctx.restoreGState()
+        }
+
         ctx.restoreGState()
     }
 
@@ -214,6 +237,14 @@ final class AnnotationCanvasView: NSView {
 
         let imagePoint = viewToImage(viewPoint)
 
+        // OCR selection mode
+        if isOCRSelectionMode {
+            ocrSelectionStart = imagePoint
+            ocrSelectionCurrent = imagePoint
+            needsDisplay = true
+            return
+        }
+
         // Finalize text field if clicking elsewhere while a non-text tool is active
         if activeTextField != nil && !(currentTool is TextTool) {
             finalizeActiveTextField()
@@ -236,6 +267,13 @@ final class AnnotationCanvasView: NSView {
         }
 
         let imagePoint = viewToImage(viewPoint)
+
+        if isOCRSelectionMode {
+            ocrSelectionCurrent = imagePoint
+            needsDisplay = true
+            return
+        }
+
         currentTool?.mouseDragged(to: imagePoint, modifiers: event.modifierFlags, canvas: self)
     }
 
@@ -248,6 +286,24 @@ final class AnnotationCanvasView: NSView {
 
         let viewPoint = convert(event.locationInWindow, from: nil)
         let imagePoint = viewToImage(viewPoint)
+
+        if isOCRSelectionMode, let start = ocrSelectionStart {
+            let rect = CGRect(
+                x: min(start.x, imagePoint.x),
+                y: min(start.y, imagePoint.y),
+                width: abs(imagePoint.x - start.x),
+                height: abs(imagePoint.y - start.y)
+            )
+            if rect.width > 3 && rect.height > 3 {
+                isOCRSelectionMode = false
+                ocrSelectionStart = nil
+                ocrSelectionCurrent = nil
+                needsDisplay = true
+                onOCRSelection?(rect)
+            }
+            return
+        }
+
         currentTool?.mouseUp(at: imagePoint, modifiers: event.modifierFlags, canvas: self)
     }
 
