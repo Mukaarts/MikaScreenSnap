@@ -20,6 +20,16 @@ mkdir -p "$APP_BUNDLE/Contents/Resources"
 cp "$EXECUTABLE" "$APP_BUNDLE/Contents/MacOS/MikaScreenSnap"
 cp "$PROJECT_DIR/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 
+# Copy app icon and menubar icon
+if [ -f "$PROJECT_DIR/Resources/AppIcon.icns" ]; then
+    cp "$PROJECT_DIR/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+fi
+for img in MenubarIconTemplate.png MenubarIconTemplate@2x.png; do
+    if [ -f "$PROJECT_DIR/Resources/$img" ]; then
+        cp "$PROJECT_DIR/Resources/$img" "$APP_BUNDLE/Contents/Resources/$img"
+    fi
+done
+
 echo "==> Signing with hardened runtime..."
 codesign --force --sign - \
     --entitlements "$PROJECT_DIR/Resources/MikaScreenSnap.entitlements" \
