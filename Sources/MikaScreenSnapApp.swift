@@ -16,6 +16,7 @@ final class AppState {
     var measurementController: MeasurementOverlayController?
     var preferencesController: PreferencesWindowController?
     var aboutController: AboutWindowController?
+    var sparkleUpdater: SparkleUpdater
 
     init() {
         let prefs = AppPreferences()
@@ -23,6 +24,7 @@ final class AppState {
         self.captureEngine = CaptureEngine()
         self.historyManager = ScreenshotHistoryManager(preferences: prefs)
         self.colorHistory = ColorHistoryManager()
+        self.sparkleUpdater = SparkleUpdater()
     }
 }
 
@@ -129,6 +131,9 @@ struct MikaScreenSnapApp: App {
                     appDelegate.appState.aboutController = AboutWindowController()
                 }
                 appDelegate.appState.aboutController?.showWindow()
+            }
+            Button("Check for Updates...") {
+                appDelegate.appState.sparkleUpdater.checkForUpdates()
             }
             Divider()
 

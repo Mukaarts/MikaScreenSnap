@@ -104,7 +104,9 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 ./build.sh
 ```
 
-This compiles the project, assembles the `.app` bundle, and signs it with hardened runtime.
+This compiles the project, assembles the `.app` bundle, embeds Sparkle.framework, and signs with hardened runtime.
+
+Use `./build.sh --clean` to clean the `.build/` directory before compiling.
 
 ## Install
 
@@ -119,6 +121,59 @@ open "build/Mika+ScreenSnap.app"
 ```
 
 > **Note:** Always run via the `.app` bundle, not `swift run`, to ensure proper bundle identifier and window activation.
+
+## Distribution
+
+### Create DMG Installer
+
+**Professional DMG** (with custom background and layout):
+
+```bash
+brew install create-dmg  # one-time prerequisite
+bash scripts/create-dmg.sh
+```
+
+**Simple DMG** (no dependencies, uses only hdiutil):
+
+```bash
+bash scripts/create-dmg-simple.sh
+```
+
+Both output to `installer/Mika+ScreenSnap-v{VERSION}.dmg`.
+
+### Code Signing & Notarization
+
+**Local ad-hoc signing** (for development/testing):
+
+```bash
+bash scripts/sign-local.sh
+```
+
+**Developer ID signing + Apple notarization** (for distribution):
+
+```bash
+export DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)"
+export APPLE_ID="your@email.com"
+export TEAM_ID="YOURTEAMID"
+export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+bash scripts/notarize.sh
+```
+
+### DMG Background
+
+Regenerate the branded DMG background images:
+
+```bash
+swift scripts/GenerateDMGBackground.swift
+```
+
+### Auto-Update (Sparkle)
+
+The app includes Sparkle for auto-updates. To configure:
+1. Generate Ed25519 keys: `.build/artifacts/Sparkle/bin/generate_keys`
+2. Update `SUPublicEDKey` in `Resources/Info.plist`
+3. Update `SUFeedURL` to point to your appcast.xml
+4. Host signed updates with Sparkle's `generate_appcast` tool
 
 ## Project Structure
 

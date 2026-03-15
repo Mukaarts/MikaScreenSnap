@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.1.0] - 2026-03-15
+
+### Added
+- **DMG Installer** — professional DMG with custom branded background, app icon, and Applications drop link
+- **Build Pipeline Scripts** — enhanced `scripts/build.sh` with `--clean` flag and Sparkle framework embedding
+- **Sparkle Auto-Update** — integrated Sparkle 2.6+ for automatic update checks via menubar menu
+- **Code Signing Scripts** — `scripts/sign-local.sh` for ad-hoc signing, `scripts/notarize.sh` for Apple notarization
+- **DMG Background Generator** — `scripts/GenerateDMGBackground.swift` generates branded installer backgrounds
+- **Simple DMG Fallback** — `scripts/create-dmg-simple.sh` creates basic DMG with only hdiutil (no dependencies)
+
+### Changed
+- `build.sh` (root) is now a thin wrapper delegating to `scripts/build.sh`
+- `Scripts/` directory renamed to `scripts/` (lowercase convention)
+- About window now reads version dynamically from `Bundle.main` instead of hardcoded string
+- Info.plist: added `SUFeedURL` and `SUPublicEDKey` for Sparkle auto-update
+- Package.swift: added Sparkle dependency
+
 ## [3.0.0] - 2026-03-15
 
 ### Added
