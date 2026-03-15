@@ -6,7 +6,7 @@ import SwiftUI
 final class AppState {
     var captureEngine: CaptureEngine
     var lastCapture: NSImage?
-    var previewWindowController: PreviewWindowController?
+    var annotationEditorController: AnnotationEditorWindowController?
 
     init() {
         self.captureEngine = CaptureEngine()

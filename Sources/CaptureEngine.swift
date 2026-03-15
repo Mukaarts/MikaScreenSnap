@@ -128,7 +128,6 @@ final class CaptureEngine {
     }
 
     private func postCapture(_ image: NSImage, appState: AppState?) {
-        ClipboardManager.copyToClipboard(image)
         appState?.lastCapture = image
 
         // Play capture sound
@@ -136,9 +135,9 @@ final class CaptureEngine {
             sound.play()
         }
 
-        // Show preview window
-        let controller = PreviewWindowController(image: image)
+        // Open annotation editor
+        let controller = AnnotationEditorWindowController(image: image)
         controller.showWindow(nil)
-        appState?.previewWindowController = controller
+        appState?.annotationEditorController = controller
     }
 }

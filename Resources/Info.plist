@@ -20,6 +20,8 @@
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
     <string>Mika+ScreenSnap needs screen capture permission to take screenshots of your screen, selected areas, and individual windows.</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>LSMinimumSystemVersion</key>
