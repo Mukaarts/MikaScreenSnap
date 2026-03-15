@@ -15,6 +15,7 @@ final class AppState {
     var colorLoupeController: ColorLoupeController?
     var measurementController: MeasurementOverlayController?
     var preferencesController: PreferencesWindowController?
+    var aboutController: AboutWindowController?
 
     init() {
         let prefs = AppPreferences()
@@ -111,8 +112,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct MikaScreenSnapApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    private static let menubarIcon: NSImage = {
+        if let url = Bundle.main.url(forResource: "MenubarIconTemplate@2x", withExtension: "png"),
+           let img = NSImage(contentsOf: url) {
+            img.size = NSSize(width: 18, height: 18)
+            img.isTemplate = true
+            return img
+        }
+        return NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Mika+ScreenSnap")!
+    }()
+
     var body: some Scene {
-        MenuBarExtra("Mika+ScreenSnap", systemImage: "camera.viewfinder") {
+        MenuBarExtra {
+            Button("About Mika+ScreenSnap") {
+                if appDelegate.appState.aboutController == nil {
+                    appDelegate.appState.aboutController = AboutWindowController()
+                }
+                appDelegate.appState.aboutController?.showWindow()
+            }
+            Divider()
+
             // Capture Section
             Button("Capture Area  \u{2303}\u{21E7}\u{2318}4") {
                 appDelegate.appState.captureEngine.startAreaSelection(appState: appDelegate.appState)
@@ -210,6 +229,8 @@ struct MikaScreenSnapApp: App {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
+        } label: {
+            Image(nsImage: Self.menubarIcon)
         }
     }
 }

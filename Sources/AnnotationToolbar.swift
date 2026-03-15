@@ -104,7 +104,7 @@ struct AnnotationToolbarView: View {
         .buttonStyle(.plain)
         .background(
             store.selectedTool == tool
-                ? Color.accentColor.opacity(0.3)
+                ? Color.MikaPlus.tealPrimary.opacity(0.2)
                 : Color.clear
         )
         .cornerRadius(6)
@@ -127,7 +127,7 @@ struct AnnotationToolbarView: View {
                         Circle()
                             .stroke(
                                 isColorSelected(color)
-                                    ? Color.blue
+                                    ? Color.MikaPlus.tealPrimary
                                     : Color.clear,
                                 lineWidth: 2
                             )
@@ -186,7 +186,7 @@ struct AnnotationToolbarView: View {
                 .frame(width: 28, height: 28)
                 .background(
                     store.currentStrokeWidth == option.width
-                        ? Color.accentColor.opacity(0.3)
+                        ? Color.MikaPlus.tealPrimary.opacity(0.2)
                         : Color.clear
                 )
                 .cornerRadius(6)

@@ -43,8 +43,10 @@ final class PinnedScreenshotPanel: NSPanel {
         imageView.image = image
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.wantsLayer = true
-        imageView.layer?.cornerRadius = 6
+        imageView.layer?.cornerRadius = 12
         imageView.layer?.masksToBounds = true
+        imageView.layer?.borderColor = NSColor.MikaPlus.tealPrimary.withAlphaComponent(0.4).cgColor
+        imageView.layer?.borderWidth = 1
 
         let contentView = PinnedContentView(panel: self)
         contentView.frame = NSRect(origin: .zero, size: size)
