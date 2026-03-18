@@ -36,6 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
     var hotkeyManager: HotkeyManager?
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !appState.preferences.hasCompletedOnboarding {
             showOnboarding()
@@ -249,6 +253,9 @@ struct MikaScreenSnapApp: App {
                     appDelegate.appState.preferencesController = PreferencesWindowController(
                         preferences: appDelegate.appState.preferences,
                         launchAtLoginManager: appDelegate.appState.launchAtLoginManager,
+                        sparkleUpdater: appDelegate.appState.sparkleUpdater,
+                        historyManager: appDelegate.appState.historyManager,
+                        hotkeyManager: appDelegate.hotkeyManager!,
                         onShowOnboarding: { [weak appDelegate] in
                             appDelegate?.showOnboarding()
                         }

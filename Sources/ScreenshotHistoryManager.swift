@@ -94,6 +94,37 @@ final class ScreenshotHistoryManager {
         items.removeAll { $0.id == item.id }
     }
 
+    // MARK: - Clear All
+
+    func clearAll() {
+        let fm = FileManager.default
+        for item in items {
+            try? fm.removeItem(at: item.url)
+            try? fm.removeItem(at: item.thumbnailURL)
+        }
+        let thumbnailDir = preferences.saveLocation.appendingPathComponent(".thumbnails", isDirectory: true)
+        try? fm.removeItem(at: thumbnailDir)
+        items.removeAll()
+    }
+
+    func storageUsage() -> Int64 {
+        let fm = FileManager.default
+        var total: Int64 = 0
+        for item in items {
+            if let attrs = try? fm.attributesOfItem(atPath: item.url.path),
+               let size = attrs[.size] as? Int64 {
+                total += size
+            }
+        }
+        return total
+    }
+
+    static func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
+    }
+
     // MARK: - Thumbnail Generation
 
     private func generateThumbnail(for image: NSImage, originalURL: URL) -> URL? {

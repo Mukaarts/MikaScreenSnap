@@ -7,7 +7,7 @@
 import SwiftUI
 
 @MainActor
-final class AboutWindowController {
+final class AboutWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
 
     func showWindow() {
@@ -17,8 +17,6 @@ final class AboutWindowController {
             return
         }
 
-        NSApp.setActivationPolicy(.regular)
-
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 320, height: 400),
             styleMask: [.titled, .closable],
@@ -27,6 +25,7 @@ final class AboutWindowController {
         )
         window.title = "About Mika+ScreenSnap"
         window.isReleasedWhenClosed = false
+        window.delegate = self
         window.contentView = NSHostingView(rootView: AboutView())
         window.center()
 
@@ -34,6 +33,10 @@ final class AboutWindowController {
 
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        window = nil
     }
 }
 

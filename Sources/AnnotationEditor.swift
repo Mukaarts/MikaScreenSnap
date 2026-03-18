@@ -18,8 +18,13 @@ final class AnnotationEditorWindowController {
     private var keyMonitor: Any?
     weak var appState: AppState?
 
-    init(image: NSImage) {
+    init(image: NSImage, preferences: AppPreferences? = nil) {
         self.baseImage = image
+        if let prefs = preferences {
+            store.selectedTool = DrawingToolType(rawValue: prefs.defaultAnnotationTool) ?? .arrow
+            store.currentColor = prefs.defaultStrokeNSColor
+            store.currentStrokeWidth = prefs.defaultStrokeWidth
+        }
     }
 
     deinit {
@@ -36,9 +41,6 @@ final class AnnotationEditorWindowController {
         let scale = min(maxW / imageSize.width, maxH / imageSize.height, 1.0)
         let contentW = max(imageSize.width * scale, 600)
         let contentH = max(imageSize.height * scale, 400) + 82  // +50 toolbar + 32 bottom bar
-
-        // Switch to regular app BEFORE creating the window
-        NSApp.setActivationPolicy(.regular)
 
         let window = AnnotationWindow(
             contentRect: NSRect(x: 0, y: 0, width: contentW, height: contentH),
@@ -354,12 +356,16 @@ final class AnnotationEditorWindowController {
     }
 
     private func close() {
+        // Save last used tool if enabled
+        if let prefs = appState?.preferences, prefs.rememberLastTool {
+            prefs.defaultAnnotationTool = store.selectedTool.rawValue
+        }
+
         if let monitor = keyMonitor {
             NSEvent.removeMonitor(monitor)
             keyMonitor = nil
         }
         window?.orderOut(nil)
         window = nil
-        NSApp.setActivationPolicy(.accessory)
     }
 }

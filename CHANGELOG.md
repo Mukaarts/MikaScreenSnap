@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.4.0] - 2026-03-18
+
+### Added
+- **Preferences UI redesign** — dark-themed, four-tab preferences window (General, Shortcuts, Annotation, Advanced) matching the Mika+ brand aesthetic
+- **Shortcut configuration** — inline hotkey recorder with conflict detection and restore-defaults
+- **Annotation defaults** — configurable default tool, stroke color, and stroke width; "remember last tool" option
+- **Capture sound toggle** — enable/disable the capture sound effect
+- **Floating preview option** — configurable auto-dismiss duration (3s, 5s, 10s, never)
+- **Storage management** — view screenshot count/size, clear history with confirmation
+- **Reset all preferences** — one-click reset with confirmation dialog
+- **Destructive color** — added `Color.MikaPlus.destructive` (#E24B4A) to brand palette
+
+### Changed
+- Preferences window size increased from 450×350 to 560×480 with transparent titlebar
+- HotkeyManager refactored to support dynamic re-registration and saved bindings
+- AppPreferences extended with ~10 new UserDefaults-backed properties
+- AnnotationEditor now applies default tool/color/stroke from preferences
+- CaptureEngine capture sound respects preferences toggle
+
+### Fixed
+- **App inaccessible after Dock close** — removed activation policy switching; app stays permanently in `.accessory` mode (fixes #18)
+
+### Removed
+- Old `Sources/PreferencesView.swift` replaced by `Sources/Preferences/` module
+
 ## [3.3.2] - 2026-03-18
 
 ### Fixed
