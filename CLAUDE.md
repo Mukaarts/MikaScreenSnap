@@ -22,7 +22,7 @@ open "build/Mika+ScreenSnap.app"
 - **Pure Swift Package** — no Xcode project, uses `Package.swift`
 - **Menubar app** — `NSApp.setActivationPolicy(.accessory)` by default, switches to `.regular` when editor/history windows open
 - **Strict concurrency** — `@MainActor` isolation on all UI, `@Observable` for state, `nonisolated(unsafe)` for Carbon callback bridges
-- **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate), Sparkle (auto-update)
+- **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate), Sparkle (auto-update), ServiceManagement (launch at login)
 - **Build pipeline:** `scripts/build.sh` compiles, assembles .app, embeds Sparkle.framework, signs. DMG creation via `scripts/create-dmg.sh` or `scripts/create-dmg-simple.sh`. Notarization via `scripts/notarize.sh`
 
 ## Key Patterns
