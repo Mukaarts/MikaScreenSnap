@@ -29,7 +29,7 @@
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/Mukaarts/MikaScreenSnap/main/appcast.xml</string>
+    <string>https://raw.githubusercontent.com/Mukaarts/MikaScreenSnap/master/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
 </dict>

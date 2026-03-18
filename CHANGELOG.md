@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.3.2] - 2026-03-18
+
+### Fixed
+- **Appcast parsing error** — corrected XML namespace (`sparkle` → `http://www.andymatuschak.org/xml-namespaces/sparkle`) and XML declaration encoding in `appcast.xml`; fixes "An error occurred while parsing the update feed"
+
 ## [3.3.1] - 2026-03-18
 
 ### Fixed
