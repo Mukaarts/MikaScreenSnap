@@ -36,7 +36,7 @@ open "build/Mika+ScreenSnap.app"
 
 ## File Organization
 
-All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in `Sources/Onboarding/`. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
+All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in `Sources/Onboarding/`, preferences tabs in `Sources/Preferences/`. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
 
 ## Conventions
 

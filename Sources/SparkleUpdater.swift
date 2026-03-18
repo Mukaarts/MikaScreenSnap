@@ -27,6 +27,10 @@ final class SparkleUpdater {
         )
     }
 
+    var lastUpdateCheckDate: Date? {
+        updaterController.updater.lastUpdateCheckDate
+    }
+
     func checkForUpdates() {
         updaterController.checkForUpdates(nil)
     }
