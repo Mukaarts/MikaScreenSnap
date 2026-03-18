@@ -249,6 +249,9 @@ struct MikaScreenSnapApp: App {
                     appDelegate.appState.preferencesController = PreferencesWindowController(
                         preferences: appDelegate.appState.preferences,
                         launchAtLoginManager: appDelegate.appState.launchAtLoginManager,
+                        sparkleUpdater: appDelegate.appState.sparkleUpdater,
+                        historyManager: appDelegate.appState.historyManager,
+                        hotkeyManager: appDelegate.hotkeyManager!,
                         onShowOnboarding: { [weak appDelegate] in
                             appDelegate?.showOnboarding()
                         }

@@ -189,7 +189,8 @@ final class CaptureEngine {
                 let resultPanel = OCRResultPanel(text: recognizedText)
                 resultPanel.makeKeyAndOrderFront(nil)
 
-                if let sound = NSSound(named: "Tink") {
+                if appState?.preferences.captureSoundEnabled != false,
+                   let sound = NSSound(named: "Tink") {
                     sound.play()
                 }
             }
@@ -225,7 +226,8 @@ final class CaptureEngine {
         appState?.lastCapture = image
 
         // Play capture sound
-        if let sound = NSSound(named: "Tink") {
+        if appState?.preferences.captureSoundEnabled != false,
+           let sound = NSSound(named: "Tink") {
             sound.play()
         }
 
@@ -233,7 +235,7 @@ final class CaptureEngine {
         appState?.historyManager.autoSave(image)
 
         // Open annotation editor
-        let controller = AnnotationEditorWindowController(image: image)
+        let controller = AnnotationEditorWindowController(image: image, preferences: appState?.preferences)
         controller.appState = appState
         controller.showWindow(nil)
         appState?.annotationEditorController = controller

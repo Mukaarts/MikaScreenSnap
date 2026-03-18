@@ -18,8 +18,13 @@ final class AnnotationEditorWindowController {
     private var keyMonitor: Any?
     weak var appState: AppState?
 
-    init(image: NSImage) {
+    init(image: NSImage, preferences: AppPreferences? = nil) {
         self.baseImage = image
+        if let prefs = preferences {
+            store.selectedTool = DrawingToolType(rawValue: prefs.defaultAnnotationTool) ?? .arrow
+            store.currentColor = prefs.defaultStrokeNSColor
+            store.currentStrokeWidth = prefs.defaultStrokeWidth
+        }
     }
 
     deinit {
@@ -354,6 +359,11 @@ final class AnnotationEditorWindowController {
     }
 
     private func close() {
+        // Save last used tool if enabled
+        if let prefs = appState?.preferences, prefs.rememberLastTool {
+            prefs.defaultAnnotationTool = store.selectedTool.rawValue
+        }
+
         if let monitor = keyMonitor {
             NSEvent.removeMonitor(monitor)
             keyMonitor = nil

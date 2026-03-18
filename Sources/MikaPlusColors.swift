@@ -27,6 +27,7 @@ extension NSColor {
         static let darkBgDeep     = NSColor(hex: "#0F0F1A")
         static let textPrimary    = NSColor(hex: "#E1F5EE")
         static let textSecondary  = NSColor(hex: "#9FE1CB")
+        static let destructive    = NSColor(hex: "#E24B4A")
     }
 }
 
@@ -40,5 +41,6 @@ extension Color {
         static let darkBgDeep    = Color(nsColor: NSColor.MikaPlus.darkBgDeep)
         static let textPrimary   = Color(nsColor: NSColor.MikaPlus.textPrimary)
         static let textSecondary = Color(nsColor: NSColor.MikaPlus.textSecondary)
+        static let destructive   = Color(nsColor: NSColor.MikaPlus.destructive)
     }
 }
