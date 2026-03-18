@@ -32,10 +32,11 @@ open "build/Mika+ScreenSnap.app"
 - **Annotation protocol** — self-drawing annotations with snapshot/restore for undo. Sorted by zIndex for render order
 - **Carbon hotkeys** — EventHotKeyID with static instance pointer for callback. Signature: `0x4D534E53`
 - **SwiftUI in AppKit** — Toolbar and BottomBar are `NSHostingView` with `@Observable` store binding
+- **Onboarding flow** — `OnboardingWindowController` follows AboutWindowController pattern; SwiftUI `TabView` with paged navigation, conditional permission screen, live permission polling
 
 ## File Organization
 
-All source files in `Sources/`, tools in `Sources/Tools/`. No subdirectories beyond that. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
+All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in `Sources/Onboarding/`. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
 
 ## Conventions
 

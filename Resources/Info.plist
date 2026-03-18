@@ -11,9 +11,9 @@
     <key>CFBundleExecutable</key>
     <string>MikaScreenSnap</string>
     <key>CFBundleVersion</key>
-    <string>3.2.0</string>
+    <string>3.3.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>3.2.0</string>
+    <string>3.3.0</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>

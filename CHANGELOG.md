@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0] - 2026-03-18
+
+### Added
+- **First Launch Onboarding** — 3-screen guided flow (welcome, permissions, shortcuts) for new users
+- **Screen Recording permission warning** in menubar when not granted
+- **"Show Onboarding Again"** button in Preferences
+
 ## [3.2.0] - 2026-03-18
 
 ### Added
