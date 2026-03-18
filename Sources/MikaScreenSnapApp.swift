@@ -36,6 +36,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
     var hotkeyManager: HotkeyManager?
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !appState.preferences.hasCompletedOnboarding {
             showOnboarding()
