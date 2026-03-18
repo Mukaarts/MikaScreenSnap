@@ -5,6 +5,7 @@
 // Swift 6.0 strict concurrency, macOS 14+
 
 import AppKit
+import ServiceManagement
 
 enum ImageFormat: String, CaseIterable, Sendable {
     case png = "PNG"
@@ -32,6 +33,22 @@ final class AppPreferences {
         didSet { defaults.set(jpegQuality, forKey: "jpegQuality") }
     }
 
+    var hasCompletedOnboarding: Bool {
+        didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
+    }
+
+    var permissionSkipped: Bool {
+        didSet { defaults.set(permissionSkipped, forKey: "permissionSkipped") }
+    }
+
+    var launchAtLogin: Bool {
+        didSet {
+            defaults.set(launchAtLogin, forKey: "launchAtLogin")
+            if launchAtLogin { try? SMAppService.mainApp.register() }
+            else { try? SMAppService.mainApp.unregister() }
+        }
+    }
+
     init() {
         let defaultLocation = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first!
             .appendingPathComponent("MikaScreenSnap", isDirectory: true)
@@ -39,6 +56,9 @@ final class AppPreferences {
         self.autoSaveEnabled = defaults.object(forKey: "autoSaveEnabled") as? Bool ?? true
         self.jpegQuality = defaults.object(forKey: "jpegQuality") as? CGFloat ?? 0.85
         self.imageFormat = ImageFormat(rawValue: defaults.string(forKey: "imageFormat") ?? "") ?? .png
+        self.hasCompletedOnboarding = defaults.object(forKey: "hasCompletedOnboarding") as? Bool ?? false
+        self.permissionSkipped = defaults.object(forKey: "permissionSkipped") as? Bool ?? false
+        self.launchAtLogin = defaults.object(forKey: "launchAtLogin") as? Bool ?? false
 
         if let savedPath = defaults.string(forKey: "saveLocation") {
             self.saveLocation = URL(fileURLWithPath: savedPath)

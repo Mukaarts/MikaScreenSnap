@@ -1,9 +1,10 @@
-# Mika+ScreenSnap v3.1.0
+# Mika+ScreenSnap v3.2.0
 
 A lightweight macOS menubar screenshot tool with a professional annotation editor and power features. Capture your screen, annotate it with 11 tools, extract text via OCR, pick colors, measure pixels, pin screenshots, and manage your history — all without leaving your workflow.
 
 ## Features
 
+- **First Launch Onboarding** — guided setup with permissions and shortcut overview
 - **Menubar App** — lives in your menubar, no Dock icon
 - **Capture Modes**
   - Full Screen (`Ctrl+Shift+Cmd+3`)
@@ -187,6 +188,8 @@ Sources/
 ├── AppPreferences.swift          # UserDefaults-backed preferences
 ├── ScreenshotHistoryManager.swift # Auto-save, thumbnails, history
 ├── HistoryBrowserWindow.swift    # History browser window (LazyVGrid)
+├── OnboardingView.swift          # First-launch onboarding SwiftUI views
+├── OnboardingWindowController.swift # Onboarding window controller
 ├── PreferencesView.swift         # Preferences window
 ├── OCREngine.swift               # Vision framework text recognition
 ├── OCRResultPanel.swift          # HUD result panel for OCR

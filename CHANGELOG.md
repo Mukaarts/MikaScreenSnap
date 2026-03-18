@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.0] - 2026-03-18
+
+### Added
+- **First Launch Onboarding** — 3-screen guided flow (welcome, permissions, shortcuts) shown only on first launch
+- **Launch at Login** — toggle in onboarding and Preferences, backed by SMAppService
+- **Screen Recording Permission Warning** — menubar shows warning when permission not granted
+- **Show Onboarding Again** — button in Preferences to re-trigger onboarding flow
+
 ## [3.1.0] - 2026-03-15
 
 ### Added
