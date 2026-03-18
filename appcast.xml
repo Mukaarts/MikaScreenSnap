@@ -2,6 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
         <title>Mika+ScreenSnap Updates</title>
+        <link>https://github.com/Mukaarts/MikaScreenSnap</link>
         <item>
             <title>Version 3.3.1</title>
             <sparkle:version>3.3.1</sparkle:version>
@@ -25,11 +26,6 @@
                 sparkle:edSignature="XvTwo4/t5juWRF7G744QyIW8KDR4jj9+rQdiB3jNlcSjPF4MpIiFmn5MaPGqoUCd4ugk57V0+Qbf0qSmI/oFAw=="
                 length="1802655"
                 type="application/octet-stream" />
-        </item>
-        <item>
-            <title>Version 3.3.0</title>
-            <sparkle:version>3.3.0</sparkle:version>
-            <sparkle:shortVersionString>3.3.0</sparkle:shortVersionString>
         </item>
     </channel>
 </rss>
