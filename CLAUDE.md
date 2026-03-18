@@ -20,7 +20,7 @@ open "build/Mika+ScreenSnap.app"
 ## Architecture
 
 - **Pure Swift Package** — no Xcode project, uses `Package.swift`
-- **Menubar app** — `NSApp.setActivationPolicy(.accessory)` by default, switches to `.regular` when editor/history windows open
+- **Menubar app** — permanently `.accessory`; windows activate via `NSApp.activate()`
 - **Strict concurrency** — `@MainActor` isolation on all UI, `@Observable` for state, `nonisolated(unsafe)` for Carbon callback bridges
 - **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate), Sparkle (auto-update), ServiceManagement (launch at login)
 - **Build pipeline:** `scripts/build.sh` compiles, assembles .app, embeds Sparkle.framework, signs. DMG creation via `scripts/create-dmg.sh` or `scripts/create-dmg-simple.sh`. Notarization via `scripts/notarize.sh`
@@ -44,8 +44,8 @@ All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in
 - New NSPanel-based features follow the AreaSelectionPanel pattern (borderless, nonactivating, clear background)
 - New drawing tools implement `DrawingTool` protocol and register in `AnnotationCanvasView.setupTools()`
 - New DrawingToolType cases need systemImage, label, and keyboard shortcut in AnnotationEditor
-- Window controllers manage activation policy: `.regular` on show, `.accessory` on close (only if no other windows visible)
-- Pinned panels don't count for activation policy decisions
+- App stays permanently in `.accessory` mode; window controllers use `NSApp.activate()` to bring windows forward
+- `applicationShouldTerminateAfterLastWindowClosed` returns `false` (menubar app stays running)
 - Scripts use lowercase `scripts/` directory (not `Scripts/`)
 - Build scripts reference `PROJECT_DIR` relative to script location: `$(cd "$(dirname "$0")/.." && pwd)`
 - Sparkle: `@preconcurrency import Sparkle` for Swift 6.0 concurrency compatibility
