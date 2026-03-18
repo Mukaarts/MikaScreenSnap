@@ -22,7 +22,7 @@ open "build/Mika+ScreenSnap.app"
 - **Pure Swift Package** — no Xcode project, uses `Package.swift`
 - **Menubar app** — `NSApp.setActivationPolicy(.accessory)` by default, switches to `.regular` when editor/history windows open
 - **Strict concurrency** — `@MainActor` isolation on all UI, `@Observable` for state, `nonisolated(unsafe)` for Carbon callback bridges
-- **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate), Sparkle (auto-update)
+- **Frameworks:** ScreenCaptureKit, Carbon (hotkeys), Vision (OCR), UniformTypeIdentifiers, CoreImage (blur/pixelate), Sparkle (auto-update), ServiceManagement (launch at login)
 - **Build pipeline:** `scripts/build.sh` compiles, assembles .app, embeds Sparkle.framework, signs. DMG creation via `scripts/create-dmg.sh` or `scripts/create-dmg-simple.sh`. Notarization via `scripts/notarize.sh`
 
 ## Key Patterns
@@ -32,10 +32,11 @@ open "build/Mika+ScreenSnap.app"
 - **Annotation protocol** — self-drawing annotations with snapshot/restore for undo. Sorted by zIndex for render order
 - **Carbon hotkeys** — EventHotKeyID with static instance pointer for callback. Signature: `0x4D534E53`
 - **SwiftUI in AppKit** — Toolbar and BottomBar are `NSHostingView` with `@Observable` store binding
+- **Onboarding flow** — `OnboardingWindowController` follows AboutWindowController pattern; SwiftUI `TabView` with paged navigation, conditional permission screen, live permission polling
 
 ## File Organization
 
-All source files in `Sources/`, tools in `Sources/Tools/`. No subdirectories beyond that. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
+All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in `Sources/Onboarding/`. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
 
 ## Conventions
 

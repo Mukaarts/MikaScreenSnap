@@ -10,9 +10,13 @@ import SwiftUI
 final class PreferencesWindowController {
     private var window: NSWindow?
     private let preferences: AppPreferences
+    private let launchAtLoginManager: LaunchAtLoginManager
+    let onShowOnboarding: () -> Void
 
-    init(preferences: AppPreferences) {
+    init(preferences: AppPreferences, launchAtLoginManager: LaunchAtLoginManager, onShowOnboarding: @escaping () -> Void) {
         self.preferences = preferences
+        self.launchAtLoginManager = launchAtLoginManager
+        self.onShowOnboarding = onShowOnboarding
     }
 
     func showWindow() {
@@ -24,10 +28,14 @@ final class PreferencesWindowController {
 
         NSApp.setActivationPolicy(.regular)
 
-        let contentView = PreferencesView(preferences: preferences)
+        let contentView = PreferencesView(
+            preferences: preferences,
+            launchAtLoginManager: launchAtLoginManager,
+            onShowOnboarding: onShowOnboarding
+        )
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 450, height: 280),
+            contentRect: NSRect(x: 0, y: 0, width: 450, height: 350),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -46,9 +54,18 @@ final class PreferencesWindowController {
 
 struct PreferencesView: View {
     let preferences: AppPreferences
+    let launchAtLoginManager: LaunchAtLoginManager
+    let onShowOnboarding: () -> Void
 
     var body: some View {
         Form {
+            Section("General") {
+                Toggle("Launch at Login", isOn: Binding(
+                    get: { launchAtLoginManager.isEnabled },
+                    set: { launchAtLoginManager.setEnabled($0) }
+                ))
+            }
+
             Section("Auto-Save") {
                 Toggle("Automatically save screenshots", isOn: Binding(
                     get: { preferences.autoSaveEnabled },
@@ -91,9 +108,15 @@ struct PreferencesView: View {
                     }
                 }
             }
+
+            Section("Onboarding") {
+                Button("Show Onboarding Again") {
+                    onShowOnboarding()
+                }
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 450, height: 280)
+        .frame(width: 450, height: 350)
     }
 
     private func chooseFolder() {

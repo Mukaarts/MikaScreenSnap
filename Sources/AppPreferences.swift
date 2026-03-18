@@ -32,6 +32,14 @@ final class AppPreferences {
         didSet { defaults.set(jpegQuality, forKey: "jpegQuality") }
     }
 
+    var hasCompletedOnboarding: Bool {
+        didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
+    }
+
+    var permissionSkipped: Bool {
+        didSet { defaults.set(permissionSkipped, forKey: "permissionSkipped") }
+    }
+
     init() {
         let defaultLocation = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first!
             .appendingPathComponent("MikaScreenSnap", isDirectory: true)
@@ -39,6 +47,8 @@ final class AppPreferences {
         self.autoSaveEnabled = defaults.object(forKey: "autoSaveEnabled") as? Bool ?? true
         self.jpegQuality = defaults.object(forKey: "jpegQuality") as? CGFloat ?? 0.85
         self.imageFormat = ImageFormat(rawValue: defaults.string(forKey: "imageFormat") ?? "") ?? .png
+        self.hasCompletedOnboarding = defaults.object(forKey: "hasCompletedOnboarding") as? Bool ?? false
+        self.permissionSkipped = defaults.object(forKey: "permissionSkipped") as? Bool ?? false
 
         if let savedPath = defaults.string(forKey: "saveLocation") {
             self.saveLocation = URL(fileURLWithPath: savedPath)

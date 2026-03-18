@@ -17,6 +17,8 @@ final class AppState {
     var preferencesController: PreferencesWindowController?
     var aboutController: AboutWindowController?
     var sparkleUpdater: SparkleUpdater
+    var launchAtLoginManager: LaunchAtLoginManager
+    var onboardingController: OnboardingWindowController?
 
     init() {
         let prefs = AppPreferences()
@@ -25,6 +27,7 @@ final class AppState {
         self.historyManager = ScreenshotHistoryManager(preferences: prefs)
         self.colorHistory = ColorHistoryManager()
         self.sparkleUpdater = SparkleUpdater()
+        self.launchAtLoginManager = LaunchAtLoginManager()
     }
 }
 
@@ -34,7 +37,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var hotkeyManager: HotkeyManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        checkScreenCapturePermission()
+        if !appState.preferences.hasCompletedOnboarding {
+            showOnboarding()
+        } else if !CGPreflightScreenCaptureAccess() {
+            checkScreenCapturePermission()
+        }
 
         // Restore pinned screenshots
         PinnedScreenshotManager.restorePins(appState: appState)
@@ -73,6 +80,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.showHistoryBrowser()
             }
         )
+    }
+
+    func showOnboarding() {
+        if appState.onboardingController == nil {
+            appState.onboardingController = OnboardingWindowController(
+                preferences: appState.preferences,
+                launchAtLoginManager: appState.launchAtLoginManager
+            )
+        }
+        appState.onboardingController?.showWindow()
     }
 
     private func showHistoryBrowser() {
@@ -134,6 +151,13 @@ struct MikaScreenSnapApp: App {
             }
             Button("Check for Updates...") {
                 appDelegate.appState.sparkleUpdater.checkForUpdates()
+            }
+            if !CGPreflightScreenCaptureAccess() {
+                Button("\u{26A0} Screen Recording not granted") {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
             }
             Divider()
 
@@ -223,7 +247,11 @@ struct MikaScreenSnapApp: App {
             Button("Preferences...") {
                 if appDelegate.appState.preferencesController == nil {
                     appDelegate.appState.preferencesController = PreferencesWindowController(
-                        preferences: appDelegate.appState.preferences
+                        preferences: appDelegate.appState.preferences,
+                        launchAtLoginManager: appDelegate.appState.launchAtLoginManager,
+                        onShowOnboarding: { [weak appDelegate] in
+                            appDelegate?.showOnboarding()
+                        }
                     )
                 }
                 appDelegate.appState.preferencesController?.showWindow()
