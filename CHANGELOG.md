@@ -19,6 +19,9 @@
 - AnnotationEditor now applies default tool/color/stroke from preferences
 - CaptureEngine capture sound respects preferences toggle
 
+### Fixed
+- **App inaccessible after Dock close** — removed activation policy switching; app stays permanently in `.accessory` mode (fixes #18)
+
 ### Removed
 - Old `Sources/PreferencesView.swift` replaced by `Sources/Preferences/` module
 

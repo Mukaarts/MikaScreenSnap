@@ -4,6 +4,31 @@
         <title>Mika+ScreenSnap Updates</title>
         <link>https://github.com/Mukaarts/MikaScreenSnap</link>
         <item>
+            <title>Version 3.4.0</title>
+            <sparkle:version>3.4.0</sparkle:version>
+            <sparkle:shortVersionString>3.4.0</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>Added</h2>
+                <ul>
+                    <li><strong>Preferences UI redesign</strong> — dark-themed, four-tab preferences window matching the Mika+ brand aesthetic</li>
+                    <li><strong>Shortcut configuration</strong> — inline hotkey recorder with conflict detection and restore-defaults</li>
+                    <li><strong>Annotation defaults</strong> — configurable default tool, stroke color, and stroke width</li>
+                </ul>
+                <h2>Fixed</h2>
+                <ul>
+                    <li><strong>App inaccessible after Dock close</strong> — removed activation policy switching; app stays permanently in .accessory mode</li>
+                </ul>
+            ]]></description>
+            <pubDate>Wed, 18 Mar 2026 18:00:00 +0100</pubDate>
+            <enclosure
+                url="https://github.com/Mukaarts/MikaScreenSnap/releases/download/v3.4.0/Mika%2BScreenSnap-v3.4.0.dmg"
+                sparkle:version="3.4.0"
+                sparkle:shortVersionString="3.4.0"
+                sparkle:edSignature="UUmCjjLEg5BoCzzflTqvTbxOd1fxHZT+6kQY0/7WYWjANuwrgIrLOEecuukzup0ufCvm72iB8ofvogcHhLhlCA=="
+                length="1899097"
+                type="application/octet-stream" />
+        </item>
+        <item>
             <title>Version 3.3.1</title>
             <sparkle:version>3.3.1</sparkle:version>
             <sparkle:shortVersionString>3.3.1</sparkle:shortVersionString>
