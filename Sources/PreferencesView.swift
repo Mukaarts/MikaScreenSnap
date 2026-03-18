@@ -11,10 +11,12 @@ final class PreferencesWindowController {
     private var window: NSWindow?
     private let preferences: AppPreferences
     private let launchAtLoginManager: LaunchAtLoginManager
+    let onShowOnboarding: () -> Void
 
-    init(preferences: AppPreferences, launchAtLoginManager: LaunchAtLoginManager) {
+    init(preferences: AppPreferences, launchAtLoginManager: LaunchAtLoginManager, onShowOnboarding: @escaping () -> Void) {
         self.preferences = preferences
         self.launchAtLoginManager = launchAtLoginManager
+        self.onShowOnboarding = onShowOnboarding
     }
 
     func showWindow() {
@@ -28,7 +30,8 @@ final class PreferencesWindowController {
 
         let contentView = PreferencesView(
             preferences: preferences,
-            launchAtLoginManager: launchAtLoginManager
+            launchAtLoginManager: launchAtLoginManager,
+            onShowOnboarding: onShowOnboarding
         )
 
         let window = NSWindow(
@@ -52,6 +55,7 @@ final class PreferencesWindowController {
 struct PreferencesView: View {
     let preferences: AppPreferences
     let launchAtLoginManager: LaunchAtLoginManager
+    let onShowOnboarding: () -> Void
 
     var body: some View {
         Form {
@@ -102,6 +106,12 @@ struct PreferencesView: View {
                         Text("\(Int(preferences.jpegQuality * 100))%")
                             .frame(width: 40)
                     }
+                }
+            }
+
+            Section("Onboarding") {
+                Button("Show Onboarding Again") {
+                    onShowOnboarding()
                 }
             }
         }
