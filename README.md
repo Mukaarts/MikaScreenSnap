@@ -1,4 +1,4 @@
-# Mika+ScreenSnap v3.3.0
+# Mika+ScreenSnap v3.3.1
 
 A lightweight macOS menubar screenshot tool with a professional annotation editor and power features. Capture your screen, annotate it with 11 tools, extract text via OCR, pick colors, measure pixels, pin screenshots, and manage your history — all without leaving your workflow.
 
@@ -171,11 +171,16 @@ swift scripts/GenerateDMGBackground.swift
 
 ### Auto-Update (Sparkle)
 
-The app includes Sparkle for auto-updates. To configure:
-1. Generate Ed25519 keys: `.build/artifacts/Sparkle/bin/generate_keys`
-2. Update `SUPublicEDKey` in `Resources/Info.plist`
-3. Update `SUFeedURL` to point to your appcast.xml
-4. Host signed updates with Sparkle's `generate_appcast` tool
+The app uses Sparkle 2.x for auto-updates. Configuration:
+- **Feed URL:** `https://raw.githubusercontent.com/Mukaarts/MikaScreenSnap/main/appcast.xml`
+- **Ed25519 public key:** configured in `Resources/Info.plist` (`SUPublicEDKey`)
+- **Private key:** stored in the macOS Keychain (generated via `.build/artifacts/sparkle/Sparkle/bin/generate_keys`)
+
+To publish a new update:
+1. Build the release `.app` bundle
+2. Sign the update: `.build/artifacts/sparkle/Sparkle/bin/sign_update path/to/archive.zip`
+3. Update `appcast.xml` with the new version, download URL, and signature
+4. Or use `generate_appcast` to auto-generate from a folder of releases
 
 ## Project Structure
 

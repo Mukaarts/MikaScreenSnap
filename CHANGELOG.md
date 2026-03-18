@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.3.1] - 2026-03-18
+
+### Fixed
+- **Check for Updates** — Sparkle auto-update now works; replaced placeholder `SUFeedURL` and `SUPublicEDKey` in Info.plist with real values
+- **Update menu button** — now visually disabled when Sparkle updater is not ready
+
+### Added
+- `appcast.xml` — initial Sparkle appcast hosted on GitHub for update checks
+
 ## [3.3.0] - 2026-03-18
 
 ### Added

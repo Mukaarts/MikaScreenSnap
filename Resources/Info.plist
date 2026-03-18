@@ -11,9 +11,9 @@
     <key>CFBundleExecutable</key>
     <string>MikaScreenSnap</string>
     <key>CFBundleVersion</key>
-    <string>3.3.0</string>
+    <string>3.3.1</string>
     <key>CFBundleShortVersionString</key>
-    <string>3.3.0</string>
+    <string>3.3.1</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -29,8 +29,8 @@
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>SUFeedURL</key>
-    <string>https://example.com/appcast.xml</string>
+    <string>https://raw.githubusercontent.com/Mukaarts/MikaScreenSnap/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>PLACEHOLDER_ED25519_PUBLIC_KEY</string>
+    <string>eauiHgP4PM9ynLekAmo3URrX3ye3HW7D53xOZa5AeYI=</string>
 </dict>
 </plist>
