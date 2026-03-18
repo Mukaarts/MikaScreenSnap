@@ -17,6 +17,7 @@ final class AppState {
     var preferencesController: PreferencesWindowController?
     var aboutController: AboutWindowController?
     var sparkleUpdater: SparkleUpdater
+    var launchAtLoginManager: LaunchAtLoginManager
 
     init() {
         let prefs = AppPreferences()
@@ -25,6 +26,7 @@ final class AppState {
         self.historyManager = ScreenshotHistoryManager(preferences: prefs)
         self.colorHistory = ColorHistoryManager()
         self.sparkleUpdater = SparkleUpdater()
+        self.launchAtLoginManager = LaunchAtLoginManager()
     }
 }
 
@@ -223,7 +225,8 @@ struct MikaScreenSnapApp: App {
             Button("Preferences...") {
                 if appDelegate.appState.preferencesController == nil {
                     appDelegate.appState.preferencesController = PreferencesWindowController(
-                        preferences: appDelegate.appState.preferences
+                        preferences: appDelegate.appState.preferences,
+                        launchAtLoginManager: appDelegate.appState.launchAtLoginManager
                     )
                 }
                 appDelegate.appState.preferencesController?.showWindow()

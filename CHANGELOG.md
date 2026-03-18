@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.0] - 2026-03-18
+
+### Added
+- **Launch at Login** — optional auto-start at macOS login via SMAppService; toggle in Preferences > General
+
+### Changed
+- Preferences window: new "General" section with Launch at Login toggle; window height increased for new section
+
 ## [3.1.0] - 2026-03-15
 
 ### Added
