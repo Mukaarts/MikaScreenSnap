@@ -42,9 +42,6 @@ final class AnnotationEditorWindowController {
         let contentW = max(imageSize.width * scale, 600)
         let contentH = max(imageSize.height * scale, 400) + 82  // +50 toolbar + 32 bottom bar
 
-        // Switch to regular app BEFORE creating the window
-        NSApp.setActivationPolicy(.regular)
-
         let window = AnnotationWindow(
             contentRect: NSRect(x: 0, y: 0, width: contentW, height: contentH),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
@@ -370,6 +367,5 @@ final class AnnotationEditorWindowController {
         }
         window?.orderOut(nil)
         window = nil
-        NSApp.setActivationPolicy(.accessory)
     }
 }

@@ -24,8 +24,6 @@ final class OnboardingWindowController: NSObject, NSWindowDelegate {
             return
         }
 
-        NSApp.setActivationPolicy(.regular)
-
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 560),
             styleMask: [.titled, .closable, .fullSizeContentView],
@@ -58,13 +56,6 @@ final class OnboardingWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         preferences.hasCompletedOnboarding = true
-
-        // Switch back to accessory if no other windows are visible
-        let hasVisibleWindows = NSApp.windows.contains { win in
-            win !== window && win.isVisible && !(win is NSPanel)
-        }
-        if !hasVisibleWindows {
-            NSApp.setActivationPolicy(.accessory)
-        }
+        window = nil
     }
 }

@@ -39,8 +39,6 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
             return
         }
 
-        NSApp.setActivationPolicy(.regular)
-
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 460),
             styleMask: [.titled, .closable],
@@ -69,11 +67,6 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        let hasVisibleWindows = NSApp.windows.contains { win in
-            win !== window && win.isVisible && !(win is NSPanel)
-        }
-        if !hasVisibleWindows {
-            NSApp.setActivationPolicy(.accessory)
-        }
+        window = nil
     }
 }

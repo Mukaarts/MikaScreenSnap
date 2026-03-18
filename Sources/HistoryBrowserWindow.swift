@@ -26,8 +26,6 @@ final class HistoryBrowserWindowController {
 
         historyManager.loadHistory()
 
-        NSApp.setActivationPolicy(.regular)
-
         let contentView = HistoryBrowserView(
             historyManager: historyManager,
             onOpenInEditor: { [weak self] url in self?.openInEditor(url) },
@@ -60,11 +58,6 @@ final class HistoryBrowserWindowController {
     func close() {
         window?.orderOut(nil)
         window = nil
-        // Only switch to accessory if no other windows are open
-        let hasVisibleWindows = NSApp.windows.contains { $0.isVisible && $0 !== window && !($0 is NSPanel) }
-        if !hasVisibleWindows {
-            NSApp.setActivationPolicy(.accessory)
-        }
     }
 
     private func openInEditor(_ url: URL) {
