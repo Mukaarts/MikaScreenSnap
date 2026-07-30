@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Design tokens mirror Sources/MikaPlusColors.swift so the site and the app
+   read as one product. The page is dark-only by intent: the brand is dark and
+   every product screenshot is dark, so a light variant would look broken. */
+@theme {
+  --color-ink: #07070e;
+  --color-ink-raised: #0e0e18;
+  --color-surface: #141420;
+  --color-surface-hi: #1b1b2a;
+  --color-line: #262639;
+
+  --color-teal: #1d9e75;
+  --color-teal-light: #5dcaa5;
+  --color-teal-lightest: #9fe1cb;
+
+  --color-body: #e4efea;
+  --color-muted: #8fa09a;
+  --color-faint: #63736d;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--color-ink);
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Wide content (tables, screenshots) scrolls inside its own container so the
+   page body never scrolls horizontally. */
+.scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+::selection {
+  background-color: var(--color-teal);
+  color: #04120c;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-teal-light);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
