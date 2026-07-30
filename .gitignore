@@ -6,3 +6,4 @@ build/
 installer/*.dmg
 installer/dmg-background.png
 installer/dmg-background@2x.png
+installer/demo-canvas.png
