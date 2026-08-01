@@ -6,21 +6,24 @@
  * that needs editing.
  */
 
+const version = "3.4.0";
+const repo = "https://github.com/daumedia/MikaScreenSnap";
+
 export const product = {
   name: "Mika+ScreenSnap",
   tagline: "Screenshots, annotated before you even switch windows.",
   description:
     "A lightweight macOS menu bar screenshot tool with a real annotation editor, OCR, a colour picker and pixel measurement — all one keystroke away.",
-  version: "3.4.0",
+  version,
   minimumOS: "macOS 14.0 (Sonoma)",
   // The shipped binary is arm64-only (verified with `lipo -info`), so the site
   // must not promise Intel support.
   architecture: "Apple silicon",
   license: "MIT",
-  repo: "https://github.com/Mukaarts/MikaScreenSnap",
-  releases: "https://github.com/Mukaarts/MikaScreenSnap/releases",
-  download:
-    "https://github.com/Mukaarts/MikaScreenSnap/releases/download/v3.4.0/Mika%2BScreenSnap-v3.4.0.dmg",
+  repo,
+  releases: `${repo}/releases`,
+  // Derived from version so a release only needs the constant above changed.
+  download: `${repo}/releases/download/v${version}/Mika%2BScreenSnap-v${version}.dmg`,
   saveFolder: "~/Pictures/MikaScreenSnap/",
 } as const;
 

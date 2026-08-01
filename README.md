@@ -173,7 +173,7 @@ swift scripts/GenerateDMGBackground.swift
 ### Auto-Update (Sparkle)
 
 The app uses Sparkle 2.x for auto-updates. Configuration:
-- **Feed URL:** `https://raw.githubusercontent.com/Mukaarts/MikaScreenSnap/main/appcast.xml`
+- **Feed URL:** `https://raw.githubusercontent.com/daumedia/MikaScreenSnap/master/appcast.xml` (as configured in `Resources/Info.plist`)
 - **Ed25519 public key:** configured in `Resources/Info.plist` (`SUPublicEDKey`)
 - **Private key:** stored in the macOS Keychain (generated via `.build/artifacts/sparkle/Sparkle/bin/generate_keys`)
 

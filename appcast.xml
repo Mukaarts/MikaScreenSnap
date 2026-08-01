@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
         <title>Mika+ScreenSnap Updates</title>
-        <link>https://github.com/Mukaarts/MikaScreenSnap</link>
+        <link>https://github.com/daumedia/MikaScreenSnap</link>
         <item>
             <title>Version 3.4.0</title>
             <sparkle:version>3.4.0</sparkle:version>
@@ -21,7 +21,7 @@
             ]]></description>
             <pubDate>Wed, 18 Mar 2026 18:00:00 +0100</pubDate>
             <enclosure
-                url="https://github.com/Mukaarts/MikaScreenSnap/releases/download/v3.4.0/Mika%2BScreenSnap-v3.4.0.dmg"
+                url="https://github.com/daumedia/MikaScreenSnap/releases/download/v3.4.0/Mika%2BScreenSnap-v3.4.0.dmg"
                 sparkle:version="3.4.0"
                 sparkle:shortVersionString="3.4.0"
                 sparkle:edSignature="UUmCjjLEg5BoCzzflTqvTbxOd1fxHZT+6kQY0/7WYWjANuwrgIrLOEecuukzup0ufCvm72iB8ofvogcHhLhlCA=="
@@ -45,7 +45,7 @@
             ]]></description>
             <pubDate>Wed, 18 Mar 2026 12:00:00 +0100</pubDate>
             <enclosure
-                url="https://github.com/Mukaarts/MikaScreenSnap/releases/download/v3.3.1/Mika%2BScreenSnap-v3.3.1.dmg"
+                url="https://github.com/daumedia/MikaScreenSnap/releases/download/v3.3.1/Mika%2BScreenSnap-v3.3.1.dmg"
                 sparkle:version="3.3.1"
                 sparkle:shortVersionString="3.3.1"
                 sparkle:edSignature="XvTwo4/t5juWRF7G744QyIW8KDR4jj9+rQdiB3jNlcSjPF4MpIiFmn5MaPGqoUCd4ugk57V0+Qbf0qSmI/oFAw=="
