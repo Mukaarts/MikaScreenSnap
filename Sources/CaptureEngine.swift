@@ -7,6 +7,59 @@ final class CaptureEngine {
     private var colorLoupeController: ColorLoupeController?
     private var measurementController: MeasurementOverlayController?
 
+    // MARK: - Content Filtering
+
+    /// Windows that must never end up in a capture: our own UI, every app the user
+    /// excluded, and the software-rendered pointer overlay.
+    private func excludedWindows(in content: SCShareableContent, preferences: AppPreferences?) -> [SCWindow] {
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let blocked = preferences?.excludedBundleIdentifiers ?? []
+        return content.windows.filter { window in
+            if CaptureEngine.isPointerOverlay(window) { return true }
+            guard let app = window.owningApplication else { return false }
+            return app.processID == ownPID || blocked.contains(app.bundleIdentifier)
+        }
+    }
+
+    /// Detects the pointer that WindowServer draws as an ordinary window instead of a
+    /// hardware cursor — which is what happens once an accessibility pointer (coloured,
+    /// enlarged, or driven by Dwell Control) is enabled.
+    ///
+    /// `SCStreamConfiguration.showsCursor` only suppresses the hardware cursor, so this
+    /// overlay would otherwise be baked into every screenshot.
+    private static func isPointerOverlay(_ window: SCWindow) -> Bool {
+        guard window.title == "Cursor",
+              window.owningApplication?.bundleIdentifier.isEmpty ?? false,
+              window.windowLayer > 100
+        else { return false }
+        return true
+    }
+
+    /// Captures a still image with the hardware cursor suppressed.
+    /// - Parameters:
+    ///   - sourceRect: crop in points, top-left origin — pass `.null` to capture everything.
+    ///   - pixelWidth/pixelHeight: output size in pixels.
+    private func captureCGImage(
+        filter: SCContentFilter,
+        sourceRect: CGRect,
+        pixelWidth: Int,
+        pixelHeight: Int,
+        shouldBeOpaque: Bool = true
+    ) async throws -> CGImage {
+        let config = SCStreamConfiguration()
+        config.width = pixelWidth
+        config.height = pixelHeight
+        config.showsCursor = false
+        config.shouldBeOpaque = shouldBeOpaque
+        if !sourceRect.isNull {
+            config.sourceRect = sourceRect
+        }
+
+        return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+    }
+
+    // MARK: - Capture
+
     func captureFullScreen(appState: AppState?) async {
         do {
             let content = try await SCShareableContent.current
@@ -15,16 +68,17 @@ final class CaptureEngine {
                 return
             }
 
-            let ownPID = ProcessInfo.processInfo.processIdentifier
-            let excludedWindows = content.windows.filter { $0.owningApplication?.processID == ownPID }
+            let filter = SCContentFilter(
+                display: display,
+                excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
+            )
 
-            let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
-            let config = SCStreamConfiguration()
-            config.width = Int(display.width) * 2
-            config.height = Int(display.height) * 2
-            config.showsCursor = false
-
-            let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+            let cgImage = try await captureCGImage(
+                filter: filter,
+                sourceRect: .null,
+                pixelWidth: Int(display.width) * 2,
+                pixelHeight: Int(display.height) * 2
+            )
             let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: display.width, height: display.height))
 
             postCapture(nsImage, appState: appState)
@@ -38,10 +92,10 @@ final class CaptureEngine {
             let content = try await SCShareableContent.current
             guard let display = content.displays.first else { return }
 
-            let ownPID = ProcessInfo.processInfo.processIdentifier
-            let excludedWindows = content.windows.filter { $0.owningApplication?.processID == ownPID }
-
-            let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
+            let filter = SCContentFilter(
+                display: display,
+                excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
+            )
 
             // Convert from AppKit coordinates (origin bottom-left) to ScreenCaptureKit (origin top-left)
             let displayHeight = CGFloat(display.height)
@@ -53,13 +107,12 @@ final class CaptureEngine {
             )
 
             let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            let config = SCStreamConfiguration()
-            config.sourceRect = scRect
-            config.width = Int(rect.width * scale)
-            config.height = Int(rect.height * scale)
-            config.showsCursor = false
-
-            let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+            let cgImage = try await captureCGImage(
+                filter: filter,
+                sourceRect: scRect,
+                pixelWidth: Int(rect.width * scale),
+                pixelHeight: Int(rect.height * scale)
+            )
             let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: rect.width, height: rect.height))
 
             postCapture(nsImage, appState: appState)
@@ -72,10 +125,10 @@ final class CaptureEngine {
         do {
             let content = try await SCShareableContent.current
 
-            // Find the frontmost window that isn't ours
-            let ownPID = ProcessInfo.processInfo.processIdentifier
+            // Find the frontmost window that is neither ours nor an excluded app's
+            let skipped = Set(excludedWindows(in: content, preferences: appState?.preferences).map(\.windowID))
             let windows = content.windows.filter {
-                $0.owningApplication?.processID != ownPID &&
+                !skipped.contains($0.windowID) &&
                 $0.isOnScreen &&
                 $0.frame.width > 0 && $0.frame.height > 0 &&
                 $0.title?.isEmpty == false
@@ -87,15 +140,14 @@ final class CaptureEngine {
             }
 
             let filter = SCContentFilter(desktopIndependentWindow: targetWindow)
-            let config = SCStreamConfiguration()
             let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            config.width = Int(targetWindow.frame.width * scale)
-            config.height = Int(targetWindow.frame.height * scale)
-            config.showsCursor = false
-            config.capturesShadowsOnly = false
-            config.shouldBeOpaque = false
-
-            let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+            let cgImage = try await captureCGImage(
+                filter: filter,
+                sourceRect: .null,
+                pixelWidth: Int(targetWindow.frame.width * scale),
+                pixelHeight: Int(targetWindow.frame.height * scale),
+                shouldBeOpaque: false
+            )
             let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: targetWindow.frame.width, height: targetWindow.frame.height))
 
             postCapture(nsImage, appState: appState)
@@ -154,10 +206,10 @@ final class CaptureEngine {
             let content = try await SCShareableContent.current
             guard let display = content.displays.first else { return }
 
-            let ownPID = ProcessInfo.processInfo.processIdentifier
-            let excludedWindows = content.windows.filter { $0.owningApplication?.processID == ownPID }
-
-            let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
+            let filter = SCContentFilter(
+                display: display,
+                excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
+            )
 
             let displayHeight = CGFloat(display.height)
             let scRect = CGRect(
@@ -168,13 +220,12 @@ final class CaptureEngine {
             )
 
             let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            let config = SCStreamConfiguration()
-            config.sourceRect = scRect
-            config.width = Int(rect.width * scale)
-            config.height = Int(rect.height * scale)
-            config.showsCursor = false
-
-            let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+            let cgImage = try await captureCGImage(
+                filter: filter,
+                sourceRect: scRect,
+                pixelWidth: Int(rect.width * scale),
+                pixelHeight: Int(rect.height * scale)
+            )
 
             // Run OCR
             let recognizedText = try await OCREngine.recognizeText(in: cgImage)

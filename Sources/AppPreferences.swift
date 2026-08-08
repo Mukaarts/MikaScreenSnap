@@ -72,6 +72,19 @@ final class AppPreferences {
         didSet { defaults.set(showToolbarLabels, forKey: "showToolbarLabels") }
     }
 
+    /// Bundle identifiers whose windows are never included in a capture.
+    var excludedBundleIdentifiers: Set<String> {
+        didSet { defaults.set(Array(excludedBundleIdentifiers), forKey: "excludedBundleIdentifiers") }
+    }
+
+    /// Accessibility overlays that sit on top of everything and would otherwise be
+    /// baked into every screenshot.
+    static let defaultExcludedBundleIdentifiers = [
+        "com.apple.inputmethod.AssistiveControl",   // Accessibility Keyboard + Keyboard Viewer
+        "com.apple.DwellControl",                   // Dwell Control (pointer control panel)
+        "com.apple.AccessibilityVisualsAgent",      // Zoom / "shake to find pointer" visuals
+    ]
+
     var defaultStrokeNSColor: NSColor {
         get {
             guard let data = defaultStrokeColorData,
@@ -101,6 +114,11 @@ final class AppPreferences {
         self.defaultStrokeWidth = defaults.object(forKey: "defaultStrokeWidth") as? CGFloat ?? 3.0
         self.rememberLastTool = defaults.object(forKey: "rememberLastTool") as? Bool ?? true
         self.showToolbarLabels = defaults.object(forKey: "showToolbarLabels") as? Bool ?? false
+        // An explicitly emptied list stays empty — only a missing key falls back to the defaults.
+        self.excludedBundleIdentifiers = Set(
+            defaults.stringArray(forKey: "excludedBundleIdentifiers")
+                ?? AppPreferences.defaultExcludedBundleIdentifiers
+        )
 
         if let savedPath = defaults.string(forKey: "saveLocation") {
             self.saveLocation = URL(fileURLWithPath: savedPath)
@@ -118,7 +136,8 @@ final class AppPreferences {
             "hasCompletedOnboarding", "permissionSkipped",
             "captureSoundEnabled", "floatingPreviewEnabled", "previewDismissDuration",
             "defaultAnnotationTool", "defaultStrokeColorData", "defaultStrokeWidth",
-            "rememberLastTool", "showToolbarLabels", "hotkeyBindings"
+            "rememberLastTool", "showToolbarLabels", "hotkeyBindings",
+            "excludedBundleIdentifiers"
         ]
         for key in allKeys {
             defaults.removeObject(forKey: key)
@@ -143,6 +162,7 @@ final class AppPreferences {
         defaultStrokeWidth = 3.0
         rememberLastTool = true
         showToolbarLabels = false
+        excludedBundleIdentifiers = Set(AppPreferences.defaultExcludedBundleIdentifiers)
         saveLocation = defaultLocation
     }
 
