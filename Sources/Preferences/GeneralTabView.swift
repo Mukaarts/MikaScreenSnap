@@ -135,6 +135,9 @@ struct GeneralTabView: View {
                     }
                 }
             }
+
+            // Privacy
+            ExcludedAppsSection(preferences: preferences)
         }
     }
 
@@ -156,5 +159,121 @@ struct GeneralTabView: View {
         if panel.runModal() == .OK, let url = panel.url {
             preferences.saveLocation = url
         }
+    }
+}
+
+// MARK: - Excluded Apps
+
+/// Lets the user pick applications whose windows are never captured — the on-screen
+/// keyboard and similar overlays that would otherwise be baked into every screenshot.
+struct ExcludedAppsSection: View {
+    let preferences: AppPreferences
+
+    @State private var manager = ExcludedAppsManager()
+    @State private var showPicker = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Privacy")
+                .font(.headline)
+                .padding(.bottom, 6)
+
+            GroupBox {
+                VStack(spacing: 0) {
+                    HStack {
+                        Label("Exclude apps from capture", systemImage: "eye.slash")
+                        Spacer()
+                        Text(excludedSummary)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Button("Choose...") {
+                            showPicker = true
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+        .sheet(isPresented: $showPicker) {
+            ExcludedAppsPicker(preferences: preferences, manager: manager)
+        }
+    }
+
+    private var excludedSummary: String {
+        let count = preferences.excludedBundleIdentifiers.count
+        switch count {
+        case 0:  return "None"
+        case 1:  return "1 app"
+        default: return "\(count) apps"
+        }
+    }
+}
+
+private struct ExcludedAppsPicker: View {
+    let preferences: AppPreferences
+    let manager: ExcludedAppsManager
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Exclude Apps from Capture")
+                .font(.headline)
+
+            Text("Windows of the selected apps are left out of every screenshot.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if manager.isLoading && manager.apps.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if manager.apps.isEmpty {
+                Text("No capturable apps found. Grant Screen Recording permission and try again.")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(manager.apps) { app in
+                    Toggle(isOn: binding(for: app.bundleIdentifier)) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(app.name)
+                            Text(app.bundleIdentifier)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .listStyle(.inset)
+                .alternatingRowBackgrounds()
+            }
+
+            HStack {
+                Button("Refresh") {
+                    Task { await manager.refresh(selected: preferences.excludedBundleIdentifiers) }
+                }
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 420, height: 400)
+        .task {
+            await manager.refresh(selected: preferences.excludedBundleIdentifiers)
+        }
+    }
+
+    private func binding(for bundleIdentifier: String) -> Binding<Bool> {
+        Binding(
+            get: { preferences.excludedBundleIdentifiers.contains(bundleIdentifier) },
+            set: { isExcluded in
+                if isExcluded {
+                    preferences.excludedBundleIdentifiers.insert(bundleIdentifier)
+                } else {
+                    preferences.excludedBundleIdentifiers.remove(bundleIdentifier)
+                }
+            }
+        )
     }
 }
