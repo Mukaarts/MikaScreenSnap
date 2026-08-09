@@ -154,13 +154,26 @@ bash scripts/sign-local.sh
 
 **Developer ID signing + Apple notarization** (for distribution):
 
+Store the credentials in the keychain once — the app-specific password (from
+[appleid.apple.com](https://appleid.apple.com)) is prompted for, so it never lands in
+your shell history:
+
 ```bash
-export DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)"
-export APPLE_ID="your@email.com"
-export TEAM_ID="YOURTEAMID"
-export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+xcrun notarytool store-credentials "MikaScreenSnap" \
+    --apple-id "your@email.com" --team-id "YOURTEAMID"
+```
+
+After that, no environment is needed:
+
+```bash
 bash scripts/notarize.sh
 ```
+
+The script re-signs the bundle with your Developer ID (including Sparkle's nested XPC
+services), rebuilds the DMG through `create-dmg.sh` so the layout survives, notarizes,
+staples, and prints the byte size and `sign_update` command the appcast entry needs.
+The certificate is picked up from the keychain automatically; override `DEVELOPER_ID`
+or `NOTARY_PROFILE` if you have several.
 
 ### DMG Background
 
@@ -173,15 +186,31 @@ swift scripts/GenerateDMGBackground.swift
 ### Auto-Update (Sparkle)
 
 The app uses Sparkle 2.x for auto-updates. Configuration:
-- **Feed URL:** `https://raw.githubusercontent.com/daumedia/MikaScreenSnap/master/appcast.xml` (as configured in `Resources/Info.plist`)
+- **Feed URL:** `https://raw.githubusercontent.com/daumedia/MikaScreenSnap/main/appcast.xml` (as configured in `Resources/Info.plist`)
 - **Ed25519 public key:** configured in `Resources/Info.plist` (`SUPublicEDKey`)
 - **Private key:** stored in the macOS Keychain (generated via `.build/artifacts/sparkle/Sparkle/bin/generate_keys`)
 
-To publish a new update:
-1. Build the release `.app` bundle
-2. Sign the update: `.build/artifacts/sparkle/Sparkle/bin/sign_update path/to/archive.zip`
-3. Update `appcast.xml` with the new version, download URL, and signature
-4. Or use `generate_appcast` to auto-generate from a folder of releases
+> **Keep `master` in sync.** Up to and including 3.4.1 the feed URL pointed at the
+> `master` branch, and those builds have it compiled in. Until every install has moved
+> to a later version, `master` has to be pushed alongside `main` (`git push origin
+> main:master`) or those users silently stop receiving updates. This is what made the
+> 3.4.1 entry invisible at first — `master` had not been touched since March.
+
+Publishing a new version, in this order — the appcast comes **last**, because merging it
+is what offers the update to every existing install:
+
+1. Bump the version in `Resources/Info.plist`, `README.md` and `web/lib/content.ts`, and
+   add a `CHANGELOG.md` entry
+2. `bash build.sh`
+3. `bash scripts/notarize.sh` — signs, rebuilds the DMG, notarizes and staples it.
+   Do not skip this: an un-notarized build is blocked by Gatekeeper on first launch
+4. Create the GitHub release and upload the notarized DMG. Verify the download URL
+   resolves — `web/lib/content.ts` derives it from the version string
+5. `.build/artifacts/sparkle/Sparkle/bin/sign_update installer/Mika+ScreenSnap-vX.Y.Z.dmg`
+   over the DMG **as downloaded from GitHub**, so the signature matches what Sparkle
+   will actually fetch
+6. Add the `<item>` to `appcast.xml` with that signature and length, merge it, and push
+   `main:master`
 
 ## Project Structure
 
