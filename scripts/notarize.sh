@@ -37,9 +37,13 @@ if [ -z "${DEVELOPER_ID:-}" ]; then
     echo "==> Using certificate: $DEVELOPER_ID"
 fi
 
-# notarytool stores each profile as a generic password under this service.
-if ! security find-generic-password -s "com.apple.gke.notary.tool" -a "$NOTARY_PROFILE" &>/dev/null; then
-    echo "ERROR: No notarytool keychain profile named '$NOTARY_PROFILE'."
+# notarytool's keychain items are not reliably discoverable with
+# `security find-generic-password`, so verify the profile by using it. This also
+# catches a revoked or expired app-specific password, which a lookup would not —
+# worth one network round trip before we start re-signing anything.
+echo "==> Verifying notarization credentials..."
+if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" &>/dev/null; then
+    echo "ERROR: notarytool keychain profile '$NOTARY_PROFILE' is missing or invalid."
     echo ""
     echo "Create it once — the app-specific password is prompted for, not passed in:"
     echo "  xcrun notarytool store-credentials \"$NOTARY_PROFILE\" \\"
