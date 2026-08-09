@@ -16,9 +16,12 @@ final class ColorLoupeController {
     private var keyMonitor: Any?
     private weak var appState: AppState?
     private var onComplete: ((PickedColor) -> Void)?
+    /// Pre-loaded screen snapshot; sampling must stay synchronous for the loupe.
+    private var engine: ColorPickerEngine?
 
-    func start(appState: AppState, onComplete: @escaping (PickedColor) -> Void) {
+    func start(appState: AppState, engine: ColorPickerEngine, onComplete: @escaping (PickedColor) -> Void) {
         self.appState = appState
+        self.engine = engine
         self.onComplete = onComplete
 
         // Create fullscreen overlay panels for each screen
@@ -87,23 +90,18 @@ final class ColorLoupeController {
     }
 
     private func updateLoupe() {
-        guard let loupePanel, let loupeView else { return }
+        guard let loupePanel, let loupeView, let engine else { return }
 
         let mouseLocation = NSEvent.mouseLocation
-        // Convert to screen coordinates (CGDisplay uses top-left origin)
-        guard let screen = NSScreen.main else { return }
-        let screenHeight = screen.frame.height
-        let cgPoint = CGPoint(x: mouseLocation.x, y: screenHeight - mouseLocation.y)
-
-        let loupeWindowIDs = [loupePanel].compactMap { CGWindowID($0.windowNumber) }
+        let cgPoint = NSScreen.coreGraphicsPoint(fromAppKit: mouseLocation)
 
         // Sample color at cursor
-        if let pickedColor = ColorPickerEngine.sampleColor(at: cgPoint, excluding: loupeWindowIDs) {
+        if let pickedColor = engine.sampleColor(at: cgPoint) {
             loupeView.currentColor = pickedColor
         }
 
         // Capture loupe region
-        if let loupeImage = ColorPickerEngine.captureLoupeRegion(at: cgPoint, radius: 10, excluding: loupeWindowIDs) {
+        if let loupeImage = engine.captureLoupeRegion(at: cgPoint, radius: 10) {
             loupeView.loupeImage = loupeImage
         }
 
@@ -119,14 +117,9 @@ final class ColorLoupeController {
     }
 
     private func handleClick(event: NSEvent) {
-        let mouseLocation = NSEvent.mouseLocation
-        guard let screen = NSScreen.main else { return }
-        let screenHeight = screen.frame.height
-        let cgPoint = CGPoint(x: mouseLocation.x, y: screenHeight - mouseLocation.y)
+        let cgPoint = NSScreen.coreGraphicsPoint(fromAppKit: NSEvent.mouseLocation)
 
-        let loupeWindowIDs = loupePanel.map { [CGWindowID($0.windowNumber)] } ?? []
-
-        guard let pickedColor = ColorPickerEngine.sampleColor(at: cgPoint, excluding: loupeWindowIDs) else {
+        guard let engine, let pickedColor = engine.sampleColor(at: cgPoint) else {
             cancel()
             return
         }
@@ -179,6 +172,7 @@ final class ColorLoupeController {
         loupePanel?.orderOut(nil)
         loupePanel = nil
         loupeView = nil
+        engine = nil
     }
 }
 

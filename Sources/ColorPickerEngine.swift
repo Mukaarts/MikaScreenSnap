@@ -5,6 +5,7 @@
 // Swift 6.0 strict concurrency, macOS 14+
 
 import AppKit
+@preconcurrency import ScreenCaptureKit
 
 struct PickedColor: Sendable {
     let nsColor: NSColor
@@ -52,53 +53,108 @@ struct PickedColor: Sendable {
     }
 }
 
+/// Samples screen pixels for the colour picker.
+///
+/// `CGWindowListCreateImage` is deprecated and no longer a viable path, but its
+/// ScreenCaptureKit replacement is async — and the loupe redraws on every mouse move,
+/// where awaiting a round trip per sample would stutter. So the screen is snapshotted
+/// once when the picker starts and every sample reads from that buffer synchronously.
+///
+/// Consequence: live content (video, animation) under the cursor does not update while
+/// the picker is open.
 @MainActor
-enum ColorPickerEngine {
-    /// Sample the pixel color at the given screen-space point.
-    /// Uses CGWindowListCreateImage to capture a 1x1 pixel at the cursor location,
-    /// excluding the specified window IDs (e.g., the loupe panel).
-    static func sampleColor(at screenPoint: CGPoint, excluding windowIDs: [CGWindowID] = []) -> PickedColor? {
-        // Capture a 1x1 area at the cursor position
-        let captureRect = CGRect(x: screenPoint.x, y: screenPoint.y, width: 1, height: 1)
-
-        guard let cgImage = CGWindowListCreateImage(
-            captureRect,
-            .optionOnScreenBelowWindow,
-            windowIDs.first ?? kCGNullWindowID,
-            [.bestResolution]
-        ) else { return nil }
-
-        // Extract pixel color
-        guard let dataProvider = cgImage.dataProvider,
-              let data = dataProvider.data,
-              let ptr = CFDataGetBytePtr(data) else { return nil }
-
-        let bytesPerPixel = cgImage.bitsPerPixel / 8
-        guard bytesPerPixel >= 3 else { return nil }
-
-        let r = CGFloat(ptr[0]) / 255.0
-        let g = CGFloat(ptr[1]) / 255.0
-        let b = CGFloat(ptr[2]) / 255.0
-
-        let color = NSColor(srgbRed: r, green: g, blue: b, alpha: 1.0)
-        return PickedColor(nsColor: color)
+final class ColorPickerEngine {
+    private struct DisplaySnapshot {
+        /// Display bounds in global CoreGraphics points, top-left origin.
+        let frame: CGRect
+        let image: CGImage
+        let bytesPerPixel: Int
+        let bytesPerRow: Int
+        let data: CFData
+        /// Pixels per point.
+        let scale: CGFloat
     }
 
-    /// Capture a magnified region around the given screen point for the loupe display.
-    static func captureLoupeRegion(at screenPoint: CGPoint, radius: Int, excluding windowIDs: [CGWindowID] = []) -> CGImage? {
-        let size = radius * 2
-        let captureRect = CGRect(
-            x: screenPoint.x - CGFloat(radius),
-            y: screenPoint.y - CGFloat(radius),
-            width: CGFloat(size),
-            height: CGFloat(size)
-        )
+    private var snapshots: [DisplaySnapshot] = []
 
-        return CGWindowListCreateImage(
-            captureRect,
-            .optionOnScreenBelowWindow,
-            windowIDs.first ?? kCGNullWindowID,
-            [.bestResolution]
-        )
+    /// Captures every display once, excluding our own overlays and the user's blocked apps.
+    func loadSnapshots(excludedWindows: [SCWindow], content: SCShareableContent) async throws {
+        var loaded: [DisplaySnapshot] = []
+
+        for display in content.displays {
+            let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
+            let scale = CGFloat(filter.pointPixelScale)
+
+            let config = SCStreamConfiguration()
+            config.width = Int((CGFloat(display.width) * scale).rounded())
+            config.height = Int((CGFloat(display.height) * scale).rounded())
+            config.showsCursor = false
+            config.shouldBeOpaque = true
+
+            let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+
+            guard let provider = image.dataProvider, let data = provider.data else { continue }
+
+            loaded.append(DisplaySnapshot(
+                frame: display.frame,
+                image: image,
+                bytesPerPixel: image.bitsPerPixel / 8,
+                bytesPerRow: image.bytesPerRow,
+                data: data,
+                scale: scale
+            ))
+        }
+
+        snapshots = loaded
+    }
+
+    /// Sample the pixel colour at the given point in global CoreGraphics space.
+    func sampleColor(at screenPoint: CGPoint) -> PickedColor? {
+        guard let snapshot = snapshot(containing: screenPoint),
+              let pixel = pixelCoordinate(of: screenPoint, in: snapshot),
+              snapshot.bytesPerPixel >= 3,
+              let ptr = CFDataGetBytePtr(snapshot.data)
+        else { return nil }
+
+        let offset = pixel.y * snapshot.bytesPerRow + pixel.x * snapshot.bytesPerPixel
+        guard offset + 2 < CFDataGetLength(snapshot.data) else { return nil }
+
+        // SCScreenshotManager hands back BGRA.
+        let b = CGFloat(ptr[offset]) / 255.0
+        let g = CGFloat(ptr[offset + 1]) / 255.0
+        let r = CGFloat(ptr[offset + 2]) / 255.0
+
+        return PickedColor(nsColor: NSColor(srgbRed: r, green: g, blue: b, alpha: 1.0))
+    }
+
+    /// Crop a magnified region around the given point for the loupe display.
+    func captureLoupeRegion(at screenPoint: CGPoint, radius: Int) -> CGImage? {
+        guard let snapshot = snapshot(containing: screenPoint),
+              let center = pixelCoordinate(of: screenPoint, in: snapshot)
+        else { return nil }
+
+        let pixelRadius = Int((CGFloat(radius) * snapshot.scale).rounded())
+        let cropRect = CGRect(
+            x: center.x - pixelRadius,
+            y: center.y - pixelRadius,
+            width: pixelRadius * 2,
+            height: pixelRadius * 2
+        ).intersection(CGRect(x: 0, y: 0, width: snapshot.image.width, height: snapshot.image.height))
+
+        guard cropRect.width >= 1, cropRect.height >= 1 else { return nil }
+        return snapshot.image.cropping(to: cropRect)
+    }
+
+    private func snapshot(containing point: CGPoint) -> DisplaySnapshot? {
+        snapshots.first { $0.frame.contains(point) } ?? snapshots.first
+    }
+
+    /// Global CoreGraphics point to pixel coordinates inside the snapshot. Both use a
+    /// top-left origin, so this is an offset plus the display's scale.
+    private func pixelCoordinate(of point: CGPoint, in snapshot: DisplaySnapshot) -> (x: Int, y: Int)? {
+        let x = Int(((point.x - snapshot.frame.origin.x) * snapshot.scale).rounded(.down))
+        let y = Int(((point.y - snapshot.frame.origin.y) * snapshot.scale).rounded(.down))
+        guard x >= 0, y >= 0, x < snapshot.image.width, y < snapshot.image.height else { return nil }
+        return (x, y)
     }
 }

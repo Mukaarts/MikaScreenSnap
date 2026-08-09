@@ -174,7 +174,10 @@ struct MikaScreenSnapApp: App {
                     await appDelegate.appState.captureEngine.captureFullScreen(appState: appDelegate.appState)
                 }
             }
-            Button("Capture Window  \u{2303}\u{21E7}\u{2318}5") {
+            Button("Capture Window\u{2026}") {
+                appDelegate.appState.captureEngine.startWindowSelection(appState: appDelegate.appState)
+            }
+            Button("Capture Frontmost Window  \u{2303}\u{21E7}\u{2318}5") {
                 Task {
                     await appDelegate.appState.captureEngine.captureWindow(appState: appDelegate.appState)
                 }

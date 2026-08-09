@@ -4,6 +4,7 @@ import AppKit
 @MainActor
 final class CaptureEngine {
     private var areaSelectionPanels: [AreaSelectionPanel] = []
+    private var windowSelectionController: WindowSelectionController?
     private var colorLoupeController: ColorLoupeController?
     private var measurementController: MeasurementOverlayController?
 
@@ -28,11 +29,65 @@ final class CaptureEngine {
     /// `SCStreamConfiguration.showsCursor` only suppresses the hardware cursor, so this
     /// overlay would otherwise be baked into every screenshot.
     private static func isPointerOverlay(_ window: SCWindow) -> Bool {
+        // The overlay is owned by WindowServer, which SCK may report as a nil
+        // application — treat that like the empty bundle id it otherwise carries.
         guard window.title == "Cursor",
-              window.owningApplication?.bundleIdentifier.isEmpty ?? false,
+              window.owningApplication?.bundleIdentifier.isEmpty ?? true,
               window.windowLayer > 100
         else { return false }
         return true
+    }
+
+    /// Window layers that hold real app windows: from `kCGNormalWindowLevel` (0) up to
+    /// just below `kCGDockWindowLevel` (20). Excludes desktop, wallpaper and backstop
+    /// windows (large negative layers) as well as the Dock, menubar (24), status items
+    /// (25) and open menus (101).
+    private static let selectableWindowLayers: Range<Int> = 0..<20
+
+    /// System UI that owns normal-layer windows but is never a useful capture target.
+    private static let nonTargetBundleIdentifiers: Set<String> = [
+        "com.apple.dock",                   // Dock, Mission Control, App Exposé
+        "com.apple.WindowManager",          // Stage Manager
+        "com.apple.wallpaper.agent",        // Wallpaper (macOS 14+)
+        "com.apple.notificationcenterui",
+        "com.apple.controlcenter",
+    ]
+
+    /// Every window that can serve as a capture target, ordered front to back.
+    ///
+    /// `SCShareableContent.windows` already arrives front to back, so the order is
+    /// preserved by sorting on the original index as a tiebreaker — `Array.sorted` is
+    /// not stable and all ordinary app windows share layer 0.
+    private func selectableWindows(in content: SCShareableContent, preferences: AppPreferences?) -> [SCWindow] {
+        let excludedIDs = Set(excludedWindows(in: content, preferences: preferences).map(\.windowID))
+        let minimumSide: CGFloat = 40
+
+        return content.windows.enumerated()
+            .filter { _, window in
+                guard !excludedIDs.contains(window.windowID),
+                      window.isOnScreen,
+                      CaptureEngine.selectableWindowLayers.contains(window.windowLayer),
+                      window.frame.width >= minimumSide,
+                      window.frame.height >= minimumSide,
+                      let app = window.owningApplication,
+                      !app.bundleIdentifier.isEmpty,
+                      !CaptureEngine.nonTargetBundleIdentifiers.contains(app.bundleIdentifier)
+                else { return false }
+                return true
+            }
+            .sorted { lhs, rhs in
+                if lhs.element.windowLayer != rhs.element.windowLayer {
+                    return lhs.element.windowLayer > rhs.element.windowLayer  // higher layer is further front
+                }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
+    }
+
+    /// Shareable content without the desktop and wallpaper layer, which are never
+    /// meaningful capture targets and used to win the window search.
+    private func shareableWindowContent() async throws -> SCShareableContent {
+        try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
     }
 
     /// Captures a still image with the hardware cursor suppressed.
@@ -64,7 +119,7 @@ final class CaptureEngine {
         do {
             let content = try await SCShareableContent.current
             guard let display = content.displays.first else {
-                print("No display found")
+                CaptureLog.report("No display found", message: "No display available")
                 return
             }
 
@@ -83,7 +138,7 @@ final class CaptureEngine {
 
             postCapture(nsImage, appState: appState)
         } catch {
-            print("Full screen capture failed: \(error)")
+            CaptureLog.report(error, action: "Full screen capture")
         }
     }
 
@@ -117,43 +172,113 @@ final class CaptureEngine {
 
             postCapture(nsImage, appState: appState)
         } catch {
-            print("Area capture failed: \(error)")
+            CaptureLog.report(error, action: "Area capture")
         }
     }
 
+    /// Captures the frontmost window of the active app without any interaction.
     func captureWindow(appState: AppState?) async {
         do {
-            let content = try await SCShareableContent.current
+            let content = try await shareableWindowContent()
+            let candidates = selectableWindows(in: content, preferences: appState?.preferences)
 
-            // Find the frontmost window that is neither ours nor an excluded app's
-            let skipped = Set(excludedWindows(in: content, preferences: appState?.preferences).map(\.windowID))
-            let windows = content.windows.filter {
-                !skipped.contains($0.windowID) &&
-                $0.isOnScreen &&
-                $0.frame.width > 0 && $0.frame.height > 0 &&
-                $0.title?.isEmpty == false
-            }.sorted { $0.windowLayer < $1.windowLayer }
+            // Our own app never activates (.accessory), so the previously active app is
+            // still frontmost when the hotkey fires. Falling back to the front of the
+            // list covers the menubar path, where our own windows are filtered out anyway.
+            let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+            let targetWindow = candidates.first { $0.owningApplication?.processID == frontPID }
+                ?? candidates.first
 
-            guard let targetWindow = windows.first else {
-                print("No window found")
+            guard let targetWindow else {
+                CaptureLog.report("No capturable window found", message: "No window to capture")
                 return
             }
 
-            let filter = SCContentFilter(desktopIndependentWindow: targetWindow)
-            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+            await captureWindow(targetWindow, appState: appState)
+        } catch {
+            CaptureLog.report(error, action: "Window capture")
+        }
+    }
+
+    /// Captures a single window.
+    ///
+    /// Size and scale come from the content filter rather than `NSScreen.main`, so a
+    /// window on a display with a different backing scale is captured at its own
+    /// resolution.
+    private func captureWindow(_ window: SCWindow, appState: AppState?) async {
+        let filter = SCContentFilter(desktopIndependentWindow: window)
+        let contentRect = filter.contentRect
+        let scale = CGFloat(filter.pointPixelScale)
+        let pixelWidth = Int((contentRect.width * scale).rounded())
+        let pixelHeight = Int((contentRect.height * scale).rounded())
+
+        guard pixelWidth > 0, pixelHeight > 0 else {
+            CaptureLog.report(
+                "Window \(window.windowID) has an empty content rect",
+                message: "Window has no capturable content"
+            )
+            return
+        }
+
+        do {
             let cgImage = try await captureCGImage(
                 filter: filter,
                 sourceRect: .null,
-                pixelWidth: Int(targetWindow.frame.width * scale),
-                pixelHeight: Int(targetWindow.frame.height * scale),
+                pixelWidth: pixelWidth,
+                pixelHeight: pixelHeight,
                 shouldBeOpaque: false
             )
-            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: targetWindow.frame.width, height: targetWindow.frame.height))
+            let nsImage = NSImage(cgImage: cgImage, size: contentRect.size)
 
             postCapture(nsImage, appState: appState)
         } catch {
-            print("Window capture failed: \(error)")
+            CaptureLog.report(error, action: "Window capture")
         }
+    }
+
+    // MARK: - Window Selection
+
+    /// Shows the interactive window picker: hover to highlight, click to capture.
+    func startWindowSelection(appState: AppState?) {
+        dismissWindowSelection()
+
+        Task { @MainActor in
+            do {
+                let content = try await shareableWindowContent()
+                let windows = selectableWindows(in: content, preferences: appState?.preferences)
+                let targets = windows.compactMap { WindowTarget(scWindow: $0) }
+
+                guard !targets.isEmpty else {
+                    CaptureLog.report("No capturable window found", message: "No window to capture")
+                    return
+                }
+
+                let controller = WindowSelectionController()
+                self.windowSelectionController = controller
+                controller.start(
+                    targets: targets,
+                    onSelect: { [weak self] window in
+                        guard let self else { return }
+                        self.dismissWindowSelection()
+                        // Let the panels disappear before the editor opens.
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(100))
+                            await self.captureWindow(window, appState: appState)
+                        }
+                    },
+                    onCancel: { [weak self] in
+                        self?.dismissWindowSelection()
+                    }
+                )
+            } catch {
+                CaptureLog.report(error, action: "Window picker")
+            }
+        }
+    }
+
+    func dismissWindowSelection() {
+        windowSelectionController?.dismiss()
+        windowSelectionController = nil
     }
 
     func startAreaSelection(appState: AppState?) {
@@ -246,7 +371,7 @@ final class CaptureEngine {
                 }
             }
         } catch {
-            print("Text capture failed: \(error)")
+            CaptureLog.report(error, action: "Text capture")
         }
     }
 
@@ -255,11 +380,26 @@ final class CaptureEngine {
     func startColorPicker(appState: AppState?) {
         guard let appState else { return }
 
-        let controller = ColorLoupeController()
-        self.colorLoupeController = controller
+        Task { @MainActor in
+            do {
+                // Snapshot the screen before any overlay exists, so nothing of ours
+                // can end up under the loupe.
+                let content = try await SCShareableContent.current
+                let engine = ColorPickerEngine()
+                try await engine.loadSnapshots(
+                    excludedWindows: excludedWindows(in: content, preferences: appState.preferences),
+                    content: content
+                )
 
-        controller.start(appState: appState) { [weak self] _ in
-            self?.colorLoupeController = nil
+                let controller = ColorLoupeController()
+                self.colorLoupeController = controller
+
+                controller.start(appState: appState, engine: engine) { [weak self] _ in
+                    self?.colorLoupeController = nil
+                }
+            } catch {
+                CaptureLog.report(error, action: "Colour picker")
+            }
         }
     }
 
