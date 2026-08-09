@@ -11,7 +11,7 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 - **Capture Modes**
   - Full Screen (`Ctrl+Shift+Cmd+3`)
   - Area Selection (`Ctrl+Shift+Cmd+4`)
-  - Window (`Ctrl+Shift+Cmd+5`)
+  - Window — pick one by pointing at it, or grab the frontmost with `Ctrl+Shift+Cmd+5`
 - **Annotation Editor** — opens automatically after each capture
   - **Drawing Tools:** Arrow, Rectangle, Ellipse, Line, Freehand
   - **Text Tool:** Click to place editable text with background pill
@@ -64,7 +64,7 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 |----------|--------|
 | `Ctrl+Shift+Cmd+3` | Capture Full Screen |
 | `Ctrl+Shift+Cmd+4` | Capture Area |
-| `Ctrl+Shift+Cmd+5` | Capture Window |
+| `Ctrl+Shift+Cmd+5` | Capture Frontmost Window |
 | `Shift+Cmd+6` | Capture Text (OCR) |
 | `Shift+Cmd+7` | Color Picker |
 | `Shift+Cmd+8` | Measure |

@@ -46,7 +46,7 @@ export type IconName =
 export const features: Feature[] = [
   {
     title: "Three capture modes",
-    body: "Full screen, a dragged region, or a single window — each on its own global shortcut, straight from the menu bar.",
+    body: "Full screen, a dragged region, or a single window — each on its own global shortcut, straight from the menu bar. Point at the window you want, or take the frontmost one outright.",
     icon: "capture",
   },
   {
@@ -89,7 +89,7 @@ export const features: Feature[] = [
 export const globalShortcuts: Array<[string, string]> = [
   ["⌃⇧⌘4", "Capture a region"],
   ["⌃⇧⌘3", "Capture the full screen"],
-  ["⌃⇧⌘5", "Capture a window"],
+  ["⌃⇧⌘5", "Capture the frontmost window"],
   ["⇧⌘6", "Extract text (OCR)"],
   ["⇧⌘7", "Pick a colour"],
   ["⇧⌘8", "Measure"],
