@@ -44,6 +44,22 @@ echo "==> Removing quarantine attributes..."
 xattr -cr "$APP_BUNDLE"
 
 echo "==> Signing embedded frameworks with Developer ID (inside-out)..."
+# Sparkle nests XPC services and a helper app inside the framework. Signing only the
+# framework leaves those on build.sh's ad-hoc signature, which notarization rejects.
+SPARKLE_DIR="$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
+if [ -d "$SPARKLE_DIR" ]; then
+    for xpc in "$SPARKLE_DIR"/Versions/B/XPCServices/*.xpc; do
+        [ -d "$xpc" ] && echo "    Signing: $(basename "$xpc")" \
+            && codesign --force --sign "$DEVELOPER_ID" --options runtime "$xpc"
+    done
+    for app in "$SPARKLE_DIR"/Versions/B/*.app; do
+        [ -d "$app" ] && echo "    Signing: $(basename "$app")" \
+            && codesign --force --sign "$DEVELOPER_ID" --options runtime "$app"
+    done
+    codesign --force --sign "$DEVELOPER_ID" --options runtime \
+        "$SPARKLE_DIR/Versions/B/Autoupdate" 2>/dev/null || true
+fi
+
 if [ -d "$APP_BUNDLE/Contents/Frameworks" ]; then
     for fw in "$APP_BUNDLE/Contents/Frameworks/"*.framework; do
         if [ -d "$fw" ]; then
@@ -62,21 +78,22 @@ codesign --force --sign "$DEVELOPER_ID" \
 echo "==> Verifying signature..."
 codesign --verify --deep --strict "$APP_BUNDLE"
 
+# The DMG has to be rebuilt from the app we just re-signed — any existing one still
+# holds build.sh's ad-hoc signature. Delegating to create-dmg.sh keeps the background
+# and icon layout that a hand-rolled `hdiutil create` would throw away.
 echo "==> Creating DMG for notarization..."
 mkdir -p "$INSTALLER_DIR"
-STAGING_DIR=$(mktemp -d)
-trap "rm -rf '$STAGING_DIR'" EXIT
+if command -v create-dmg &>/dev/null; then
+    bash "$PROJECT_DIR/scripts/create-dmg.sh"
+else
+    echo "    'create-dmg' not installed — falling back to the built-in layout script."
+    bash "$PROJECT_DIR/scripts/create-dmg-simple.sh"
+fi
 
-cp -R "$APP_BUNDLE" "$STAGING_DIR/"
-ln -s /Applications "$STAGING_DIR/Applications"
-
-rm -f "$DMG_PATH"
-hdiutil create \
-    -volname "Mika+ScreenSnap" \
-    -srcfolder "$STAGING_DIR" \
-    -ov \
-    -format UDZO \
-    "$DMG_PATH"
+if [ ! -f "$DMG_PATH" ]; then
+    echo "ERROR: Expected DMG at $DMG_PATH but it was not created."
+    exit 1
+fi
 
 echo "==> Signing DMG..."
 codesign --force --sign "$DEVELOPER_ID" "$DMG_PATH"

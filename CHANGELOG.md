@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.4.1] - 2026-08-09
+
+### Fixed
+- **Window capture produced an empty image** — the window search sorted ascending by `windowLayer` and took the first result, but a higher `CGWindowLevel` means further front, so it picked the backmost window. Combined with `SCShareableContent.current` including the desktop layer, this selected WindowServer's backstop window, which captures as a fully transparent image. Window selection now uses `excludingDesktopWindows(_:onScreenWindowsOnly:)`, keeps only layers `0..<20`, and preserves the front-to-back order ScreenCaptureKit already provides
+- **Wrong resolution on secondary displays** — window captures sized themselves from `NSScreen.main.backingScaleFactor`; they now use `SCContentFilter.contentRect` and `.pointPixelScale`, so a window is captured at the scale of the display it is actually on
+- **Untitled windows were not capturable** — the candidate filter required a non-empty window title, which excluded legitimate windows from Electron, games and some Java apps
+- **Color picker and loupe** — replaced the deprecated `CGWindowListCreateImage` with ScreenCaptureKit. The screen is snapshotted once per display when the picker starts, so sampling stays synchronous while the loupe redraws on every mouse move
+- **Color picker on multi-display setups** — cursor coordinates were flipped against `NSScreen.main`, which follows the key window; they now use the display that owns the AppKit origin
+- **Capture failures were invisible** — every error path ended in `print()`, which goes nowhere in an `LSUIElement` bundle launched from Finder
+- **Accessibility pointer overlay slipped through** — the detection required an owning application with an empty bundle id, but WindowServer may report no owning application at all
+
+### Added
+- **Interactive window picker** — "Capture Window…" in the menubar opens an overlay that outlines the window under the pointer with its app icon, name and pixel size; click captures it, ESC or right-click cancels. Works across displays and on windows straddling two screens
+- **Capture Frontmost Window** — the previous one-shot behaviour, still on ⌃⇧⌘5 and now also a menubar entry
+- **Status toasts** — capture failures surface to the user, with a plain-language message when the screen recording permission is missing
+- **Unified logging** — failures are logged under the `com.mika.mikaplusscreensnap` subsystem and readable in Console.app
+
 ## [3.4.0] - 2026-03-18
 
 ### Added

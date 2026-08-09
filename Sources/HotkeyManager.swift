@@ -242,7 +242,7 @@ final class HotkeyManager {
             if status == noErr {
                 hotKeyRefs.append(ref)
             } else {
-                print("Failed to register hotkey \(action.rawValue): \(status)")
+                CaptureLog.hotkey.error("Failed to register hotkey \(action.rawValue, privacy: .public): \(status)")
             }
         }
     }
