@@ -4,6 +4,34 @@
         <title>Mika+ScreenSnap Updates</title>
         <link>https://github.com/daumedia/MikaScreenSnap</link>
         <item>
+            <title>Version 3.4.1</title>
+            <sparkle:version>3.4.1</sparkle:version>
+            <sparkle:shortVersionString>3.4.1</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>Fixed</h2>
+                <ul>
+                    <li><strong>Window capture produced an empty image</strong> — the window search picked the backmost window instead of the frontmost one, which meant capturing the desktop backstop</li>
+                    <li><strong>Wrong resolution on secondary displays</strong> — window captures now use the scale of the display the window is actually on</li>
+                    <li><strong>Untitled windows were not capturable</strong> — affected Electron apps, games and some Java apps</li>
+                    <li><strong>Colour picker and loupe</strong> — moved off a deprecated API and fixed cursor coordinates on multi-display setups</li>
+                    <li><strong>Capture failures were invisible</strong> — errors now surface as a message instead of failing silently</li>
+                </ul>
+                <h2>Added</h2>
+                <ul>
+                    <li><strong>Interactive window picker</strong> — "Capture Window…" outlines the window under the pointer; click to capture, ESC to cancel</li>
+                    <li><strong>Capture Frontmost Window</strong> — the previous one-shot behaviour, still on ⌃⇧⌘5</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sun, 09 Aug 2026 01:00:00 +0100</pubDate>
+            <enclosure
+                url="https://github.com/daumedia/MikaScreenSnap/releases/download/v3.4.1/Mika%2BScreenSnap-v3.4.1.dmg"
+                sparkle:version="3.4.1"
+                sparkle:shortVersionString="3.4.1"
+                sparkle:edSignature="UJc7JmlGPmG4TWsABS1pKnT3ovIRFxYg8QqqdnEAX3LBEPt+pBiK7WiHq3NN1+jAQrXxbVI+MHf1VRKY2b3cDQ=="
+                length="2018145"
+                type="application/octet-stream" />
+        </item>
+        <item>
             <title>Version 3.4.0</title>
             <sparkle:version>3.4.0</sparkle:version>
             <sparkle:shortVersionString>3.4.0</sparkle:shortVersionString>
