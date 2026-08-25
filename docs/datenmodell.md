@@ -22,7 +22,7 @@ jeweils per `didSet`.
 | `imageFormat` | String | `PNG` | `PNG` oder `JPEG` |
 | `jpegQuality` | CGFloat | `0.85` | nur bei JPEG wirksam |
 | `hasCompletedOnboarding` | Bool | `false` | steuert den Erststart-Flow |
-| `permissionSkipped` | Bool | `false` | Berechtigung im Onboarding übersprungen |
+| `permissionSkipped` | Bool | `false` | **wirkungslos**, siehe Fehlbestand |
 | `captureSoundEnabled` | Bool | `true` | Auslöseton **— wird konsumiert** |
 | `floatingPreviewEnabled` | Bool | `false` | **wirkungslos**, siehe Fehlbestand |
 | `previewDismissDuration` | Int | `5` | **wirkungslos**, siehe Fehlbestand |
@@ -206,12 +206,16 @@ Gemessen an der Datenschutzregel des PRD („was der Nutzer unkenntlich macht, b
 unkenntlich" und „lokale Ablagen sind eine bewusste Entscheidung") ist das der schwerste
 Einzelbefund der Kartierung. Gehört in die Spec von **B08**.
 
-**FB-DM-02 · Drei Einstellungen ohne Wirkung.** `floatingPreviewEnabled`,
+**FB-DM-02 · Vier Schlüssel ohne Wirkung.** `floatingPreviewEnabled`,
 `previewDismissDuration` und `showToolbarLabels` werden gespeichert, geladen,
 zurückgesetzt und in der Oberfläche angeboten — aber von keinem Feature gelesen. Die
 Gegenprobe mit `captureSoundEnabled`, `rememberLastTool` und `defaultAnnotationTool`
 zeigt, dass die übrigen Schalter sehr wohl greifen. Der Nutzer stellt etwas ein, das
 nichts tut. Gehört in die Spec von **B11**.
+
+Hinzu kommt `permissionSkipped`: geschrieben in `Onboarding/PermissionScreen.swift:63`,
+gelesen von niemandem. Anders als die drei anderen taucht er in keiner Oberfläche auf —
+er ist ein Vermerk, auf den nie zurückgegriffen wird. Gehört in die Spec von **B12**.
 
 **FB-DM-03 · `resetAll()` erfasst Farbverlauf und Palette nicht.** Die Schlüsselliste in
 `AppPreferences.swift:135` ist von Hand gepflegt; `colorHistory` und `colorPalette`
@@ -228,6 +232,17 @@ verschiebt es. Gehört in die Spec von **B09**.
 Schlüsseln, die jede Annotation für sich definiert. Ein falscher Schlüssel oder ein
 Typwechsel scheitert stumm zur Laufzeit statt beim Übersetzen — bei einem Undo-Pfad, der
 selten läuft, fällt das lange nicht auf. Gehört in die Spec von **B03**.
+
+**FB-DM-07 · `resetAll()` erfasst Sparkles Schlüssel nicht.** Das
+Aktualisierungswerk führt eigene Einträge in den Benutzereinstellungen — Zeitpunkt der
+letzten Prüfung, automatische Prüfung, übersprungene Fassungen. Die von Hand gepflegte
+Liste in `AppPreferences.swift:135` kennt sie nicht. Folge: *Reset All Preferences* setzt
+die Aktualisierungseinstellungen nicht zurück. Gehört in die Spec von **B11**.
+
+**FB-DM-08 · Die Standard-Strichstärke steht nicht zur Auswahl.**
+`AppPreferences.swift:114` und `:162` setzen `3.0`; die Auswahl in
+`Preferences/AnnotationTabView.swift:64-66` bietet `2`, `4` und `6`. Folge: Beim ersten
+Öffnen zeigt die Auswahl keinen ausgewählten Wert. Gehört in die Spec von **B11**.
 
 **FB-DM-06 · Kein Migrationspfad für die Einstellungen.** Es gibt keine Schemaversion in
 `UserDefaults`. Das Stack-Profil `swiftui-macos` benennt das ausdrücklich als Risiko:
