@@ -16,7 +16,21 @@ final class AppState {
     var measurementController: MeasurementOverlayController?
     var preferencesController: PreferencesWindowController?
     var aboutController: AboutWindowController?
-    var sparkleUpdater: SparkleUpdater
+    /// Created on first use, not at launch.
+    ///
+    /// Sparkle's controller reaches for the surrounding app bundle as soon as it exists,
+    /// which blocks anywhere there is none — a test process, for instance. Nothing needs
+    /// the updater before the menu or Preferences ask for it.
+    /// (`@Observable` rules out `lazy`, and observing it would buy nothing: `SparkleUpdater`
+    /// is not observable itself.)
+    @ObservationIgnored private var storedSparkleUpdater: SparkleUpdater?
+
+    var sparkleUpdater: SparkleUpdater {
+        if let storedSparkleUpdater { return storedSparkleUpdater }
+        let updater = SparkleUpdater()
+        storedSparkleUpdater = updater
+        return updater
+    }
     var launchAtLoginManager: LaunchAtLoginManager
     var onboardingController: OnboardingWindowController?
 
@@ -26,7 +40,6 @@ final class AppState {
         self.captureEngine = CaptureEngine()
         self.historyManager = ScreenshotHistoryManager(preferences: prefs)
         self.colorHistory = ColorHistoryManager()
-        self.sparkleUpdater = SparkleUpdater()
         self.launchAtLoginManager = LaunchAtLoginManager()
     }
 }

@@ -1,16 +1,26 @@
 # Befunde — projektweit
 
-Stand: 2026-08-25 · Quelle: **die Rückerfassung** (`sdd-erfassen` Phase 2), nicht QA-Berichte
+Stand: 2026-08-25 · Quelle: Rückerfassung (`sdd-erfassen` Phase 2) **und QA** (`sdd-qa`, alle 15 Features)
 
-> Abweichung vom Regelfall: Diese Liste wird sonst von `sdd-qa` aus den `qa-report.md`
-> fortgeschrieben. Hier stammen die Einträge aus der Rückerfassung selbst — sie entstanden
-> beim Lesen des Codes, bevor je eine QA lief. Sobald `sdd-qa` läuft, schreibt sie hier
-> weiter; die Herkunft bleibt an der Spalte *Gefunden von* erkennbar.
+> Die Einträge BF-01 bis BF-23 und BF-A1 bis BF-A15 stammen aus der Rückerfassung — sie
+> entstanden beim **Lesen** des Codes. BF-24 und BF-25 stammen aus der QA, also aus dem
+> **Ausführen**. Der Unterschied ist der Grund, warum beide Durchgänge nötig waren.
 
 ## Offen
 
-Keine. Alle 89 Einträge aus den Feature-Specs sind entweder behoben oder mit Begründung
-und Datum akzeptiert.
+Keine Befunde. **Aber offene Nachweise:** Die QA konnte 145 von 269 Kriterien nicht
+ausführen, weil sie Oberflächenverhalten, eine erteilte Bildschirmaufnahme-Berechtigung
+oder ein zweites Display brauchen. Sie stehen in den Testberichten unter *nicht prüfbar* —
+ausdrücklich **nicht** unter *bestanden*.
+
+Die vier wichtigsten, die vor der Auslieferung manuell zu durchlaufen sind:
+
+| Prüfung | Feature | Warum sie zählt |
+|---|---|---|
+| Ausgeschlossenes Programm in allen sechs Aufnahmewegen | B02/AK-03 | die einzige Zugriffsregel der Anwendung; einer der sechs Wege, der doch etwas zeigt, ist ein Datenleck |
+| Ein Tastendruck nach zweimaliger Neubelegung | B10/AK-08 | der behobene Vervielfachungsfehler — zählbar, aber nur mit echtem Tastendruck |
+| Erstkontakt auf einem frischen Benutzerkonto | B12/AK-15 | steht die Anwendung nach *Grant Access* in der Systemliste? Vor 3.5.0 nicht |
+| Manipulierte Update-Signatur wird abgelehnt | B14/AK-05 | der einzige Weg, auf dem fremder Code auf den Rechner kommt |
 
 ## Behoben
 
@@ -41,6 +51,8 @@ Ausgeliefert mit **3.5.0**. Die Reihenfolge folgt dem Schweregrad.
 | BF-21 | B13 | Fehlschlag beim Anmeldestart blieb unsichtbar, der Schalter zeigte den falschen Zustand | niedrig | `LaunchAtLoginManager` | 2026-08-25 |
 | BF-22 | B07, B01 | `startMeasurement(appState:)` ignorierte seinen Parameter; der Controller wurde nie freigegeben | niedrig | `CaptureEngine` | 2026-08-25 |
 | BF-23 | projektweit | Keine Tests — die Fehlerklasse aus BF-04 wäre prüfbar gewesen | mittel | `Tests/` fehlte | 2026-08-25 |
+| BF-24 | B14 | **Aus der QA:** Sparkles Controller wurde beim Programmstart sofort erzeugt und greift dabei nach dem umgebenden Programmpaket. In jeder Umgebung ohne Bundle blockiert das — der Testlauf hing daran, bis er abgebrochen wurde | mittel | `AppState.init` | 2026-08-25 |
+| BF-25 | B08 | **Aus der QA:** Der Ablageort angehefteter Bilder war fest verdrahtet, sodass ein Test zwangsläufig in die echten Daten des Nutzers geschrieben hätte | niedrig | `PinnedScreenshotManager.persistenceDir` | 2026-08-25 |
 
 ## Akzeptiert
 
@@ -88,6 +100,22 @@ Was in mehreren Features zugleich auftrat — der eigentliche Ertrag der Vollerf
   nicht mehr gab (BF-12, BF-15) oder nie so gegeben hatte (BF-10). Alle drei entstanden bei
   Umbauten, bei denen der Text nicht mitgezogen wurde.
 
+- **Was beim Start sofort erzeugt wird, muss überall erzeugbar sein.** BF-24 kam erst
+  heraus, als der Testlauf hing: Sparkle griff im Initialisierer nach einem Programmpaket,
+  das es in einem Testprozess nicht gibt. Träge Erzeugung löst es und spart nebenbei
+  Startzeit.
+
 Für den Betrieb (`sdd-betrieb`) folgt daraus: Der wirksamste Hebel dieses Projekts ist
 nicht mehr Sorgfalt im Einzelfall, sondern **Tests für alles, was rechnet**, und **ein
 Blick auf die Dokumentation bei jedem Umbau**.
+
+## Was die QA nicht leisten konnte
+
+Von 269 Akzeptanzkriterien über 15 Features waren **124 ausführbar** und sind bestanden;
+**145 sind als nicht prüfbar ausgewiesen**. Durchgefallen ist keines. Das Verhältnis ist kein Mangel des Berichts,
+sondern die Lage einer macOS-Anwendung: Mausereignisse, Fensterlebenszyklen,
+Systemberechtigungen und Mehrschirmanordnungen lassen sich ohne Bedienung nicht nachweisen.
+
+Das Stack-Profil sieht dafür Screenshots und Bildschirmaufnahmen als gültigen Nachweis vor.
+Diese Belege fehlen und sind der Grund, warum jeder Testbericht mit einer benannten
+manuellen Auflage endet statt mit einem pauschalen „bestanden".

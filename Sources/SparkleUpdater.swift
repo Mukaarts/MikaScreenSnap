@@ -24,12 +24,20 @@ final class SparkleUpdater: NSObject {
         set { updaterController.updater.automaticallyChecksForUpdates = newValue }
     }
 
+    /// True when running under XCTest, where there is no real app bundle to update.
+    ///
+    /// Starting the updater there blocks: Sparkle looks for a bundle to check and never
+    /// gets an answer.
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
     override init() {
         super.init()
         // A delegate is passed now: without one the app learned nothing about an update
         // and could not defer a relaunch.
         self.updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: !SparkleUpdater.isRunningTests,
             updaterDelegate: self,
             userDriverDelegate: nil
         )

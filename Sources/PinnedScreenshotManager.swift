@@ -8,8 +8,13 @@ import AppKit
 
 @MainActor
 enum PinnedScreenshotManager {
-    private static let maxPins = 20
-    private static var persistenceDir: URL {
+    static let maxPins = 20
+
+    /// Overridable so tests never touch the user's real pinned screenshots.
+    nonisolated(unsafe) static var persistenceDirOverride: URL?
+
+    static var persistenceDir: URL {
+        if let persistenceDirOverride { return persistenceDirOverride }
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return appSupport.appendingPathComponent("MikaScreenSnap/PinnedScreenshots", isDirectory: true)
     }
@@ -119,7 +124,7 @@ enum PinnedScreenshotManager {
     }
 
     @discardableResult
-    private static func savePinnedImage(_ image: NSImage) -> URL? {
+    static func savePinnedImage(_ image: NSImage) -> URL? {
         let fm = FileManager.default
         let dir = persistenceDir
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
