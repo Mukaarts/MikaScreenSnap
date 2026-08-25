@@ -1,6 +1,10 @@
 import AppKit
 @preconcurrency import ScreenCaptureKit
 
+enum CaptureError: Error {
+    case noDisplay
+}
+
 @MainActor
 final class CaptureEngine {
     private var areaSelectionPanels: [AreaSelectionPanel] = []
@@ -84,6 +88,25 @@ final class CaptureEngine {
             .map(\.element)
     }
 
+    /// Pairs an `SCDisplay` with the `NSScreen` it corresponds to.
+    ///
+    /// Every capture used to run against `content.displays.first`, which is neither the
+    /// screen the pointer is on nor the one a selection was drawn on — on a multi-display
+    /// setup that meant the wrong screen and, for area captures, the wrong crop.
+    private func display(in content: SCShareableContent, matching screen: NSScreen?) -> (SCDisplay, NSScreen)? {
+        guard let screen, let displayID = screen.displayID else {
+            guard let fallback = content.displays.first,
+                  let fallbackScreen = NSScreen.screens.first else { return nil }
+            return (fallback, fallbackScreen)
+        }
+
+        if let match = content.displays.first(where: { $0.displayID == displayID }) {
+            return (match, screen)
+        }
+        guard let fallback = content.displays.first else { return nil }
+        return (fallback, screen)
+    }
+
     /// Shareable content without the desktop and wallpaper layer, which are never
     /// meaningful capture targets and used to win the window search.
     private func shareableWindowContent() async throws -> SCShareableContent {
@@ -115,10 +138,11 @@ final class CaptureEngine {
 
     // MARK: - Capture
 
+    /// Captures the display the pointer is on.
     func captureFullScreen(appState: AppState?) async {
         do {
             let content = try await SCShareableContent.current
-            guard let display = content.displays.first else {
+            guard let (display, _) = display(in: content, matching: NSScreen.underPointer) else {
                 CaptureLog.report("No display found", message: "No display available")
                 return
             }
@@ -128,11 +152,14 @@ final class CaptureEngine {
                 excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
             )
 
+            // Scale comes from the filter, not a hard-coded 2 — a display that is not
+            // Retina used to be captured at twice its real resolution.
+            let scale = CGFloat(filter.pointPixelScale)
             let cgImage = try await captureCGImage(
                 filter: filter,
                 sourceRect: .null,
-                pixelWidth: Int(display.width) * 2,
-                pixelHeight: Int(display.height) * 2
+                pixelWidth: Int((CGFloat(display.width) * scale).rounded()),
+                pixelHeight: Int((CGFloat(display.height) * scale).rounded())
             )
             let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: display.width, height: display.height))
 
@@ -142,38 +169,41 @@ final class CaptureEngine {
         }
     }
 
+    /// Captures a dragged region, on whichever display it was drawn.
+    ///
+    /// `rect` arrives in global AppKit coordinates; both the crop and the scale are taken
+    /// from the display that actually holds it.
     func captureArea(rect: CGRect, appState: AppState?) async {
         do {
-            let content = try await SCShareableContent.current
-            guard let display = content.displays.first else { return }
-
-            let filter = SCContentFilter(
-                display: display,
-                excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
-            )
-
-            // Convert from AppKit coordinates (origin bottom-left) to ScreenCaptureKit (origin top-left)
-            let displayHeight = CGFloat(display.height)
-            let scRect = CGRect(
-                x: rect.origin.x,
-                y: displayHeight - rect.origin.y - rect.height,
-                width: rect.width,
-                height: rect.height
-            )
-
-            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            let cgImage = try await captureCGImage(
-                filter: filter,
-                sourceRect: scRect,
-                pixelWidth: Int(rect.width * scale),
-                pixelHeight: Int(rect.height * scale)
-            )
+            let cgImage = try await captureRegion(rect: rect, appState: appState)
             let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: rect.width, height: rect.height))
-
             postCapture(nsImage, appState: appState)
         } catch {
             CaptureLog.report(error, action: "Area capture")
         }
+    }
+
+    /// Shared by area capture and text capture.
+    private func captureRegion(rect: CGRect, appState: AppState?) async throws -> CGImage {
+        let content = try await SCShareableContent.current
+        guard let (display, screen) = display(in: content, matching: NSScreen.containing(rect)) else {
+            throw CaptureError.noDisplay
+        }
+
+        let filter = SCContentFilter(
+            display: display,
+            excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
+        )
+
+        let sourceRect = screen.sourceRect(forAppKitRect: rect)
+        let scale = CGFloat(filter.pointPixelScale)
+
+        return try await captureCGImage(
+            filter: filter,
+            sourceRect: sourceRect,
+            pixelWidth: Int((rect.width * scale).rounded()),
+            pixelHeight: Int((rect.height * scale).rounded())
+        )
     }
 
     /// Captures the frontmost window of the active app without any interaction.
@@ -328,47 +358,24 @@ final class CaptureEngine {
 
     private func captureAreaForOCR(rect: CGRect, appState: AppState?) async {
         do {
-            let content = try await SCShareableContent.current
-            guard let display = content.displays.first else { return }
-
-            let filter = SCContentFilter(
-                display: display,
-                excludingWindows: excludedWindows(in: content, preferences: appState?.preferences)
-            )
-
-            let displayHeight = CGFloat(display.height)
-            let scRect = CGRect(
-                x: rect.origin.x,
-                y: displayHeight - rect.origin.y - rect.height,
-                width: rect.width,
-                height: rect.height
-            )
-
-            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            let cgImage = try await captureCGImage(
-                filter: filter,
-                sourceRect: scRect,
-                pixelWidth: Int(rect.width * scale),
-                pixelHeight: Int(rect.height * scale)
-            )
-
-            // Run OCR
+            let cgImage = try await captureRegion(rect: rect, appState: appState)
             let recognizedText = try await OCREngine.recognizeText(in: cgImage)
 
-            if !recognizedText.isEmpty {
-                // Copy to clipboard
-                let pb = NSPasteboard.general
-                pb.clearContents()
-                pb.setString(recognizedText, forType: .string)
+            guard !recognizedText.isEmpty else {
+                // Silence used to be the answer here, which is indistinguishable from the
+                // feature not having fired at all.
+                StatusToast.show("No text found in selection")
+                return
+            }
 
-                // Show result panel
-                let resultPanel = OCRResultPanel(text: recognizedText)
-                resultPanel.makeKeyAndOrderFront(nil)
+            ClipboardManager.copyToClipboard(text: recognizedText, concealed: true)
 
-                if appState?.preferences.captureSoundEnabled != false,
-                   let sound = NSSound(named: "Tink") {
-                    sound.play()
-                }
+            let resultPanel = OCRResultPanel(text: recognizedText)
+            resultPanel.makeKeyAndOrderFront(nil)
+
+            if appState?.preferences.captureSoundEnabled != false,
+               let sound = NSSound(named: "Tink") {
+                sound.play()
             }
         } catch {
             CaptureLog.report(error, action: "Text capture")
@@ -405,10 +412,13 @@ final class CaptureEngine {
 
     // MARK: - Measurement
 
-    func startMeasurement(appState: AppState?) {
+    func startMeasurement() {
+        measurementController?.dismiss()
         let controller = MeasurementOverlayController()
         self.measurementController = controller
-        controller.start()
+        controller.start { [weak self] in
+            self?.measurementController = nil
+        }
     }
 
     // MARK: - Post-Capture
@@ -422,12 +432,14 @@ final class CaptureEngine {
             sound.play()
         }
 
-        // Auto-save to history
-        appState?.historyManager.autoSave(image)
+        // Auto-save to history. The editor keeps the URL so it can replace this file with
+        // the edited image — what lands here is the untouched original.
+        let savedURL = appState?.historyManager.autoSave(image)
 
         // Open annotation editor
         let controller = AnnotationEditorWindowController(image: image, preferences: appState?.preferences)
         controller.appState = appState
+        controller.autoSavedURL = savedURL
         controller.showWindow(nil)
         appState?.annotationEditorController = controller
     }

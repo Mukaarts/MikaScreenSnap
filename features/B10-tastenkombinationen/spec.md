@@ -1,8 +1,9 @@
 # B10 · Tastenkombinationen — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Der schwerste Befund dieses Features — das
+> mehrfache Auslösen — ist behoben.
 
 ## Zweck
 
@@ -49,21 +50,15 @@ Anwendung im Vordergrund sein muss. Alle sieben lassen sich umbelegen.
   dann gelten die geänderten.
 - **AK-06** · Angenommen, der Reiter *Shortcuts* ist offen, wenn *Restore Defaults* gewählt
   wird, dann gelten wieder die sieben Voreinstellungen.
-- **AK-07** ⚠ · Angenommen, eine Kombination ist bereits vom System oder einem anderen
-  Programm belegt, wenn sie zugewiesen wird, dann **schlägt die Anmeldung still fehl**: Die
-  Einstellung zeigt die neue Kombination, sie löst aber nichts aus.
-  *(`HotkeyManager.swift:245` protokolliert den Fehler und fährt fort; die Oberfläche erfährt
-  nichts davon. Die Konflikterkennung in `ShortcutsTabView.swift:82` vergleicht
-  ausschließlich mit den eigenen sieben Aktionen. Zur Klärung vorgelegt.)*
-- **AK-08** ⚠ · Angenommen, die Belegung wurde seit dem Start **n**-mal geändert, wenn danach
-  eine Kombination gedrückt wird, dann wird die zugehörige Funktion **(n+1)-mal** ausgelöst.
-  *(`HotkeyManager.swift:234` ruft `InstallEventHandler` innerhalb von `registerHotkeys()`.
-  Diese Methode läuft im Initialisierer **und** bei jedem `reRegisterAll`. Ein Aufruf von
-  `RemoveEventHandler` existiert im gesamten Quelltext nicht, und die Kennung des
-  installierten Handlers wird nicht einmal aufbewahrt. `unregisterAll` entfernt nur die
-  Kombinationen selbst, nicht den Ereignisbehandler. Folge: Wer im Reiter *Shortcuts*
-  zweimal etwas ändert, löst mit `⌃⇧⌘3` danach drei Aufnahmen aus. Zur Klärung vorgelegt —
-  dies ist der schwerste Befund dieses Features.)*
+- **AK-07** · Angenommen, eine Kombination ist bereits vom System oder einem anderen
+  Programm belegt, wenn sie zugewiesen wird, dann **schlägt die Anmeldung fehl** und der
+  Fehler steht in der Konsole; die Einstellung zeigt die Kombination weiterhin an.
+  *(So verhält sich der Code. macOS bietet keine Abfrage, mit der sich eine fremde Belegung
+  vorher feststellen ließe — Begründung unter *Befunde*, BF-03.)*
+- **AK-08** · Angenommen, die Belegung wurde seit dem Start beliebig oft geändert, wenn
+  danach eine Kombination gedrückt wird, dann wird die zugehörige Funktion **genau einmal**
+  ausgelöst — der Ereignisbehandler wird einmal je Verwalter installiert und beim Abbau
+  wieder entfernt.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -93,33 +88,43 @@ Stufe A, Abschnitt 1 in Kraft.
 - **EC-06** · Kombination wird gedrückt, während bereits eine Auswahl läuft → die alte wird
   verworfen (B01/EC-07).
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Ereignisbehandler werden bei jeder Neuanmeldung erneut installiert.**
-  Fundstelle: `HotkeyManager.swift:234`, ohne Gegenstück. Folge: mehrfaches Auslösen nach
-  jeder Änderung der Belegung — mehrere Aufnahmen, mehrere Editorfenster, mehrere Dateien
-  aus einem Tastendruck. Über `AdvancedTabView.swift:170` (*Reset All Preferences*) tritt
-  derselbe Effekt auf, ohne dass der Nutzer die Kombinationen überhaupt angefasst hat.
-- **FB-02 · Fehlgeschlagene Anmeldungen bleiben unsichtbar.** Fundstelle:
-  `HotkeyManager.swift:245`. Folge: Eine Kombination steht in den Einstellungen und tut
-  nichts; der Grund ist nur in der Konsole zu finden.
-- **FB-03 · Die Konflikterkennung kennt nur die eigene Anwendung.** Fundstelle:
-  `ShortcutsTabView.swift:82`. Folge: Der häufigste Konfliktfall — mit dem System oder
-  einem anderen Programm — wird nicht erkannt. Zusammen mit FB-02 gibt es dafür keinerlei
-  Rückmeldung.
-- **FB-04 · Keine Prüfung auf sinnlose Belegungen.** Eine Kombination ohne Zusatztaste wird
-  angenommen und fängt danach systemweit eine gewöhnliche Taste ab.
-- **FB-05 · Keine Tests.** Kodierung und Dekodierung der Belegung sowie die
-  Symbolschreibweise sind reine Umwandlung und ideal prüfbar.
+### Behoben
+
+- **FB-01 · Ereignisbehandler wurden bei jeder Neuanmeldung erneut installiert** — behoben
+  2026-08-25. `installEventHandlerIfNeeded()` läuft genau einmal, die Kennung wird
+  aufbewahrt und in `deinit` über `RemoveEventHandler` freigegeben. **Dies war der
+  schwerste Befund dieses Features** und betraf auch *Reset All Preferences*, das denselben
+  Weg nimmt.
+- **FB-05 · Keine Tests** — behoben 2026-08-25. Sechs Tests in
+  `Tests/HotkeyBindingTests.swift` über Kodierung, Eindeutigkeit der Voreinstellungen und
+  Symbolschreibweise.
+
+### Akzeptiert
+
+- **BF-02 · Fehlgeschlagene Anmeldungen bleiben in der Oberfläche unsichtbar** — akzeptiert
+  2026-08-25. Eine Meldung im Augenblick des Zuweisens wäre möglich, träfe aber die falsche
+  Aussage: Die Anmeldung kann auch später scheitern, wenn ein anderes Programm die
+  Kombination beansprucht. Der Fehler steht in der Konsole; die verlässliche Prüfung ist,
+  die Kombination zu drücken.
+- **BF-03 · Die Konflikterkennung kennt nur die eigene Anwendung** — akzeptiert
+  2026-08-25. macOS stellt keine Schnittstelle bereit, über die sich fremde
+  Tastenkombinationen abfragen ließen; jede Anzeige wäre geraten.
+- **BF-04 · Keine Prüfung auf Kombinationen ohne Zusatztaste** — akzeptiert 2026-08-25. Wer
+  eine solche Kombination bewusst zuweist, hat einen Grund; die Voreinstellungen tragen alle
+  mindestens zwei Zusatztasten.
 
 ## Offene Fragen
 
-- **OF-01** · Soll die Anmeldung eines Ereignisbehandlers einmalig erfolgen? — entscheidet
-  der Autor. Bis dahin gilt AK-08 als beschriebenes Verhalten.
-- **OF-02** · Soll eine fehlgeschlagene Anmeldung in der Oberfläche erscheinen? —
-  entscheidet der Autor.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Ereignisbehandler einmalig anmelden? | ja — das mehrfache Auslösen war ein echter Fehler mit sichtbarer Wirkung | 2026-08-25 |
+| OF-02 · Fehlgeschlagene Anmeldung in der Oberfläche zeigen? | nein, siehe BF-02 | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -128,4 +133,5 @@ Stufe A, Abschnitt 1 in Kraft.
 | 3 | Signatur `0x4D534E53` | beliebiger Wert | „MSNS" als Kennzeichnung der Anwendung |
 | 4 | Wie werden Belegungen gespeichert? | JSON in den Benutzereinstellungen | Tastencode und Maske sind Zahlen; es gibt keine Schemaversion (siehe `docs/datenmodell.md`, FB-DM-06) |
 | 5 | Rückfall bei fehlerhaften Daten | Voreinstellungen | besser als keine Kombinationen |
-| 6 | Konflikterkennung nur intern | auch gegen das System prüfen | **Grund erkennbar**: macOS bietet dafür keine brauchbare Abfrage — dass der Fehlschlag dann aber unsichtbar bleibt, ist die eigentliche Lücke (FB-02) |
+| 6 | Konflikterkennung nur intern | auch gegen das System prüfen | macOS bietet dafür keine Abfrage; geprüft wird, was prüfbar ist |
+| 7 | Behandler einmal installieren (3.5.0) | bei jeder Anmeldung neu | jede Neuanmeldung stapelte einen weiteren Behandler, ohne dass je einer entfernt wurde |

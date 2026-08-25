@@ -52,6 +52,20 @@ final class ExcludedAppsManager {
         }
     }
 
+    /// Adds an application the user picked from disk.
+    ///
+    /// The list is built from running applications, so an app that happens to be closed —
+    /// a password manager, most of the time — could not be excluded ahead of time.
+    func add(applicationAt url: URL, selected: Set<String>) async -> String? {
+        guard let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier else {
+            CaptureLog.report("Not an application bundle: \(url.lastPathComponent)",
+                              message: "That is not an application")
+            return nil
+        }
+        await refresh(selected: selected.union([bundleID]))
+        return bundleID
+    }
+
     /// Best-effort name for an app that is currently not running.
     private static func displayName(for bundleIdentifier: String) -> String {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)

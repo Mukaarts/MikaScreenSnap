@@ -11,9 +11,13 @@ import AppKit
 final class MeasurementOverlayController {
     private var panels: [MeasurementPanel] = []
     private var keyMonitor: Any?
+    private var onDismiss: (() -> Void)?
 
-    func start() {
+    /// - Parameter onDismiss: called once the overlay is gone, so the owner can let go of
+    ///   this controller instead of holding the last one until the next measurement.
+    func start(onDismiss: (() -> Void)? = nil) {
         dismiss()
+        self.onDismiss = onDismiss
 
         for screen in NSScreen.screens {
             let panel = MeasurementPanel(screen: screen) { [weak self] in
@@ -46,7 +50,14 @@ final class MeasurementOverlayController {
         for panel in panels {
             panel.orderOut(nil)
         }
+        let wasShowing = !panels.isEmpty
         panels.removeAll()
+
+        if wasShowing {
+            let callback = onDismiss
+            onDismiss = nil
+            callback?()
+        }
     }
 }
 

@@ -20,6 +20,11 @@ let package = Package(
                 .linkedFramework("UniformTypeIdentifiers"),
                 .linkedFramework("Vision"),
             ]
+        ),
+        .testTarget(
+            name: "MikaScreenSnapTests",
+            dependencies: ["MikaScreenSnap"],
+            path: "Tests"
         )
     ]
 )

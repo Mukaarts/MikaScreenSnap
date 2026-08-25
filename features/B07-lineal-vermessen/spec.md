@@ -1,8 +1,8 @@
 # B07 · Lineal / Bildschirm vermessen — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Das markierte Kriterium ist behoben.
 
 ## Zweck
 
@@ -56,13 +56,10 @@ Hilfslinien, keine Anmerkungen: Sie erscheinen in keinem Export.
   dann bleiben die gemessenen Werte auf das Bild bezogen und ändern sich nicht.
 - **AK-09** · Angenommen, eine Messung liegt im Editor vor, wenn das Bild kopiert, gesichert
   oder angeheftet wird, dann ist die Messung im Ergebnis **nicht** enthalten.
-- **AK-10** ⚠ · Angenommen, das Messwerkzeug ist im Editor aktiv, wenn die Leertaste gedrückt
-  wird, dann schaltet die Anzeige die Einheit um **und** der Editor wechselt gleichzeitig in
-  den Verschiebemodus.
-  *(`AnnotationCanvasView.swift:70` beobachtet die Leertaste über einen lokalen
-  Ereignisbeobachter, der das Ereignis weiterreicht; `MeasurementTool.swift:54` behandelt
-  dieselbe Taste. Ein anschließendes Ziehen verschiebt den Ausschnitt, statt zu messen. Zur
-  Klärung vorgelegt.)*
+- **AK-10** · Angenommen, das Messwerkzeug ist im Editor aktiv, wenn `U` gedrückt wird, dann
+  wechselt die Einheit zwischen Pixeln und Punkten. Die Leertaste bleibt dem Verschieben
+  vorbehalten; im Vollbild-Overlay, wo es kein Verschieben gibt, schaltet weiterhin die
+  Leertaste um.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -85,36 +82,41 @@ liest**: Das Overlay zeichnet nur darüber.
   derselben Ebene wie die Bereichsauswahl; Verhalten ungeprüft.
 - **EC-04** · Messwerkzeug im Editor, dann Werkzeugwechsel → die Messung verschwindet.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Die Leertaste ist doppelt belegt.** Fundstellen:
-  `AnnotationCanvasView.swift:70`, `Tools/MeasurementTool.swift:54`. Folge: siehe AK-10.
-- **FB-02 · `startMeasurement(appState:)` benutzt seinen Parameter nicht.** Fundstelle:
-  `CaptureEngine.swift:395`. Folge: keine unmittelbare — das Overlay braucht keinen
-  Anwendungszustand. Der Parameter täuscht eine Abhängigkeit vor, die es nicht gibt.
-- **FB-03 · Der Controller des Overlays wird gehalten, aber nie freigegeben.** Fundstelle:
-  `CaptureEngine.swift:396` weist `measurementController` zu; anders als bei der Farbpipette
-  gibt es keinen Rückruf, der die Zuweisung nach dem Schließen zurücknimmt. Folge: Der
-  zuletzt benutzte Controller bleibt bis zum nächsten Messvorgang im Speicher — geringe
-  Menge, aber ein Muster, das bei der Farbpipette bewusst anders gelöst ist.
-- **FB-04 · Zwei getrennte Implementierungen derselben Sache.** `MeasurementOverlay.swift`
-  (362 Zeilen) und `Tools/MeasurementTool.swift` (160 Zeilen) berechnen und zeichnen
-  dasselbe auf verschiedene Weise. Folge: Eine Änderung an der Darstellung muss an zwei
-  Stellen erfolgen; Abweichungen fallen nicht auf.
-- **FB-05 · Keine Tests.** Abstandsberechnung und Einheitenumrechnung sind reine Rechnung.
+### Behoben
+
+- **FB-01 · Die Leertaste war doppelt belegt** — behoben 2026-08-25. Im Editor wechselt `U`
+  die Einheit; die Leertaste verschiebt.
+- **FB-02 · `startMeasurement(appState:)` benutzte seinen Parameter nicht** — behoben
+  2026-08-25. Der Parameter ist entfernt.
+- **FB-03 · Der Controller wurde gehalten, aber nie freigegeben** — behoben 2026-08-25.
+  `start(onDismiss:)` meldet das Ende, und die Aufnahme-Engine gibt den Verweis frei — wie
+  bei der Farbpipette.
+
+### Akzeptiert
+
+- **BF-04 · Zwei getrennte Implementierungen** — akzeptiert 2026-08-25. Overlay und
+  Editorwerkzeug arbeiten in verschiedenen Koordinatenräumen und mit verschiedenen
+  Ereignisquellen; ein gemeinsamer Kern brächte eine Abstraktion, die mehr kostet als die
+  Dopplung. Eine Zusammenführung wäre ein eigenes Feature.
+- **BF-05 · Keine Tests** — akzeptiert 2026-08-25. Die Abstandsberechnung ist eine Zeile
+  Pythagoras innerhalb einer Zeichenroutine; ein Test darüber prüfte die Standardbibliothek.
 
 ## Offene Fragen
 
-- **OF-01** · Soll die Leertaste im Messwerkzeug die Einheit umschalten oder verschieben? —
-  entscheidet der Autor.
-- **OF-02** · Sollen die beiden Ausprägungen zusammengeführt werden? — entscheidet der
-  Autor; das wäre ein eigenes Feature mit eigener Nummer, kein Nachtrag hier.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Leertaste im Messwerkzeug? | nein — sie bleibt das Verschieben; die Einheit wechselt `U` | 2026-08-25 |
+| OF-02 · Die beiden Ausprägungen zusammenführen? | nein, siehe BF-04 | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
 | 1 | Messungen als Anmerkung oder als Hilfslinie? | Hilfslinie, nicht exportiert | eine Messung ist ein Arbeitsmittel, kein Bildinhalt — ausdrücklich im Dateikopf vermerkt |
 | 2 | Zwei Ausprägungen | nur das Overlay | auf dem Bildschirm messen und im Bild messen sind verschiedene Vorgänge |
-| 3 | Leertaste für den Einheitenwechsel | eine Buchstabentaste | im Overlay naheliegend — im Editor kollidiert sie (FB-01) |
+| 3 | Einheitenwechsel: Leertaste im Overlay, `U` im Editor (3.5.0) | überall dieselbe Taste | im Overlay gibt es kein Verschieben, im Editor schon — dieselbe Taste hätte dort beides ausgelöst |
 | 4 | Overlay ohne Bildaufnahme | Bildschirm aufnehmen und darauf messen | braucht keine Bildschirmaufnahme-Berechtigung für diesen Weg |

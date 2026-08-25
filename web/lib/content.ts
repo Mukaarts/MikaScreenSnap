@@ -6,7 +6,7 @@
  * that needs editing.
  */
 
-const version = "3.4.1";
+const version = "3.5.0";
 const repo = "https://github.com/daumedia/MikaScreenSnap";
 
 export const product = {

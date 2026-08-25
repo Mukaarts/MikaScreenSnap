@@ -1,8 +1,9 @@
 # B11 · Einstellungen — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde behoben in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Alle sieben markierten Kriterien sind bearbeitet;
+> die Dokumentation, die das Fenster falsch beschrieb, ist korrigiert.
 
 ## Zweck
 
@@ -41,13 +42,10 @@ Speicherverwaltung und Zurücksetzen.
 - **AK-01** · Angenommen, die Anwendung läuft, wenn `⌘,` gedrückt oder *Preferences…*
   gewählt wird, dann öffnet sich ein Fenster mit den vier Reitern *General*, *Shortcuts*,
   *Annotation* und *Advanced*.
-- **AK-02** ⚠ · Angenommen, das Fenster ist offen, wenn es angezeigt wird, dann erscheint es
+- **AK-02** · Angenommen, das Fenster ist offen, wenn es angezeigt wird, dann erscheint es
   im **systemeigenen Erscheinungsbild** und folgt der Hell-/Dunkel-Einstellung des Systems.
-  *(`README.md` und `CHANGELOG.md` (3.4.0) beschreiben es als „dark-themed" im „Mika+ brand
-  aesthetic"; `Sources/Preferences/` enthält **keinen einzigen** Verweis auf die
-  Markenpalette, und der Dateikopf von `PreferencesStyles.swift` lautet „native macOS
-  style". Commit `a43683a` hat das Erscheinungsbild geändert, ohne die Dokumentation
-  nachzuziehen. Zur Klärung vorgelegt: Welche Seite ist falsch?)*
+  *(Die Beschreibung in `README.md` ist am 2026-08-25 daran angeglichen worden — sie nannte
+  das Fenster seit `a43683a` fälschlich „dark-themed".)*
 
 ### Reiter *General*
 
@@ -61,10 +59,9 @@ Speicherverwaltung und Zurücksetzen.
   wird, dann erklingt der Ton entsprechend.
 - **AK-07** · Angenommen, der Schalter *Auto-save screenshots* wird ausgeschaltet, wenn danach
   aufgenommen wird, dann entsteht keine Datei im Verlaufsordner.
-- **AK-08** ⚠ · Angenommen, der Schalter *Floating preview* wird eingeschaltet und eine
-  Dauer gewählt, wenn danach aufgenommen wird, dann **geschieht nichts anderes als vorher**.
-  *(`floatingPreviewEnabled` und `previewDismissDuration` werden gespeichert, geladen,
-  zurückgesetzt und angeboten — aber von keinem Feature gelesen. Zur Klärung vorgelegt.)*
+- **AK-08** · Angenommen, der Reiter *General* ist offen, wenn er angezeigt wird, dann gibt
+  es **keinen Schalter für eine schwebende Vorschau** mehr — er wurde entfernt, weil die
+  Funktion nie gebaut wurde.
 - **AK-09** · Angenommen, der Abschnitt *Privacy* ist sichtbar, wenn er angezeigt wird, dann
   steht dort die Zahl der ausgeschlossenen Programme und eine Schaltfläche zur Auswahl
   (Umsetzung in B02).
@@ -73,16 +70,14 @@ Speicherverwaltung und Zurücksetzen.
 
 - **AK-10** · Angenommen, ein Standardwerkzeug, eine Standardfarbe und eine Strichstärke sind
   gewählt, wenn der Editor öffnet, dann sind sie voreingestellt.
-- **AK-11** ⚠ · Angenommen, die Anwendung wurde nie eingestellt, wenn der Reiter zum ersten
-  Mal geöffnet wird, dann zeigt die Auswahl der Strichstärke **keinen** ausgewählten Wert:
-  Der Standard ist 3, zur Wahl stehen 2 („Thin"), 4 („Medium") und 6 („Thick").
-  *(`AppPreferences.swift:114` und `:162` setzen 3,0; `AnnotationTabView.swift:64-66` bietet
-  2, 4 und 6 an. Zur Klärung vorgelegt.)*
+- **AK-11** · Angenommen, die Anwendung wurde nie eingestellt, wenn der Reiter zum ersten
+  Mal geöffnet wird, dann steht die Strichstärke auf „Medium" (4) — der Standardwert ist
+  einer der drei angebotenen.
 - **AK-12** · Angenommen, *Remember last used tool* ist eingeschaltet (Standard), wenn der
   Editor geschlossen wird, dann wird das zuletzt benutzte Werkzeug zum Standard.
-- **AK-13** ⚠ · Angenommen, der Schalter *Show toolbar labels* wird eingeschaltet, wenn der
-  Editor geöffnet wird, dann **erscheinen keine Beschriftungen**.
-  *(`showToolbarLabels` wird von der Werkzeugleiste nicht gelesen. Zur Klärung vorgelegt.)*
+- **AK-13** · Angenommen, der Schalter *Show toolbar labels* wird eingeschaltet, wenn der
+  Editor **danach** geöffnet wird, dann steht unter jedem Werkzeugsymbol seine Bezeichnung
+  und die Leiste ist entsprechend höher.
 
 ### Reiter *Advanced*
 
@@ -97,15 +92,14 @@ Speicherverwaltung und Zurücksetzen.
 - **AK-17** · Angenommen, *Reset All Preferences* wird bestätigt, wenn die Aktion läuft, dann
   stehen alle Einstellungen wieder auf ihren Voreinstellungen und die Tastenkombinationen
   werden neu angemeldet.
-- **AK-18** ⚠ · Angenommen, *Reset All Preferences* wird ausgeführt, wenn danach nachgesehen
-  wird, dann bleiben **Farbverlauf und Palette erhalten** und die von Sparkle geführten
-  Einstellungen ebenso.
-  *(`AppPreferences.swift:135` führt eine von Hand gepflegte Schlüsselliste ohne
-  `colorHistory`, `colorPalette` und ohne Sparkles eigene Schlüssel. Zur Klärung vorgelegt.)*
-- **AK-19** ⚠ · Angenommen, *Reset All Preferences* wird ausgeführt, wenn danach eine
-  Tastenkombination gedrückt wird, dann wird die zugehörige Funktion **doppelt** ausgelöst.
-  *(`AdvancedTabView.swift:170` ruft `reRegisterAll`, das einen zusätzlichen
-  Ereignisbehandler installiert — siehe B10/AK-08. Zur Klärung vorgelegt.)*
+- **AK-18** · Angenommen, *Reset All Preferences* wird ausgeführt, wenn danach nachgesehen
+  wird, dann sind **Farbverlauf und Palette geleert**; die von Sparkle geführten
+  Einstellungen bleiben bestehen.
+  *(Sparkles Schlüssel gehören dem Rahmenwerk, nicht dieser Anwendung — Begründung unter
+  *Befunde*, BF-04.)*
+- **AK-19** · Angenommen, *Reset All Preferences* wird ausgeführt, wenn danach eine
+  Tastenkombination gedrückt wird, dann wird die zugehörige Funktion **genau einmal**
+  ausgelöst.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -117,9 +111,9 @@ Stufe A, Abschnitt 1 in Kraft.
   wird nur der Pfad gespeichert.
 - **AK-22** · Angenommen, *Clear History* wird ausgeführt, wenn gelöscht wird, dann erscheint
   vorher eine Rückfrage, die die Endgültigkeit benennt.
-- **AK-23** ⚠ · Angenommen, *Clear History* wird ausgeführt, wenn gelöscht wird, dann bleiben
-  die **angehefteten Bilder** in *Application Support* unberührt und ungenannt.
-  *(Siehe B08/AK-15. Zur Klärung vorgelegt.)*
+- **AK-23** · Angenommen, der Reiter *Advanced* ist offen, wenn der Abschnitt *Storage*
+  angezeigt wird, dann stehen dort **zwei Zeilen**: Aufnahmen mit Vorschaubildern und
+  angeheftete Bilder, jede mit Größe und eigener Löschmöglichkeit.
 
 *Abschnitte 4 und 6 des Katalogs: treffen nicht zu.*
 
@@ -133,41 +127,45 @@ Stufe A, Abschnitt 1 in Kraft.
 - **EC-04** · *Reset* bei geöffnetem Editor → der Editor arbeitet mit den bereits
   übernommenen Werten weiter.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Drei Einstellungen ohne jede Wirkung.** `floatingPreviewEnabled`,
-  `previewDismissDuration` (`GeneralTabView.swift:95-121`) und `showToolbarLabels`
-  (`AnnotationTabView.swift:97`). Gegenprobe: `captureSoundEnabled`, `rememberLastTool` und
-  `defaultAnnotationTool` werden sehr wohl gelesen. Folge: Der Nutzer stellt etwas ein, das
-  nichts tut — und hat keinen Anhaltspunkt dafür.
-  *(Zusammen mit `permissionSkipped` aus B12 sind es vier tote Schlüssel im Projekt.)*
-- **FB-02 · Die Dokumentation beschreibt das Fenster falsch.** `README.md`, `CHANGELOG.md`
-  (3.4.0) gegen `Sources/Preferences/`. Folge: siehe AK-02.
-- **FB-03 · Standard-Strichstärke steht nicht zur Auswahl.** Fundstellen:
-  `AppPreferences.swift:114`, `:162` gegen `AnnotationTabView.swift:64-66`. Folge: leere
-  Auswahl beim ersten Öffnen.
-- **FB-04 · Die Rücksetzliste ist von Hand gepflegt.** Fundstelle:
-  `AppPreferences.swift:135`. Folge: Wer einen Schlüssel hinzufügt, muss daran denken, ihn
-  einzutragen — bei `colorHistory` und `colorPalette` ist genau das unterblieben. Eine
-  vollständige Rücknahme über die Sammlung der Anwendungseinstellungen wäre unabhängig
-  davon.
-- **FB-05 · Die Speicherverwaltung kennt nur einen von zwei Ablageorten.** Fundstelle:
-  `AdvancedTabView.swift:85`, `:157`. Folge: siehe AK-23 und B08/FB-01.
-- **FB-06 · Zurücksetzen verdoppelt die Tastenkombinationen.** Fundstelle:
-  `AdvancedTabView.swift:170`. Folge: siehe AK-19.
-- **FB-07 · Keine Rückmeldung nach dem Zurücksetzen.** Es gibt keinen Hinweis, dass die
-  Aktion ausgeführt wurde; sichtbar wird es nur an den geänderten Feldern.
-- **FB-08 · Keine Tests.**
+### Behoben
+
+- **FB-01 · Drei Einstellungen ohne Wirkung** — behoben 2026-08-25. *Show toolbar labels*
+  wirkt jetzt; *Floating preview* und die zugehörige Dauer sind samt Schlüsseln entfernt,
+  weil die Funktion dahinter nie gebaut wurde. Eine schwebende Vorschau bleibt möglich —
+  als eigenes Feature mit eigener Nummer, nicht als Schalter ohne Gegenstück.
+- **FB-02 · Die Dokumentation beschrieb das Fenster falsch** — behoben 2026-08-25.
+  `README.md` nennt es jetzt „native System Settings layout".
+- **FB-03 · Standard-Strichstärke stand nicht zur Auswahl** — behoben 2026-08-25. Der
+  Standard ist 4; ein Test hält fest, dass er einer der angebotenen Werte ist.
+- **FB-04 · Die Rücksetzliste war unvollständig** — behoben 2026-08-25.
+  `AppPreferences.ownedDefaultsKeys` steht neben den Eigenschaften, die sie schreiben, und
+  enthält die Schlüssel des Farbverlaufs; ein Test prüft das.
+- **FB-05 · Die Speicherverwaltung kannte nur einen Ablageort** — behoben 2026-08-25.
+- **FB-06 · Zurücksetzen verdoppelte die Tastenkombinationen** — behoben in B10.
+- **FB-08 · Keine Tests** — behoben 2026-08-25 für Rücksetzliste und Standardwerte.
+
+### Akzeptiert
+
+- **BF-04 · Sparkles Einstellungen bleiben beim Zurücksetzen bestehen** — akzeptiert
+  2026-08-25. Sie gehören dem Rahmenwerk, nicht dieser Anwendung; sie zu entfernen hieße,
+  in fremde Schlüssel zu greifen, deren Namen sich mit einer neuen Fassung ändern können.
+- **BF-07 · Keine Rückmeldung nach dem Zurücksetzen** — akzeptiert 2026-08-25. Die
+  Änderungen sind unmittelbar in denselben Feldern sichtbar, in denen der Nutzer die Aktion
+  ausgelöst hat.
 
 ## Offene Fragen
 
-- **OF-01** · Sollen die drei wirkungslosen Einstellungen umgesetzt oder entfernt werden? —
-  entscheidet der Autor.
-- **OF-02** · Ist das Fenster falsch oder die Dokumentation? — entscheidet der Autor.
-- **OF-03** · Soll die Speicherverwaltung beide Ablageorte umfassen? — entscheidet der
-  Autor. Betrifft B08.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Wirkungslose Einstellungen umsetzen oder entfernen? | *Show toolbar labels* umgesetzt, *Floating preview* entfernt — eine Vorschau ist ein Feature, kein Schalter | 2026-08-25 |
+| OF-02 · Ist das Fenster falsch oder die Dokumentation? | die Dokumentation; das native Erscheinungsbild bleibt | 2026-08-25 |
+| OF-03 · Speicherverwaltung um Pins erweitern? | ja, als eigene Zeile mit Größe und Leeren | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -175,5 +173,5 @@ Stufe A, Abschnitt 1 in Kraft.
 | 2 | Wann wird gespeichert? | sofort bei jeder Änderung | kein „Übernehmen"; jede Eigenschaft schreibt beim Setzen |
 | 3 | Wo liegen die Werte? | Benutzereinstellungen, gebündelt in einer Klasse | eine Stelle für alle Voreinstellungen |
 | 4 | Erscheinungsbild | systemeigen, seit `a43683a` | zuvor dunkel im Markenbild; die Dokumentation nennt weiterhin den alten Zustand (FB-02) |
-| 5 | Zurücksetzen über eine feste Schlüsselliste | die gesamte Sammlung entfernen | **Grund nicht erkennbar** — die Folge ist FB-04 |
+| 5 | Zurücksetzen über eine gepflegte Schlüsselliste (3.5.0) | die gesamte Sammlung entfernen | die Liste steht neben den Eigenschaften und ist getestet; ein pauschales Leeren würde auch Sparkles Schlüssel treffen (BF-04) |
 | 6 | Endgültiges Löschen mit Rückfrage | Papierkorb ohne Rückfrage | die Rückfrage ist da, der Papierkorb nicht (B09/AK-18) |

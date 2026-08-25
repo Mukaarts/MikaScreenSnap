@@ -14,6 +14,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
     private let sparkleUpdater: SparkleUpdater
     private let historyManager: ScreenshotHistoryManager
     private let hotkeyManager: HotkeyManager
+    private let appState: AppState
     private let onShowOnboarding: () -> Void
 
     init(
@@ -22,6 +23,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
         sparkleUpdater: SparkleUpdater,
         historyManager: ScreenshotHistoryManager,
         hotkeyManager: HotkeyManager,
+        appState: AppState,
         onShowOnboarding: @escaping () -> Void
     ) {
         self.preferences = preferences
@@ -29,6 +31,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
         self.sparkleUpdater = sparkleUpdater
         self.historyManager = historyManager
         self.hotkeyManager = hotkeyManager
+        self.appState = appState
         self.onShowOnboarding = onShowOnboarding
     }
 
@@ -55,6 +58,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
             sparkleUpdater: sparkleUpdater,
             historyManager: historyManager,
             hotkeyManager: hotkeyManager,
+            appState: appState,
             onShowOnboarding: onShowOnboarding
         )
         window.contentView = NSHostingView(rootView: contentView)

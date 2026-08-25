@@ -11,7 +11,11 @@ struct ShortcutsScreen: View {
     let preferences: AppPreferences
     let onDismiss: () -> Void
 
-    @State private var launchAtLogin = true
+    /// Seeded from the system, not hard-coded to on.
+    ///
+    /// A pre-ticked box meant "Done" registered a login item the user never chose, while
+    /// leaving before that page did nothing despite the switch reading as on.
+    @State private var launchAtLogin: Bool
 
     private let shortcuts: [(keys: String, label: String)] = [
         ("\u{2303}\u{21E7}\u{2318}3", "Fullscreen Capture"),
@@ -21,6 +25,13 @@ struct ShortcutsScreen: View {
         ("\u{21E7}\u{2318}7", "Color Picker"),
         ("\u{21E7}\u{2318}8", "Measure"),
     ]
+
+    init(launchAtLoginManager: LaunchAtLoginManager, preferences: AppPreferences, onDismiss: @escaping () -> Void) {
+        self.launchAtLoginManager = launchAtLoginManager
+        self.preferences = preferences
+        self.onDismiss = onDismiss
+        _launchAtLogin = State(initialValue: launchAtLoginManager.isEnabled)
+    }
 
     var body: some View {
         VStack(spacing: 20) {

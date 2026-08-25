@@ -92,38 +92,6 @@ struct GeneralTabView: View {
 
                         settingsRow {
                             Label {
-                                Toggle("Floating preview", isOn: Binding(
-                                    get: { preferences.floatingPreviewEnabled },
-                                    set: { preferences.floatingPreviewEnabled = $0 }
-                                ))
-                            } icon: {
-                                Image(systemName: "pip")
-                            }
-                        }
-
-                        if preferences.floatingPreviewEnabled {
-                            Divider()
-                            settingsRow {
-                                Label("Dismiss after", systemImage: "timer")
-                                Spacer()
-                                Picker("", selection: Binding(
-                                    get: { preferences.previewDismissDuration },
-                                    set: { preferences.previewDismissDuration = $0 }
-                                )) {
-                                    Text("3s").tag(3)
-                                    Text("5s").tag(5)
-                                    Text("10s").tag(10)
-                                    Text("Never").tag(0)
-                                }
-                                .pickerStyle(.segmented)
-                                .frame(width: 200)
-                            }
-                        }
-
-                        Divider()
-
-                        settingsRow {
-                            Label {
                                 Toggle("Auto-save screenshots", isOn: Binding(
                                     get: { preferences.autoSaveEnabled },
                                     set: { preferences.autoSaveEnabled = $0 }
@@ -252,6 +220,9 @@ private struct ExcludedAppsPicker: View {
                 Button("Refresh") {
                     Task { await manager.refresh(selected: preferences.excludedBundleIdentifiers) }
                 }
+                Button("Add App...") {
+                    addApplication()
+                }
                 Spacer()
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
@@ -261,6 +232,25 @@ private struct ExcludedAppsPicker: View {
         .frame(width: 420, height: 400)
         .task {
             await manager.refresh(selected: preferences.excludedBundleIdentifiers)
+        }
+    }
+
+    /// Lets the user exclude an application that is not currently running.
+    private func addApplication() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = "Exclude"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        Task {
+            if let bundleID = await manager.add(
+                applicationAt: url, selected: preferences.excludedBundleIdentifiers
+            ) {
+                preferences.excludedBundleIdentifiers.insert(bundleID)
+            }
         }
     }
 

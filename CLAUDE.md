@@ -10,6 +10,9 @@ MikaScreenSnap (Mika+ScreenSnap) is a lightweight macOS menubar screenshot tool 
 # Build release
 swift build -c release
 
+# Run the test suite
+swift test
+
 # Build app bundle (compiles + assembles .app + code signs)
 bash build.sh
 
@@ -39,11 +42,16 @@ open "build/Mika+ScreenSnap.app"
 **Artefaktpfad: `docs/`** — alle `sdd-`-Skills lesen ihn hier.
 
 - `docs/prd.md` · `docs/datenmodell.md` · `docs/design-system.md` · `docs/app-shell.md`
-- `features/index.md` — Statustabelle aller Features, `features/NN-slug/` je Feature
+- `features/index.md` — Statustabelle aller Features, `features/BNN-slug/` je Feature
+- `features/befunde.md` — projektweite Befundliste mit Fundstellen und Mustern
 
 Das Projekt wurde am 2026-08-25 über `sdd-erfassen` rückwirkend erfasst. Alle 15 Features
 tragen das `B`-Präfix (`B01`…`B15`): Sie existierten vor der Kette und wurden nie gegen
 eine Anforderung gebaut. Ihre Specs sind Rekonstruktionen und können selbst falsch sein.
+
+Die Befunde der Erfassung sind mit 3.5.0 behoben oder mit Begründung akzeptiert; die Specs
+beschreiben den Stand von 3.5.0. **Was noch aussteht, ist die QA** (`/sdd-qa B01` in der
+Reihenfolge aus `features/index.md`) — sie weist jedes Kriterium einzeln nach.
 
 Ein Bestandsfeature läuft **nie** durch `sdd-tasks` oder den regulären `sdd-build` — es
 ist gebaut. Wer ein `B`-Feature erweitern will, legt ein neues Feature mit eigener Nummer
@@ -64,3 +72,14 @@ All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in
 - Scripts use lowercase `scripts/` directory (not `Scripts/`)
 - Build scripts reference `PROJECT_DIR` relative to script location: `$(cd "$(dirname "$0")/.." && pwd)`
 - Sparkle: `@preconcurrency import Sparkle` for Swift 6.0 concurrency compatibility
+- **Error paths must be visible to the user.** `print()` goes nowhere in an `LSUIElement`
+  bundle — route failures through `CaptureLog.report`, which logs *and* shows a toast
+- **Every write path needs a delete path.** Pinned screenshots accumulated in Application
+  Support for months because closing a pin only hid its window
+- **Capture geometry never uses `NSScreen.main`** — it follows the key window, not the
+  pointer. Use `NSScreen.underPointer`, `NSScreen.containing(_:)` and the scale from
+  `SCContentFilter.pointPixelScale`
+- **New defaults keys go into `AppPreferences.ownedDefaultsKeys`**, or they survive
+  "Reset All Preferences" unnoticed — a test enforces this for the known ones
+- **Anything that computes gets a test** in `Tests/`. Coordinates, encodings and
+  conversions are where this project's bugs have actually lived

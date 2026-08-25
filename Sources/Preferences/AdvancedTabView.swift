@@ -12,6 +12,7 @@ struct AdvancedTabView: View {
     let sparkleUpdater: SparkleUpdater
     let historyManager: ScreenshotHistoryManager
     let hotkeyManager: HotkeyManager
+    let appState: AppState
     let onShowOnboarding: () -> Void
 
     @State private var showClearConfirmation = false
@@ -87,6 +88,22 @@ struct AdvancedTabView: View {
                             Spacer()
                             Text(ScreenshotHistoryManager.formatBytes(size))
                                 .foregroundStyle(.secondary)
+                        }
+
+                        Divider()
+
+                        // Pinned screenshots live in Application Support and used to be
+                        // invisible here — and unreachable by Clear History.
+                        settingsRow {
+                            let pinnedSize = PinnedScreenshotManager.storageUsage()
+                            Label("Pinned screenshots", systemImage: "pin")
+                            Spacer()
+                            Text(ScreenshotHistoryManager.formatBytes(pinnedSize))
+                                .foregroundStyle(.secondary)
+                            Button("Clear") {
+                                PinnedScreenshotManager.clearAll(appState: appState)
+                            }
+                            .disabled(PinnedScreenshotManager.storageUsage() == 0)
                         }
 
                         Divider()

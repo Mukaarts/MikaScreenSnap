@@ -1,9 +1,9 @@
 # B04 · Bereiche zensieren — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde behoben in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ beschreiben Verhalten, das
-> fragwürdig aussieht, und stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Alle drei ⚠-Kriterien der ersten Fassung sind in
+> 3.5.0 behoben — darunter der schwerste Befund der ganzen Erfassung (AK-12).
 >
 > **Dieses Feature ist eine Datenschutzzusage, kein Zeichenwerkzeug.** Wer einen Bereich
 > verpixelt, verlässt sich darauf, dass der Inhalt danach weg ist. Jede Abweichung davon
@@ -64,20 +64,16 @@ Verpixeln.
 
 ### Wirksamkeit der Zensur
 
-- **AK-09** ⚠ · Angenommen, ein Bereich wird zensiert, wenn er gerendert wird, dann ist die
-  Stärke **fest**: Weichzeichnen mit Radius 15, Verpixeln mit Blockgröße 10 — jeweils in
-  **Bildpixeln**, nicht in Bildschirmpunkten.
-  *(`AnnotationModels.swift:872` und `:956`. Bei einer Retina-Aufnahme entspricht
-  Blockgröße 10 nur 5 Bildschirmpunkten — die Zensur ist dort also feiner als auf einem
-  nicht skalierten Bildschirm. Es gibt keine Einstellung. Zur Klärung vorgelegt: Reicht
-  das, um kleine Schrift unlesbar zu machen?)*
-- **AK-10** ⚠ · Angenommen, ein Bereich wird weichgezeichnet, wenn er gerendert wird, dann
-  ist die Unschärfe **an den Rändern des Bereichs schwächer als in der Mitte**.
-  *(`AnnotationModels.swift:895` wendet `CIGaussianBlur` auf den zugeschnittenen Ausschnitt
-  an, ohne die Kanten vorher fortzusetzen (`clampedToExtent`). Der Filter mischt am Rand
-  mit dem transparenten Außenraum, wodurch dort weniger Originalinformation zerstört wird.
-  Zur Klärung vorgelegt: Ist Text am Rand eines weichgezeichneten Bereichs noch lesbar
-  oder rekonstruierbar?)*
+- **AK-09** · Angenommen, ein Bereich wird zensiert, wenn er gerendert wird, dann richtet
+  sich die Stärke nach der **kürzeren Seite des Bereichs**: Weichzeichnen mit einem Viertel
+  davon (mindestens 15), Verpixeln mit etwa einem Achtel (mindestens 10). Eine größere
+  Aufnahme wird damit ebenso wirksam zensiert wie eine kleine.
+- **AK-10** · Angenommen, ein Bereich wird weichgezeichnet, wenn er gerendert wird, dann ist
+  die Unschärfe **am Rand so stark wie in der Mitte**: Die Kanten werden vor dem Filtern
+  fortgesetzt, sodass nicht mit dem transparenten Außenraum gemischt wird.
+- **AK-14** · Angenommen, ein zensierter Bereich wird nachträglich vergrößert, wenn er
+  gerendert wird, dann wächst die Zensurstärke mit — eine aufgezogene Zensur bleibt nicht
+  auf der Stärke ihrer ursprünglichen Größe stehen.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -88,13 +84,13 @@ eine inhaltliche Zusage über seine Daten macht.
 - **AK-11** · Angenommen, ein Bereich ist zensiert, wenn das Ergebnis exportiert wird, dann
   enthält die Ausgabedatei die Originalpixel des Bereichs **nicht mehr** — auch nicht in
   Metadaten, Ebenen oder Vorschaubildern.
-- **AK-12** ⚠ · Angenommen, der Nutzer zensiert einen Bereich und exportiert das Bild, wenn
-  danach der Verlaufsordner geöffnet wird, dann liegt dort **die unzensierte
-  Originalaufnahme**.
-  *(`CaptureEngine.swift:427` ruft `historyManager.autoSave(image)` mit dem Originalbild,
-  **bevor** der Editor überhaupt öffnet. Kein Pfad ersetzt oder löscht diese Datei später.
-  Das exportierte Bild ist zensiert, die automatisch gesicherte Datei nicht. Zur Klärung
-  vorgelegt — dies ist der schwerwiegendste Einzelbefund der gesamten Erfassung.)*
+- **AK-12** · Angenommen, der Nutzer zensiert einen Bereich und exportiert das Bild, wenn
+  danach der Verlaufsordner geöffnet wird, dann liegt dort **die zensierte Fassung** — die
+  automatisch gesicherte Originaldatei wird beim Export ersetzt.
+- **AK-15** · Angenommen, der Nutzer zensiert einen Bereich und schließt den Editor **ohne**
+  zu exportieren, wenn danach der Verlaufsordner geöffnet wird, dann liegt auch dort die
+  zensierte Fassung. Eine Zensur wird beim Schließen immer angewandt, weil sie eine Zusage
+  über den Inhalt ist und nicht eine Gestaltungsentscheidung.
 - **AK-13** · Angenommen, ein Bereich ist zensiert, wenn das Bild in die Zwischenablage
   kopiert wird, dann enthält die Zwischenablage nur das gerenderte, zensierte Bild.
 
@@ -109,40 +105,39 @@ eine inhaltliche Zusage über seine Daten macht.
 - **EC-05** · Zensur und danach `⌘Z`, `⇧⌘Z`, dann Export → das Wiederherstellen muss die
   Zensur wieder wirksam machen.
 
-## Fehlbestand
+## Behobene Befunde
 
-- **FB-01 · Die unzensierte Originalaufnahme bleibt dauerhaft auf der Festplatte.**
-  Fundstelle: `CaptureEngine.swift:427` (`postCapture` sichert vor dem Öffnen des Editors),
-  `AppPreferences.swift:168` (`saveImage`). Folge: **Die Zensur schützt das Weitergegebene,
-  nicht das Gespeicherte.** Wer ein Passwort verpixelt und den Screenshot verschickt, hat
-  das unverpixelte Bild weiterhin in `~/Pictures/MikaScreenSnap/` liegen — sichtbar für
-  jeden mit Zugriff auf den Rechner, in jedem Backup, in jeder Cloud-Synchronisation dieses
-  Ordners. Der Nutzer wird darauf an keiner Stelle hingewiesen.
-- **FB-02 · Weichzeichnen ohne Kantenfortsetzung.** Fundstelle:
-  `AnnotationModels.swift:891-899`. Folge: Am Rand des Bereichs ist die Unschärfe
-  schwächer; ein Wort, das genau an der Kante liegt, kann teilweise lesbar bleiben. Der
-  übliche Weg — die Kanten vor dem Filtern fortzusetzen — wird nicht gegangen.
-- **FB-03 · Die Zensurstärke ist nicht einstellbar und nicht auflösungsbezogen.**
-  Fundstelle: `AnnotationModels.swift:872`, `:956`. Folge: Bei hoher Auflösung ist die
-  Zensur relativ schwächer, ohne dass der Nutzer gegensteuern kann.
-- **FB-04 · Keine Warnung vor unwirksamer Zensur.** Es gibt keine Prüfung, ob der zensierte
-  Bereich noch Kontrastkanten enthält, und keinen Hinweis auf FB-01. Folge: Der Nutzer hat
-  keinen Anlass zu misstrauen.
-- **FB-05 · Keine Tests.** Die Wirksamkeit einer Zensur ist maschinell prüfbar — etwa indem
-  Text ins Bild gerendert, zensiert und anschließend die Texterkennung darauf angesetzt
-  wird. Die Anwendung hat die Texterkennung bereits an Bord (B05). Geprüft wird nichts.
+Alle fünf Einträge sind in 3.5.0 behoben.
+
+- **FB-01 · Die unzensierte Originalaufnahme blieb auf der Festplatte** — behoben
+  2026-08-25. Der Editor merkt sich die von `autoSave` geschriebene Datei
+  (`AnnotationEditorWindowController.autoSavedURL`) und ersetzt sie bei jedem Export sowie
+  beim Schließen, sobald eine Zensur vorliegt. **Dies war der schwerste Befund der
+  Erfassung.**
+- **FB-02 · Weichzeichnen ohne Kantenfortsetzung** — behoben 2026-08-25. Der Ausschnitt
+  wird vor dem Filtern fortgesetzt (`clampedToExtent()`), danach auf die ursprüngliche
+  Ausdehnung zurückgeschnitten.
+- **FB-03 · Zensurstärke nicht auflösungsbezogen** — behoben 2026-08-25.
+  `BlurAnnotation.radius(for:)` und `PixelateAnnotation.blockSize(for:)` leiten die Stärke
+  aus der kürzeren Seite des Bereichs ab und ziehen beim Skalieren nach. Sechs Tests in
+  `Tests/RedactionStrengthTests.swift`.
+- **FB-04 · Keine Warnung vor unwirksamer Zensur** — gegenstandslos seit FB-01 und FB-03:
+  Das Original bleibt nicht mehr liegen, und die Stärke passt sich an. Eine Prüfung auf
+  Restkontrast wäre eine Scheinsicherheit.
+- **FB-05 · Keine Tests** — behoben 2026-08-25. Die Stärkeberechnung ist abgedeckt; die
+  Wirksamkeit selbst bleibt in der QA über die Texterkennung nachzuweisen.
 
 ## Offene Fragen
 
-- **OF-01** · Soll das automatische Sichern erst **nach** dem Schließen des Editors
-  geschehen, oder soll die Originaldatei beim Export ersetzt werden? — entscheidet der
-  Autor. Betrifft B09 unmittelbar.
-- **OF-02** · Soll die Zensurstärke einstellbar sein? — entscheidet der Autor.
-- **OF-03** · Ist Weichzeichnen als Zensurverfahren überhaupt zulässig, oder sollte nur
-  Verpixeln angeboten werden? — entscheidet der Autor. Weichzeichnen gilt allgemein als
-  das schwächere Verfahren.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Wann wird automatisch gesichert? | weiterhin sofort — als Sicherheitsnetz gegen einen Absturz. Die Datei wird jedoch beim Export und bei jeder Zensur ersetzt, womit der Grund für die ursprüngliche Frage entfällt | 2026-08-25 |
+| OF-02 · Zensurstärke einstellbar? | nein — sie richtet sich nach der Bereichsgröße. Eine Einstellung würde nahelegen, dass eine schwächere Stufe vertretbar ist | 2026-08-25 |
+| OF-03 · Weichzeichnen als Verfahren zulassen? | ja, mit Kantenfortsetzung und größenbezogener Stärke. Verpixeln bleibt die Alternative; die Wahl trifft der Nutzer nach dem Bild, nicht nach der Sicherheit | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -150,4 +145,5 @@ eine inhaltliche Zusage über seine Daten macht.
 | 2 | Woher kommt der Inhalt des zensierten Bereichs? | aus dem Originalbild, bei jedem Zeichnen neu | erlaubt Verschieben und Skalieren ohne Qualitätsverlust — hat aber zur Folge, dass sich überlappende Zensuren nicht verstärken (EC-03) |
 | 3 | Welche Filter? | `CIGaussianBlur` und `CIPixellate` | Systemfilter, keine eigene Implementierung |
 | 4 | Feste Stärke | Radius 15 · Blockgröße 10 | **Grund nicht erkennbar** — keine Herleitung im Code, keine Einstellung |
-| 5 | Warum kein `clampedToExtent` vor dem Weichzeichnen? | — | **Grund nicht erkennbar**; erkennbar ist nur, dass auf die Originalausdehnung zurückgeschnitten wird (siehe FB-02) |
+| 5 | Kantenfortsetzung vor dem Weichzeichnen (3.5.0) | `clampedToExtent()` | ohne sie mischt der Filter den Rand mit dem transparenten Außenraum — genau dort, wo ein zensiertes Wort enden kann |
+| 6 | Stärke aus der Bereichsgröße (3.5.0) | kürzere Seite als Bezug | die kürzere Seite entspricht der Texthöhe; die längere sagt nichts darüber, wie fein der Inhalt ist |

@@ -1,8 +1,8 @@
 # B14 · Automatische Updates — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Beide markierten Kriterien sind bearbeitet.
 >
 > **Dies ist das einzige Feature mit Netzwerkverkehr** — und das einzige, das
 > ausführbaren Code auf den Rechner bringt. Beides hebt es in der Prüfreihenfolge
@@ -54,19 +54,17 @@ Appcast auf `raw.githubusercontent.com`.
   öffentlichen Schlüssel passt, dann verweigert Sparkle die Installation.
 - **AK-06** · Angenommen, ein Update wird geladen, wenn die Verbindung fehlschlägt, dann
   meldet Sparkle den Fehler und die Anwendung läuft unverändert weiter.
-- **AK-07** ⚠ · Angenommen, das Aktualisierungswerk ist noch nicht bereit, wenn der
-  Menüeintrag *Check for Updates…* angezeigt wird, dann ist er **trotzdem anklickbar**.
-  *(`SparkleUpdater.swift:13` stellt `canCheckForUpdates` bereit; die Eigenschaft wird von
-  **keiner** Oberfläche gelesen. Der Eintrag in `CHANGELOG.md` zu 3.3.1 — „Update menu
-  button — now visually disabled when Sparkle updater is not ready" — beschreibt einen
-  Zustand, den der Code heute nicht mehr herstellt. Zur Klärung vorgelegt.)*
-- **AK-08** ⚠ · Angenommen, eine Fassung bis einschließlich 3.4.1 ist installiert, wenn sie
+- **AK-07** · Angenommen, das Aktualisierungswerk ist noch nicht bereit, wenn der
+  Menüeintrag *Check for Updates…* angezeigt wird, dann ist er **deaktiviert** — wie es der
+  Eintrag zu 3.3.1 in `CHANGELOG.md` seit jeher zusagt.
+- **AK-08** · Angenommen, eine Fassung bis einschließlich 3.4.1 ist installiert, wenn sie
   nach Updates sucht, dann fragt sie den Appcast auf dem Zweig **`master`** ab, nicht auf
   `main`.
-  *(Die Feed-Adresse ist ins Programmpaket kompiliert; erst `db55d1f` hat sie auf `main`
-  umgestellt. Solange solche Installationen bestehen, muss `main:master` mitgepusht werden,
-  sonst erreichen sie keine Aktualisierung mehr. Vermerkt in `README.md`. Zur Klärung
-  vorgelegt: bis wann?)*
+  *(Die Feed-Adresse ist ins Programmpaket kompiliert und lässt sich nachträglich nicht
+  ändern. Der Umgang damit ist organisatorisch geregelt — siehe *Befunde*, BF-04.)*
+- **AK-14** · Angenommen, der Annotationseditor hält ungesicherte Anmerkungen, wenn ein
+  Update installiert werden soll, dann fragt die Anwendung, ob später aktualisiert werden
+  soll, und verschiebt auf Wunsch auf den nächsten Start.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -106,40 +104,46 @@ das Repository nie berühren.*
 - **EC-06** · Nicht beglaubigtes Programmpaket → Gatekeeper verweigert den Start nach der
   Installation; der Nutzer sitzt dann vor einer beschädigten Installation.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · `canCheckForUpdates` ist toter Code, und die Dokumentation behauptet das
-  Gegenteil.** Fundstelle: `SparkleUpdater.swift:13`, ohne Leser; `CHANGELOG.md`, Eintrag
-  3.3.1. Folge: Ein Zustand, den die Dokumentation zusichert, wird nicht hergestellt —
-  vermutlich bei der Neugestaltung der Einstellungen in 3.4.0 verloren gegangen.
-- **FB-02 · Keine Delegates am Aktualisierungswerk.** Fundstelle:
-  `SparkleUpdater.swift:23` übergibt `nil` für beide Delegates. Folge: Die Anwendung erfährt
-  nichts über Verlauf und Ausgang einer Prüfung, kann Fehler nicht protokollieren und den
-  Ablauf nicht beeinflussen — etwa um eine Installation zu verschieben, während der Editor
-  ungesicherte Anmerkungen hält.
-- **FB-03 · Ein Update kann ungesicherte Arbeit vernichten.** Es gibt keine Prüfung, ob der
-  Editor offen ist oder `hasUnsavedChanges` gesetzt ist, bevor Sparkle die Anwendung für die
-  Installation beendet. Folge: Anmerkungen gehen ohne Rückfrage verloren. Ohne Delegate
-  (FB-02) ist dieser Punkt auch nicht nachrüstbar.
-- **FB-04 · Der Zweigwechsel des Feeds hat kein Ende.** Fundstelle: `README.md`,
-  Abschnitt *Auto-Update*. Folge: `main:master` muss auf unbestimmte Zeit mitgepusht
-  werden; vergisst der Autor es einmal, bemerkt es niemand, weil die betroffenen
-  Installationen still auf altem Stand bleiben.
-- **FB-05 · Kein Prüfweg für den Appcast.** Es gibt keinen Test und keinen
-  Auslieferungsschritt, der die XML-Datei gegen Sparkles Erwartung prüft. Folge: Der Fehler
-  aus 3.3.2 (falscher Namensraum) konnte ausgeliefert werden und war erst am Gerät des
-  Nutzers sichtbar.
-- **FB-06 · Keine Tests.**
+### Behoben
+
+- **FB-01 · `canCheckForUpdates` war toter Code** — behoben 2026-08-25. Der Menüeintrag
+  liest die Eigenschaft und ist andernfalls deaktiviert; der CHANGELOG-Eintrag zu 3.3.1
+  trifft damit wieder zu.
+- **FB-02 · Keine Delegates am Aktualisierungswerk** — behoben 2026-08-25. `SparkleUpdater`
+  ist selbst `SPUUpdaterDelegate`.
+- **FB-03 · Ein Update konnte ungesicherte Arbeit vernichten** — behoben 2026-08-25 über
+  `updater(_:shouldPostponeRelaunchForUpdate:untilInvokingBlock:)`, das den Editor prüft und
+  auf Wunsch verschiebt. Zusätzlich meldet `didAbortWithError` fehlgeschlagene Prüfungen ins
+  Protokoll.
+
+### Akzeptiert
+
+- **BF-04 · Der Zweigwechsel des Feeds hat kein Ende** — akzeptiert 2026-08-25. Die
+  Feed-Adresse älterer Installationen lässt sich nachträglich nicht ändern; `main:master`
+  muss mitgepusht werden, solange solche Installationen bestehen. Der Ablauf steht in
+  `README.md` unter *Auto-Update*. Ein Ende wäre nur nach einer Zählung der verbleibenden
+  Installationen begründbar — und die gibt es bewusst nicht, weil die Anwendung keine
+  Nutzungsdaten erhebt.
+- **BF-05 · Kein Prüfweg für den Appcast** — akzeptiert 2026-08-25. Ein Test müsste
+  Sparkles Auswertung nachbilden; verlässlicher ist der Schritt, der in `README.md` ohnehin
+  vorgeschrieben ist: die Signatur über das von GitHub geladene DMG bilden und die
+  Aktualisierung vor der Veröffentlichung an einer echten Installation prüfen.
+- **BF-06 · Keine Tests** — akzeptiert 2026-08-25. Der Code besteht aus Weiterleitungen an
+  Sparkle; ein Test darüber prüfte das Rahmenwerk.
 
 ## Offene Fragen
 
-- **OF-01** · Bis wann muss `master` mitgepflegt werden? — entscheidet der Autor.
-- **OF-02** · Soll ein Update verschoben werden, wenn der Editor ungesicherte Anmerkungen
-  hält? — entscheidet der Autor.
-- **OF-03** · Soll `canCheckForUpdates` wieder benutzt oder entfernt werden? — entscheidet
-  der Autor. Der CHANGELOG-Eintrag zu 3.3.1 ist bis dahin unzutreffend.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Bis wann `master` mitpflegen? | unbefristet, solange keine Zählung der Installationen existiert — und die soll es nicht geben. Der Aufwand ist ein zusätzlicher Push je Release und in `README.md` festgehalten | 2026-08-25 |
+| OF-02 · Update bei ungesicherten Anmerkungen verschieben? | ja, mit Rückfrage | 2026-08-25 |
+| OF-03 · `canCheckForUpdates` benutzen oder entfernen? | benutzen — der Menüeintrag ist deaktiviert, solange das Werk nicht bereit ist | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -147,6 +151,6 @@ das Repository nie berühren.*
 | 2 | Wie wird die Echtheit gesichert? | EdDSA-Signatur, öffentlicher Schlüssel im Paket | Sparkles empfohlener Weg; der private Schlüssel liegt im Schlüsselbund |
 | 3 | Wo liegt der Appcast? | `raw.githubusercontent.com`, Zweig `main` | keine eigene Serverinfrastruktur nötig |
 | 4 | Wie wird Sparkle eingebunden? | dünne Hülle um den Standardcontroller | die Oberfläche kommt vollständig von Sparkle |
-| 5 | Delegates? | keine | **Grund nicht erkennbar** — vermutlich nicht gebraucht (FB-02) |
+| 5 | Delegates (3.5.0) | Aktualisierungs-Delegate an der Hülle | ohne ihn konnte ein Update den Editor mitsamt ungesicherter Anmerkungen schließen, und ein Fehlschlag hinterließ keine Spur |
 | 6 | Wo steht der Schalter für die automatische Prüfung? | Reiter *Advanced* | wird selten geändert |
 | 7 | Zweigwechsel `master` → `main` | `db55d1f` | `master` war seit März unberührt, wodurch die Auslieferung von 3.4.1 zunächst unsichtbar blieb |

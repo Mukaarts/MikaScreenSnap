@@ -10,8 +10,15 @@ import AppKit
 @MainActor
 final class ColorHistoryManager {
     private let defaults = UserDefaults.standard
-    private let historyKey = "colorHistory"
-    private let paletteKey = "colorPalette"
+
+    /// Exposed so `AppPreferences.ownedDefaultsKeys` can list them — these used to be
+    /// private and were therefore missing from the reset, which let picked colours
+    /// outlive "Reset All Preferences".
+    static let historyDefaultsKey = "colorHistory"
+    static let paletteDefaultsKey = "colorPalette"
+
+    private var historyKey: String { ColorHistoryManager.historyDefaultsKey }
+    private var paletteKey: String { ColorHistoryManager.paletteDefaultsKey }
 
     private(set) var recentColors: [String] = []    // HEX strings, max 10
     private(set) var palette: [String] = []          // HEX strings, max 20
@@ -38,6 +45,16 @@ final class ColorHistoryManager {
             }
             defaults.set(palette, forKey: paletteKey)
         }
+    }
+
+    func clearPalette() {
+        palette.removeAll()
+        defaults.set(palette, forKey: paletteKey)
+    }
+
+    func clearHistory() {
+        recentColors.removeAll()
+        defaults.set(recentColors, forKey: historyKey)
     }
 
     func removeFromPalette(_ hex: String) {

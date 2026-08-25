@@ -12,6 +12,7 @@ struct PreferencesContainerView: View {
     let sparkleUpdater: SparkleUpdater
     let historyManager: ScreenshotHistoryManager
     let hotkeyManager: HotkeyManager
+    let appState: AppState
     let onShowOnboarding: () -> Void
 
     @State private var selectedTab: PreferencesTab = .general
@@ -51,6 +52,7 @@ struct PreferencesContainerView: View {
                 sparkleUpdater: sparkleUpdater,
                 historyManager: historyManager,
                 hotkeyManager: hotkeyManager,
+                appState: appState,
                 onShowOnboarding: onShowOnboarding
             )
         }

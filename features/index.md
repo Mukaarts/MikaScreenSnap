@@ -1,6 +1,6 @@
 # Features
 
-Stand: 2026-08-25 · Stack-Profil: `swiftui-macos` · Artefaktpfad: `docs/`
+Stand: 2026-08-25 · Stack-Profil: `swiftui-macos` · Artefaktpfad: `docs/` · Fassung 3.5.0
 
 Alle Einträge sind **Bestand**: Sie existieren im ausgelieferten Code (Version 3.4.1) und
 sind nie durch die SDD-Kette gelaufen. Das `B`-Präfix hält das dauerhaft sichtbar — bei
@@ -27,24 +27,26 @@ einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst falsch se
 **Alle fünfzehn Features sind rückerfasst.** Je Feature liegen `spec.md` und `design.md`
 vor. Nächster Schritt: `/sdd-qa B01` und so fort, in der Reihenfolge unten.
 
-## Was `rekonstruiert` hier bedeutet — und was noch fehlt
+## Stand der Rückerfassung
 
-Die Specs beschreiben, **was der Code tut**, nicht was er tun sollte. Wo das Verhalten
-fragwürdig aussieht, steht es trotzdem als Kriterium da, mit ⚠ markiert — damit `sdd-qa` es
-reproduziert statt es zu übersehen.
+Die Specs beschreiben, **was der Code tut**. Sie sind auf 3.5.0 nachgeführt: Alle Befunde
+der Erfassung sind entweder behoben oder mit Begründung und Datum akzeptiert, und alle
+markierten Kriterien sind entschieden.
 
-**Der Bestätigungsschritt steht aus.** Nach dem Verfahren wird jedes ⚠-Kriterium einzeln
-vorgelegt mit der Frage: *„Das tut der Code heute — soll er das?"* Diese Frage kann kein
-Agent beantworten, weil die Absicht nirgends im Code steht. Bis sie beantwortet ist, gilt:
+| | Erfassung (3.4.1) | Jetzt (3.5.0) |
+|---|---|---|
+| Einträge unter *Fehlbestand* | 89 | 0 offen — 23 behoben, 15 akzeptiert (zusammengefasst in `befunde.md`) |
+| Kriterien mit ⚠ | 51 | 0 |
+| Offene Fragen in den Specs | 40 | 0 |
+| Offene Punkte im PRD | 6 | 0 |
+| Tests | keine | 28 |
 
-| Antwort | Folge |
-|---|---|
-| „ja, so gewollt" | Marker entfällt, bleibt reguläres Kriterium |
-| „nein, das ist ein Fehler" | wandert aus den Kriterien in den *Fehlbestand* |
-| „unklar" | bleibt als offene Frage stehen |
+Die vollständige Liste mit Fundstellen, Graden und Begründungen steht in
+`features/befunde.md`, einschließlich der Muster, die erst projektweit sichtbar wurden.
 
-**51 Kriterien** tragen den Marker. Sie sind konservativ gesetzt: im Zweifel markiert statt
-stillschweigend durchgewunken.
+**Was noch aussteht: die QA.** Die Befunde stammen aus dem Lesen des Codes, nicht aus dem
+Prüfen. `sdd-qa` weist jedes Kriterium einzeln nach — das ist der Schritt, der aus
+„beschrieben" ein „belegt" macht.
 
 ## Prüfreihenfolge
 
@@ -64,56 +66,22 @@ wer mit der Darstellung anfängt, prüft zuletzt, was zuerst brennen kann.
 | 7 | B03, B10, B11 | nehmen Eingaben entgegen und schreiben Dateien |
 | 8 | B13, B07, B15 | geringstes Risiko |
 
-## Befunde aus der Rückerfassung
+## Befunde
 
-**89 Einträge unter *Fehlbestand*** über alle Specs, jeder mit Fundstelle und Folge. Hier
-stehen nur die, die über ein einzelnes Feature hinausreichen oder Daten betreffen. Die
-Grade sind **vorläufig** — gesetzt beim Lesen, nicht beim Prüfen. `sdd-qa` bewertet neu und
-schreibt nach `features/befunde.md` fort.
-
-### Datenverlust und Datenverbleib
-
-| Befund | Feature | Grad (vorläufig) | Kern |
-|---|---|---|---|
-| Auto-Save schreibt **vor** dem Editor, also immer das unzensierte Original | B04, B09 | **hoch** | wer ein Passwort verpixelt und exportiert, hat das Original weiter in `~/Pictures/MikaScreenSnap/` |
-| Angeheftete Bilder werden nie gelöscht, geschlossene kehren zurück | B08 | **hoch** | unsichtbarer, unbegrenzt wachsender Ablageort, in der Anwendung nicht leerbar |
-| Dateiname mit Sekundengenauigkeit, Schreiben ohne Prüfung | B03, B09 | mittel | zwei Aufnahmen in derselben Sekunde → eine Datei |
-| Fehlgeschlagenes Sichern schließt den Editor trotzdem und meldet nichts | B03, B09 | mittel | stiller Datenverlust |
-| Anheften ignoriert die Einstellung zum automatischen Sichern | B08 | mittel | eine ausdrückliche Nutzerentscheidung wird übergangen |
-
-### Zusagen, die nicht eingelöst werden
+Vollständig in `features/befunde.md`. Die drei schwersten, alle in 3.5.0 behoben:
 
 | Befund | Feature | Grad | Kern |
 |---|---|---|---|
-| Zwischenablage ohne Vertraulichkeitskennzeichnung | B03, B05, B06 | mittel | bei geräteübergreifender Zwischenablage trägt **macOS** Bild und erkannten Text zu anderen Geräten — die einzige Einschränkung der Zusage „kein Byte verlässt den Rechner" |
-| Zensurstärke fest und nicht auflösungsbezogen; Weichzeichnen ohne Kantenfortsetzung | B04 | mittel | am Rand eines weichgezeichneten Bereichs bleibt mehr Originalinformation stehen |
-| Palette wird befüllt und nirgends angezeigt | B06 | mittel | im README beworben, aus Nutzersicht wirkungslos |
-| Ausschlussliste nicht nachprüfbar, nur laufende Programme wählbar | B02 | mittel | eine Zusage ohne Kontrollmöglichkeit; Passwortmanager nicht vorbeugend ausschließbar |
-| Vier Einstellungsschlüssel ohne jeden Leser | B11, B12 | mittel | `floatingPreviewEnabled`, `previewDismissDuration`, `showToolbarLabels`, `permissionSkipped` |
-| README und CHANGELOG beschreiben die Einstellungen als dunkel und markenfarben | B11 | mittel | der Code ist seit `a43683a` systemnativ |
-| CHANGELOG 3.3.1 sagt, die Update-Schaltfläche werde deaktiviert | B14 | niedrig | `canCheckForUpdates` ist toter Code |
+| Auto-Save schrieb vor dem Editor, also immer das unzensierte Original | B04, B09 | hoch | wer ein Passwort verpixelte und exportierte, hatte das Original weiter im Verlaufsordner |
+| Angeheftete Bilder wurden nie gelöscht, geschlossene kehrten zurück | B08 | hoch | ein unsichtbarer, unbegrenzt wachsender Ablageort |
+| Ereignisbehandler wurden bei jeder Neuanmeldung erneut installiert | B10, B11 | hoch | nach *n* Änderungen der Belegung löste ein Tastendruck *n+1* Aufnahmen aus |
 
-### Fehlverhalten mit Außenwirkung
-
-| Befund | Feature | Grad | Kern |
-|---|---|---|---|
-| Ereignisbehandler werden bei jeder Neuanmeldung erneut installiert | B10, B11 | **hoch** | nach *n* Änderungen der Belegung löst ein Tastendruck *n+1* Aufnahmen aus; *Reset All Preferences* nimmt denselben Weg |
-| Vollbild und Bereich rechnen immer gegen `displays.first` | B01 | mittel | auf Mehrschirm-Arbeitsplätzen falscher Bildschirm und falscher Ausschnitt — obwohl `ScreenGeometry` die Lösung enthält und der Fensterpfad sie benutzt |
-| Vollbild multipliziert die Pixelgröße fest mit 2 | B01 | mittel | falsche Auflösung bei Skalierung ≠ 2 |
-| Berechtigung wird nie angefordert, beim Erststart nicht einmal angestoßen | B12, B15, B01 | mittel | der Nutzer wird in eine Systemliste geschickt, in der die Anwendung noch nicht steht |
-| Leertaste doppelt belegt (Einheitenwechsel und Verschieben) | B07, B03 | niedrig | Messen und Verschieben lösen gleichzeitig aus |
-| Leeres OCR-Ergebnis bleibt stumm; die beiden OCR-Wege verhalten sich unterschiedlich | B05 | niedrig | Fehlschlag und Nichtstun sind nicht unterscheidbar |
-| Lupe zeigt einen eingefrorenen Bildschirm | B06 | niedrig | bewusste Entscheidung, aber nicht gekennzeichnet |
-
-### Projektweit
-
-| Befund | Grad | Kern |
-|---|---|---|
-| **Keine Tests** (`Tests/` fehlt) | mittel | betrifft alle 15 Features. Genau die Fehlerklasse, die 3.4.1 im Fensterpfad behoben hat, ist im Bereichs- und Vollbildpfad unbemerkt geblieben — sie wäre testbar gewesen |
-| Sechs `print()` in Fehlerpfaden | mittel | erreichen in einem Programm ohne Dock-Symbol niemanden |
-| Keine Schemaversion in den Benutzereinstellungen | niedrig | ein Formatwechsel verliert die Konfiguration unbemerkt |
-| Rücksetzliste von Hand gepflegt | niedrig | Farbverlauf, Palette und Sparkles Schlüssel überstehen *Reset All Preferences* |
-| Kein Weg zur Projektseite aus der Anwendung | niedrig | bei „keine Fehlerberichte" als Erfolgskriterium bemerkenswert |
+Das aufschlussreichste Muster: **Ein Fehler wurde einmal behoben und blieb an drei anderen
+Stellen stehen.** 3.4.1 korrigierte Displaywahl und Skalierung für Fensteraufnahmen;
+Vollbild, Bereich und Texterkennung behielten `displays.first` und `NSScreen.main` — obwohl
+die Anwendung mit `ScreenGeometry` die richtige Umrechnung bereits besaß. Ursache waren die
+fehlenden Tests: Eine Prüfung der Koordinatenrechnung hätte alle vier Stellen zugleich
+erfasst. Sie existiert jetzt.
 
 ## Nächster Schritt
 
@@ -121,8 +89,13 @@ schreibt nach `features/befunde.md` fort.
 /sdd-qa B01
 ```
 
-Findet die QA nichts, geht das Feature auf `deployed` mit Auditvermerk — ausgeliefert wird
-nichts, der Code läuft ja. Ein kritischer oder hoher Befund **unterbricht** die Reihe, bis
-die Reparatur draußen ist; mittlere und niedrige sammeln sich in `features/befunde.md`.
+In der Prüfreihenfolge oben. Findet die QA nichts, geht das Feature auf `deployed` mit
+Auditvermerk — ausgeliefert wird nichts, der Code läuft ja. Ein kritischer oder hoher
+Befund unterbricht die Reihe, bis die Reparatur draußen ist.
 
-Nach allen fünfzehn: `/sdd-erfassen abschluss` für den Auditbericht.
+Nach allen fünfzehn: `/sdd-erfassen abschluss` für den Auditbericht, dessen Eingabe
+`features/befunde.md` ist.
+
+**Zur Auslieferung von 3.5.0** siehe die Reihenfolge in `README.md` unter *Auto-Update* —
+Version, Bau, Beglaubigung, GitHub-Release, Signatur über das geladene DMG, dann der
+Appcast-Eintrag als letzter Schritt. Und `main:master` mitpushen.
