@@ -96,6 +96,13 @@ enum HotkeyAction: String, CaseIterable, Sendable {
 @MainActor
 final class HotkeyManager {
     nonisolated(unsafe) private var hotKeyRefs: [EventHotKeyRef?] = []
+
+    /// Installed once and kept, so re-binding cannot stack handlers.
+    ///
+    /// `registerHotkeys()` used to install a fresh handler on every call — from `init` and
+    /// from every `reRegisterAll` — with nothing ever removing them. After n rebinds a
+    /// single keypress fired the action n+1 times.
+    nonisolated(unsafe) private var eventHandlerRef: EventHandlerRef?
     private var onFullScreen: @MainActor () -> Void
     private var onArea: @MainActor () -> Void
     private var onWindow: @MainActor () -> Void
@@ -156,6 +163,9 @@ final class HotkeyManager {
                 UnregisterEventHotKey(ref)
             }
         }
+        if let handler = eventHandlerRef {
+            RemoveEventHandler(handler)
+        }
     }
 
     // MARK: - Public
@@ -199,6 +209,14 @@ final class HotkeyManager {
     }
 
     private func registerHotkeys() {
+        installEventHandlerIfNeeded()
+        registerBindings()
+    }
+
+    /// Installs the Carbon handler exactly once per manager.
+    private func installEventHandlerIfNeeded() {
+        guard eventHandlerRef == nil else { return }
+
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
 
         let handler: EventHandlerUPP = { _, event, _ -> OSStatus in
@@ -231,8 +249,16 @@ final class HotkeyManager {
             return noErr
         }
 
-        InstallEventHandler(GetApplicationEventTarget(), handler, 1, &eventType, nil, nil)
+        var installed: EventHandlerRef?
+        let status = InstallEventHandler(GetApplicationEventTarget(), handler, 1, &eventType, nil, &installed)
+        if status == noErr {
+            eventHandlerRef = installed
+        } else {
+            CaptureLog.hotkey.error("Failed to install hotkey handler: \(status)")
+        }
+    }
 
+    private func registerBindings() {
         for action in HotkeyAction.allCases {
             guard let binding = currentBindings[action] else { continue }
             var ref: EventHotKeyRef?

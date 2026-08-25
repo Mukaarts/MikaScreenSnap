@@ -50,6 +50,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Restore pinned screenshots
         PinnedScreenshotManager.restorePins(appState: appState)
 
+        // Let the updater ask before it closes an editor holding unsaved annotations.
+        appState.sparkleUpdater.hasUnsavedWork = { [weak appState] in
+            appState?.annotationEditorController?.hasUnsavedChanges ?? false
+        }
+
         hotkeyManager = HotkeyManager(
             onFullScreen: { [weak self] in
                 guard let self else { return }
@@ -77,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onMeasure: { [weak self] in
                 guard let self else { return }
-                self.appState.captureEngine.startMeasurement(appState: self.appState)
+                self.appState.captureEngine.startMeasurement()
             },
             onHistory: { [weak self] in
                 guard let self else { return }
@@ -145,6 +150,9 @@ struct MikaScreenSnapApp: App {
         return NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Mika+ScreenSnap")!
     }()
 
+    /// Checked when the menu is built, so the entry reflects the current answer.
+    private var hasScreenRecordingAccess: Bool { CGPreflightScreenCaptureAccess() }
+
     var body: some Scene {
         MenuBarExtra {
             Button("About Mika+ScreenSnap") {
@@ -156,7 +164,8 @@ struct MikaScreenSnapApp: App {
             Button("Check for Updates...") {
                 appDelegate.appState.sparkleUpdater.checkForUpdates()
             }
-            if !CGPreflightScreenCaptureAccess() {
+            .disabled(!appDelegate.appState.sparkleUpdater.canCheckForUpdates)
+            if !hasScreenRecordingAccess {
                 Button("\u{26A0} Screen Recording not granted") {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
                         NSWorkspace.shared.open(url)
@@ -165,23 +174,28 @@ struct MikaScreenSnapApp: App {
             }
             Divider()
 
-            // Capture Section
+            // Capture Section — disabled without the permission they all need, so the
+            // path to granting it no longer runs through a failed attempt.
             Button("Capture Area  \u{2303}\u{21E7}\u{2318}4") {
                 appDelegate.appState.captureEngine.startAreaSelection(appState: appDelegate.appState)
             }
+            .disabled(!hasScreenRecordingAccess)
             Button("Capture Full Screen  \u{2303}\u{21E7}\u{2318}3") {
                 Task {
                     await appDelegate.appState.captureEngine.captureFullScreen(appState: appDelegate.appState)
                 }
             }
+            .disabled(!hasScreenRecordingAccess)
             Button("Capture Window\u{2026}") {
                 appDelegate.appState.captureEngine.startWindowSelection(appState: appDelegate.appState)
             }
+            .disabled(!hasScreenRecordingAccess)
             Button("Capture Frontmost Window  \u{2303}\u{21E7}\u{2318}5") {
                 Task {
                     await appDelegate.appState.captureEngine.captureWindow(appState: appDelegate.appState)
                 }
             }
+            .disabled(!hasScreenRecordingAccess)
 
             Divider()
 
@@ -189,12 +203,15 @@ struct MikaScreenSnapApp: App {
             Button("Capture Text  \u{21E7}\u{2318}6") {
                 appDelegate.appState.captureEngine.startTextCapture(appState: appDelegate.appState)
             }
+            .disabled(!hasScreenRecordingAccess)
             Button("Pick Color  \u{21E7}\u{2318}7") {
                 appDelegate.appState.captureEngine.startColorPicker(appState: appDelegate.appState)
             }
+            .disabled(!hasScreenRecordingAccess)
             Button("Measure  \u{21E7}\u{2318}8") {
-                appDelegate.appState.captureEngine.startMeasurement(appState: appDelegate.appState)
+                appDelegate.appState.captureEngine.startMeasurement()
             }
+            .disabled(!hasScreenRecordingAccess)
 
             Divider()
 
@@ -222,9 +239,7 @@ struct MikaScreenSnapApp: App {
                 } else {
                     ForEach(appDelegate.appState.colorHistory.recentColors, id: \.self) { hex in
                         Button {
-                            let pb = NSPasteboard.general
-                            pb.clearContents()
-                            pb.setString(hex, forType: .string)
+                            ClipboardManager.copyToClipboard(text: hex, concealed: false)
                         } label: {
                             HStack {
                                 Circle()
@@ -234,6 +249,36 @@ struct MikaScreenSnapApp: App {
                                     .font(.system(.body, design: .monospaced))
                             }
                         }
+                    }
+                    Divider()
+                    Button("Clear History") {
+                        appDelegate.appState.colorHistory.clearHistory()
+                    }
+                }
+            }
+
+            // Palette — the shift-click target. It was persisted but never shown
+            // anywhere, so shift-clicking was indistinguishable from a plain click.
+            Menu("Colour Palette") {
+                if appDelegate.appState.colorHistory.palette.isEmpty {
+                    Text("Shift-click the picker to add a colour")
+                } else {
+                    ForEach(appDelegate.appState.colorHistory.palette, id: \.self) { hex in
+                        Button {
+                            ClipboardManager.copyToClipboard(text: hex, concealed: false)
+                        } label: {
+                            HStack {
+                                Circle()
+                                    .fill(Color(nsColor: ColorHistoryManager.colorFromHex(hex)))
+                                    .frame(width: 12, height: 12)
+                                Text(hex)
+                                    .font(.system(.body, design: .monospaced))
+                            }
+                        }
+                    }
+                    Divider()
+                    Button("Clear Palette") {
+                        appDelegate.appState.colorHistory.clearPalette()
                     }
                 }
             }
@@ -259,6 +304,7 @@ struct MikaScreenSnapApp: App {
                         sparkleUpdater: appDelegate.appState.sparkleUpdater,
                         historyManager: appDelegate.appState.historyManager,
                         hotkeyManager: appDelegate.hotkeyManager!,
+                        appState: appDelegate.appState,
                         onShowOnboarding: { [weak appDelegate] in
                             appDelegate?.showOnboarding()
                         }

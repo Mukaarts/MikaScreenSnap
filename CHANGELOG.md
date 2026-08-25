@@ -1,5 +1,92 @@
 # Changelog
 
+## [3.5.0] - 2026-08-25
+
+Everything here came out of the SDD reconstruction (#31, #32), which read the shipped code
+feature by feature and recorded what it actually did. Behaviour changes are listed as such.
+
+### Fixed — data that should not have survived
+
+- **Redacting no longer leaves the original on disk** — auto-save runs before the editor
+  opens, so the saved file was always the unedited capture. Blurring a password and
+  exporting left the readable original in `~/Pictures/MikaScreenSnap/`. Every export now
+  replaces that file, and a capture carrying a blur or pixelate region is replaced even if
+  the editor is closed without exporting
+- **Pinned screenshots are deleted when closed** — closing a pin only hid the window. The
+  PNG stayed in `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/` forever,
+  the twenty-pin limit applied only to open windows, and `restorePins` sorted filenames
+  ascending — so it restored the *oldest* twenty and a deliberately closed pin could come
+  back. Restoration is now newest-first, surplus files are removed, and Preferences shows
+  and can clear this storage
+- **Two captures in the same second no longer overwrite each other** — filenames carried
+  only second precision and were written without checking for an existing file
+- **Blur no longer weakens at the edges** — the filter ran on the cropped region without
+  clamping, so it mixed the border with transparent space outside it and left text sitting
+  on that border far less blurred than the middle
+- **Redaction strength scales with the region** — a fixed 15px radius and 10px block hid
+  progressively less the larger the capture
+
+### Fixed — failures that reached nobody
+
+- **A failed save is reported** — six `print()` calls survived in error paths (OCR,
+  launch-at-login, save, auto-save, pin limit). In an `LSUIElement` bundle they reach
+  nobody, so a screenshot that failed to save vanished without a word
+- **One keypress fires one capture again** — `registerHotkeys()` installed a Carbon event
+  handler on every call, from `init` and from every re-binding, and nothing ever removed
+  one. After *n* re-binds a single shortcut fired *n+1* captures; "Reset All Preferences"
+  took the same path without the user touching a shortcut
+- **Empty OCR results say so** — recognising nothing produced silence, indistinguishable
+  from the feature not firing
+- **Launch at Login reports failures**, and its switch now shows the system's state rather
+  than the one that was asked for
+
+### Fixed — multi-display
+
+- **Full screen captures the display the pointer is on**, not whichever one
+  ScreenCaptureKit listed first
+- **Area captures compute against the display they were drawn on** — the crop was measured
+  against the first display, so a selection on a second screen produced the wrong region
+- **Scale comes from the capture filter** — full screen multiplied by a hard-coded 2, and
+  area capture used `NSScreen.main`, which follows the key window rather than the pointer
+
+### Changed
+
+- **⌘S saves to the configured folder in the configured format.** It used to write a PNG
+  to the Desktop regardless of both settings, and overwrote the clipboard as a side effect.
+  If auto-save already wrote the capture, ⌘S updates that file instead of creating a second
+  one. ⇧⌘S still asks where to put it
+- **The measurement tool toggles px/pt with `U`, not space** — inside the editor space is
+  the pan modifier and both fired at once
+- **Onboarding asks the system for the permission** via `CGRequestScreenCaptureAccess`
+  instead of only ever checking it. The app was never registered with the system, so the
+  Screen Recording list a user was sent to could not contain it yet
+- **Capture menu entries are disabled without the permission** rather than failing when used
+- **Launch at Login is no longer pre-ticked** in onboarding; it reflects the current state
+- **Recognised text is marked as concealed** on the pasteboard, so clipboard managers leave
+  it alone
+- Default stroke width is 4 — it was 3, which Preferences did not offer
+
+### Added
+
+- **Colour palette in the menubar** — shift-clicking the picker filled a palette that no
+  view ever displayed. Both palette and history can now be cleared
+- **Exclude apps that are not running** — "Add App…" picks a bundle from disk, so a
+  password manager can be excluded before it is opened
+- **Pinned-screenshot storage in Preferences** — size and a way to clear it
+- **"Show toolbar labels" works** — it was offered in Preferences and read by nothing
+- **Updates ask before discarding unsaved annotations** — Sparkle now has a delegate that
+  can postpone the relaunch
+- **A test suite** (`swift test`) — 28 tests over the arithmetic that had no coverage:
+  multi-display coordinates, hotkey encoding, colour conversion, redaction strength and
+  filename collisions
+
+### Removed
+
+- **"Floating preview" and its dismiss duration** — stored, loaded, reset and offered in
+  Preferences, but read by nothing. A preview window was never built; it belongs in a
+  feature of its own rather than as a switch that does nothing
+- `permissionSkipped` — written by onboarding and read by nobody
+
 ## [3.4.1] - 2026-08-09
 
 ### Fixed

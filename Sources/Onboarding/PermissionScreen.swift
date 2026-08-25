@@ -42,11 +42,9 @@ struct PermissionScreen: View {
 
             if !granted {
                 Button {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                        NSWorkspace.shared.open(url)
-                    }
+                    requestAccess()
                 } label: {
-                    Text("Open System Settings")
+                    Text("Grant Access")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.white)
                         .frame(width: 200, height: 40)
@@ -60,7 +58,6 @@ struct PermissionScreen: View {
 
             if !granted {
                 Button("Skip for now") {
-                    preferences.permissionSkipped = true
                     onNext()
                 }
                 .buttonStyle(.plain)
@@ -87,6 +84,26 @@ struct PermissionScreen: View {
         }
         .onDisappear {
             autoAdvanceTask?.cancel()
+        }
+    }
+
+    /// Asks the system for the permission, then opens Settings.
+    ///
+    /// Only ever preflighting the permission meant the system never listed the app, so a
+    /// user following this screen could arrive at a Screen Recording list the app was not
+    /// in yet. `CGRequestScreenCaptureAccess` registers it and shows the system prompt;
+    /// Settings is opened afterwards because macOS does not re-prompt once the answer has
+    /// been given.
+    private func requestAccess() {
+        Task {
+            let granted = await Task.detached { CGRequestScreenCaptureAccess() }.value
+            if granted {
+                self.granted = true
+                return
+            }
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 }

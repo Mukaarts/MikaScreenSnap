@@ -14,6 +14,12 @@ final class PinnedScreenshotPanel: NSPanel {
     private var closeButton: NSButton?
     fileprivate weak var appState: AppState?
 
+    /// The file this pin was persisted to, so closing can delete it again.
+    ///
+    /// Without it a closed pin left its PNG behind in Application Support forever and
+    /// came back on the next launch.
+    var persistedURL: URL?
+
     init(image: NSImage, appState: AppState) {
         self.image = image
         self.appState = appState
@@ -123,8 +129,11 @@ final class PinnedScreenshotPanel: NSPanel {
     }
 
     @objc private func closePanel() {
-        appState?.pinnedPanels.removeAll { $0 === self }
-        orderOut(nil)
+        guard let appState else {
+            orderOut(nil)
+            return
+        }
+        PinnedScreenshotManager.unpinPanel(self, appState: appState)
     }
 
     // MARK: - Context Menu
@@ -136,7 +145,7 @@ final class PinnedScreenshotPanel: NSPanel {
         copyItem.target = self
         menu.addItem(copyItem)
 
-        let saveItem = NSMenuItem(title: "Save to Desktop", action: #selector(saveImage), keyEquivalent: "")
+        let saveItem = NSMenuItem(title: "Save to Folder", action: #selector(saveImage), keyEquivalent: "")
         saveItem.target = self
         menu.addItem(saveItem)
 
@@ -172,7 +181,12 @@ final class PinnedScreenshotPanel: NSPanel {
     }
 
     @objc private func saveImage() {
-        ClipboardManager.saveToDesktop(image)
+        guard let prefs = appState?.preferences else {
+            CaptureLog.report("No preferences available", message: "Could not save screenshot")
+            return
+        }
+        guard prefs.saveImage(image) != nil else { return }
+        StatusToast.show("Saved to \(prefs.saveLocation.lastPathComponent)")
     }
 
     @objc private func openInEditor() {

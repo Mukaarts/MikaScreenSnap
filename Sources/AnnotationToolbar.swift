@@ -12,6 +12,10 @@ struct AnnotationToolbarView: View {
     var onExtractText: (() -> Void)? = nil
     var onPin: (() -> Void)? = nil
 
+    /// Honours the "Show toolbar labels" preference, which was offered in Preferences but
+    /// read by nothing.
+    var showLabels: Bool = false
+
     private let presetColors: [NSColor] = [
         .systemRed, .systemBlue, .systemGreen, .yellow, .white, .black,
     ]
@@ -56,7 +60,7 @@ struct AnnotationToolbarView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .frame(height: 50)
+        .frame(height: showLabels ? 60 : 50)
         .background(.ultraThinMaterial)
     }
 
@@ -98,8 +102,17 @@ struct AnnotationToolbarView: View {
             store.selectedTool = tool
             onToolChanged()
         } label: {
-            Image(systemName: tool.systemImage)
-                .frame(width: 28, height: 28)
+            if showLabels {
+                VStack(spacing: 1) {
+                    Image(systemName: tool.systemImage)
+                    Text(tool.label)
+                        .font(.system(size: 9))
+                }
+                .frame(minWidth: 40, minHeight: 34)
+            } else {
+                Image(systemName: tool.systemImage)
+                    .frame(width: 28, height: 28)
+            }
         }
         .buttonStyle(.plain)
         .background(

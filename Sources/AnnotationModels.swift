@@ -871,14 +871,22 @@ final class BlurAnnotation: Annotation {
 
     var bounds: CGRect { rect }
 
+    /// Blur strength as a fraction of the redacted region's shorter side.
+    ///
+    /// A fixed pixel radius is weaker the larger the image: 15px hides little on a Retina
+    /// capture where text is twice as tall.
+    static func radius(for rect: CGRect) -> CGFloat {
+        max(15.0, min(rect.width, rect.height) * 0.25)
+    }
+
     init(
         id: UUID = UUID(),
         rect: CGRect,
-        radius: CGFloat = 15.0
+        radius: CGFloat? = nil
     ) {
         self.id = id
         self.rect = rect
-        self.radius = radius
+        self.radius = radius ?? BlurAnnotation.radius(for: rect)
     }
 
     func contains(_ point: CGPoint) -> Bool {
@@ -895,8 +903,12 @@ final class BlurAnnotation: Annotation {
         guard let cropped = baseImage.cropping(to: clampedRect) else { return }
 
         let ciImage = CIImage(cgImage: cropped)
+
+        // Clamp before blurring: without it the filter mixes the edges with transparent
+        // space outside the crop, so the border of a redacted region ends up far less
+        // blurred than its middle — and text sitting on that border stays readable.
         guard let filter = CIFilter(name: "CIGaussianBlur") else { return }
-        filter.setValue(ciImage, forKey: kCIInputImageKey)
+        filter.setValue(ciImage.clampedToExtent(), forKey: kCIInputImageKey)
         filter.setValue(radius, forKey: kCIInputRadiusKey)
 
         let ciContext = CIContext()
@@ -916,6 +928,7 @@ final class BlurAnnotation: Annotation {
 
     func resized(from oldBounds: CGRect, to newBounds: CGRect) {
         rect = mapRect(rect, from: oldBounds, to: newBounds)
+        radius = BlurAnnotation.radius(for: rect)
     }
 
     func snapshot() -> AnnotationSnapshot {
@@ -950,14 +963,20 @@ final class PixelateAnnotation: Annotation {
 
     var bounds: CGRect { rect }
 
+    /// Block size as a fraction of the redacted region's shorter side, for the same
+    /// reason as `BlurAnnotation.radius(for:)`.
+    static func blockSize(for rect: CGRect) -> CGFloat {
+        max(10.0, min(rect.width, rect.height) * 0.12)
+    }
+
     init(
         id: UUID = UUID(),
         rect: CGRect,
-        blockSize: CGFloat = 10.0
+        blockSize: CGFloat? = nil
     ) {
         self.id = id
         self.rect = rect
-        self.blockSize = blockSize
+        self.blockSize = blockSize ?? PixelateAnnotation.blockSize(for: rect)
     }
 
     func contains(_ point: CGPoint) -> Bool {
@@ -999,6 +1018,7 @@ final class PixelateAnnotation: Annotation {
 
     func resized(from oldBounds: CGRect, to newBounds: CGRect) {
         rect = mapRect(rect, from: oldBounds, to: newBounds)
+        blockSize = PixelateAnnotation.blockSize(for: rect)
     }
 
     func snapshot() -> AnnotationSnapshot {

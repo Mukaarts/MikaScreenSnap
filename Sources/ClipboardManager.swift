@@ -1,6 +1,7 @@
 import AppKit
 import UniformTypeIdentifiers
 
+@MainActor
 enum ClipboardManager {
     static func copyToClipboard(_ image: NSImage) {
         let pasteboard = NSPasteboard.general
@@ -8,20 +9,18 @@ enum ClipboardManager {
         pasteboard.writeObjects([image])
     }
 
-    @discardableResult
-    static func saveToDesktop(_ image: NSImage) -> URL? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        let timestamp = formatter.string(from: Date())
-        let filename = "MikaSnap_\(timestamp).png"
-
-        let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
-        let fileURL = desktopURL.appendingPathComponent(filename)
-
-        if saveToFile(image, url: fileURL) {
-            return fileURL
+    /// Puts text on the pasteboard, marked so clipboard managers and history tools leave
+    /// it alone.
+    ///
+    /// Recognised text can be a password that happened to sit inside the selected region.
+    static func copyToClipboard(text: String, concealed: Bool) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        if concealed {
+            // Convention honoured by clipboard managers (nspasteboard.org).
+            pasteboard.setString("", forType: NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType"))
         }
-        return nil
     }
 
     @discardableResult
@@ -29,7 +28,7 @@ enum ClipboardManager {
         guard let tiffData = image.tiffRepresentation,
               let bitmapRep = NSBitmapImageRep(data: tiffData),
               let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
-            print("Failed to create PNG data")
+            CaptureLog.report("Could not encode image as PNG", message: "Could not save screenshot")
             return false
         }
 
@@ -37,7 +36,7 @@ enum ClipboardManager {
             try pngData.write(to: url)
             return true
         } catch {
-            print("Failed to save image: \(error)")
+            CaptureLog.report(error, action: "Saving screenshot")
             return false
         }
     }

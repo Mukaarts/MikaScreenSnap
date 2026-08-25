@@ -18,6 +18,8 @@ struct HistoryItem: Identifiable, Sendable {
 @Observable
 @MainActor
 final class ScreenshotHistoryManager {
+    static let imageExtensions: Set<String> = ["png", "jpg", "jpeg"]
+
     private(set) var items: [HistoryItem] = []
     private let preferences: AppPreferences
 
@@ -28,10 +30,15 @@ final class ScreenshotHistoryManager {
 
     // MARK: - Auto-Save
 
-    func autoSave(_ image: NSImage) {
-        guard preferences.autoSaveEnabled else { return }
+    /// Saves a fresh capture and returns the file it wrote.
+    ///
+    /// The caller keeps the URL so the editor can replace the file with the edited image —
+    /// auto-save runs before the editor opens, so what lands here is the untouched original.
+    @discardableResult
+    func autoSave(_ image: NSImage) -> URL? {
+        guard preferences.autoSaveEnabled else { return nil }
 
-        guard let savedURL = preferences.saveImage(image) else { return }
+        guard let savedURL = preferences.saveImage(image) else { return nil }
 
         // Generate thumbnail
         let thumbnailURL = generateThumbnail(for: image, originalURL: savedURL)
@@ -46,6 +53,25 @@ final class ScreenshotHistoryManager {
             pixelHeight: cgImage?.height ?? Int(image.size.height)
         )
         items.insert(item, at: 0)
+        return savedURL
+    }
+
+    /// Replaces an already-saved capture with its edited version and refreshes its entry.
+    func replaceSaved(at url: URL, with image: NSImage) {
+        guard preferences.overwrite(url, with: image) else { return }
+
+        let thumbnailURL = generateThumbnail(for: image, originalURL: url)
+        let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+
+        guard let index = items.firstIndex(where: { $0.url == url }) else { return }
+        items[index] = HistoryItem(
+            id: items[index].id,
+            url: url,
+            thumbnailURL: thumbnailURL ?? url,
+            date: Date(),
+            pixelWidth: cgImage?.width ?? Int(image.size.width),
+            pixelHeight: cgImage?.height ?? Int(image.size.height)
+        )
     }
 
     // MARK: - Load History
@@ -62,7 +88,7 @@ final class ScreenshotHistoryManager {
 
         let imageFiles = files.filter { url in
             let ext = url.pathExtension.lowercased()
-            return ext == "png" || ext == "jpg" || ext == "jpeg"
+            return ScreenshotHistoryManager.imageExtensions.contains(ext)
         }
 
         let thumbnailDir = saveDir.appendingPathComponent(".thumbnails", isDirectory: true)
@@ -96,24 +122,42 @@ final class ScreenshotHistoryManager {
 
     // MARK: - Clear All
 
+    /// Deletes every capture in the save location, not just the ones currently listed.
+    ///
+    /// Files that were not picked up at launch used to survive "Clear History" while the
+    /// user was told everything had been deleted.
     func clearAll() {
         let fm = FileManager.default
-        for item in items {
-            try? fm.removeItem(at: item.url)
-            try? fm.removeItem(at: item.thumbnailURL)
+        let saveDir = preferences.saveLocation
+
+        if let files = try? fm.contentsOfDirectory(
+            at: saveDir,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        ) {
+            for url in files where ScreenshotHistoryManager.imageExtensions.contains(url.pathExtension.lowercased()) {
+                try? fm.removeItem(at: url)
+            }
         }
-        let thumbnailDir = preferences.saveLocation.appendingPathComponent(".thumbnails", isDirectory: true)
+
+        let thumbnailDir = saveDir.appendingPathComponent(".thumbnails", isDirectory: true)
         try? fm.removeItem(at: thumbnailDir)
         items.removeAll()
     }
 
+    /// Bytes used by captures **and** their thumbnails.
+    ///
+    /// Thumbnails used to be left out, so the figure shown in Preferences was always too
+    /// small.
     func storageUsage() -> Int64 {
         let fm = FileManager.default
         var total: Int64 = 0
         for item in items {
-            if let attrs = try? fm.attributesOfItem(atPath: item.url.path),
-               let size = attrs[.size] as? Int64 {
-                total += size
+            for url in [item.url, item.thumbnailURL] where fm.fileExists(atPath: url.path) {
+                if let attrs = try? fm.attributesOfItem(atPath: url.path),
+                   let size = attrs[.size] as? Int64 {
+                    total += size
+                }
             }
         }
         return total

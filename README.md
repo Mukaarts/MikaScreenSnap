@@ -1,4 +1,4 @@
-# Mika+ScreenSnap v3.4.1
+# Mika+ScreenSnap v3.5.0
 
 A lightweight macOS menubar screenshot tool with a professional annotation editor and power features. Capture your screen, annotate it with 11 tools, extract text via OCR, pick colors, measure pixels, pin screenshots, and manage your history — all without leaving your workflow.
 
@@ -6,8 +6,9 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 
 - **First Launch Onboarding** — guided setup for permissions, shortcuts, and launch-at-login
 - **Launch at Login** — optional auto-start at macOS login (Preferences > General)
-- **Preferences** — dark-themed four-tab window (General, Shortcuts, Annotation, Advanced) with customizable hotkeys, annotation defaults, storage management, and reset
+- **Preferences** — four-tab window in the native System Settings layout (General, Shortcuts, Annotation, Advanced) with customizable hotkeys, annotation defaults, app exclusions, storage management, and reset
 - **Menubar App** — lives in your menubar, no Dock icon
+- **Exclude apps from capture** — named apps never appear in any screenshot, OCR or colour sample; pick them from the running list or straight from disk
 - **Capture Modes**
   - Full Screen (`Ctrl+Shift+Cmd+3`)
   - Area Selection (`Ctrl+Shift+Cmd+4`)
@@ -30,11 +31,11 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 - **Color Picker**
   - `Shift+Cmd+7` — magnifying loupe follows cursor with 8x zoom
   - Click copies HEX to clipboard with toast notification
-  - Shift+Click adds to palette
-  - Color History submenu (last 10 colors)
+  - Shift+Click adds to the palette
+  - Color History and Colour Palette submenus in the menubar, both clearable
 - **Measurement Tool**
   - `Shift+Cmd+8` — fullscreen overlay with point-to-point and rectangle modes
-  - Guide lines, px/pt toggle (Space), coordinates display
+  - Guide lines, px/pt toggle (Space in the overlay, `U` in the editor), coordinates display
   - Also available as editor tool (`M` key) — non-destructive, not exported
 - **Pin Screenshot**
   - Float any screenshot as always-on-top panel
@@ -42,7 +43,7 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
   - Right-click menu: Copy, Save, Edit, Opacity, Close
   - Persistent across app restarts (max 20)
 - **Auto-Save & History**
-  - Screenshots auto-saved to ~/Pictures/MikaScreenSnap/
+  - Screenshots auto-saved to ~/Pictures/MikaScreenSnap/ — the saved file is replaced with the edited image when you export, so a redacted capture never leaves the original behind
   - History Browser (`Shift+Cmd+H`) with thumbnail grid and search
   - Configurable: folder, format (PNG/JPEG), quality
 - **Zoom & Pan**
@@ -51,7 +52,7 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
   - `Space+Drag` to pan
 - **Export**
   - Copy to clipboard (`Cmd+C`)
-  - Save to Desktop (`Cmd+S`)
+  - Save to the configured folder and format (`Cmd+S`) — updates the auto-saved file rather than adding a second one
   - Save As (`Shift+Cmd+S`)
   - Pin to screen
   - Escape: quick-capture (no annotations) or confirm dialog (with annotations)
@@ -88,7 +89,7 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 | `Cmd+Z` | Undo |
 | `Shift+Cmd+Z` | Redo |
 | `Cmd+C` | Copy & close |
-| `Cmd+S` | Save to Desktop & close |
+| `Cmd+S` | Save to the configured folder & close |
 | `Shift+Cmd+S` | Save As... |
 | `Cmd+=` / `Cmd+-` | Zoom in/out |
 | `Cmd+0` | Zoom to fit |
@@ -110,6 +111,15 @@ A lightweight macOS menubar screenshot tool with a professional annotation edito
 This compiles the project, assembles the `.app` bundle, embeds Sparkle.framework, and signs with hardened runtime.
 
 Use `./build.sh --clean` to clean the `.build/` directory before compiling.
+
+## Test
+
+```bash
+swift test
+```
+
+Covers the arithmetic that has no UI to catch it: multi-display capture coordinates,
+hotkey encoding, colour conversion, redaction strength and filename collisions.
 
 ## Install
 

@@ -51,7 +51,9 @@ final class MeasurementTool: DrawingTool {
     }
 
     func keyDown(event: NSEvent, canvas: AnnotationCanvasView) -> Bool {
-        if event.keyCode == 49 { // Space toggles px/pt
+        // "U" rather than space: inside the editor space is the pan modifier, and both
+        // used to fire at once — toggling the unit while starting a pan.
+        if event.charactersIgnoringModifiers?.lowercased() == "u" {
             showInPoints.toggle()
             canvas.needsDisplay = true
             return true

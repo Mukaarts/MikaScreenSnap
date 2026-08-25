@@ -18,6 +18,41 @@ final class AnnotationEditorWindowController {
     private var keyMonitor: Any?
     weak var appState: AppState?
 
+    /// The file auto-save already wrote for this capture, if any.
+    ///
+    /// Auto-save runs before the editor opens, so that file holds the *unedited* original.
+    /// Every path that produces a final image replaces it — otherwise redacting a password
+    /// and exporting would leave the unredacted capture sitting in the save folder.
+    var autoSavedURL: URL?
+
+    /// Whether the editor is open with changes that closing would throw away.
+    var hasUnsavedChanges: Bool {
+        window != nil && store.hasUnsavedChanges
+    }
+
+    /// True once the image carries a blur or pixelate region.
+    private var hasRedactions: Bool {
+        store.annotations.contains { $0.annotationType == .blur || $0.annotationType == .pixelate }
+    }
+
+    /// Renders the export image, replacing the auto-saved original on the way out.
+    private func finalImage() -> NSImage? {
+        guard let rendered = AnnotationRenderer.renderFinalImage(
+            baseImage: baseImage, annotations: store.annotations
+        ) else {
+            CaptureLog.report("Could not render annotated image", message: "Could not render screenshot")
+            return nil
+        }
+        replaceAutoSavedIfNeeded(with: rendered)
+        return rendered
+    }
+
+    /// Brings the auto-saved file in line with what the user actually produced.
+    private func replaceAutoSavedIfNeeded(with image: NSImage) {
+        guard let url = autoSavedURL, !store.annotations.isEmpty else { return }
+        appState?.historyManager.replaceSaved(at: url, with: image)
+    }
+
     init(image: NSImage, preferences: AppPreferences? = nil) {
         self.baseImage = image
         if let prefs = preferences {
@@ -62,7 +97,8 @@ final class AnnotationEditorWindowController {
             store: store,
             onToolChanged: { [weak self] in self?.canvasView?.toolChanged() },
             onExtractText: { [weak self] in self?.startOCRSelection() },
-            onPin: { [weak self] in self?.pinScreenshot() }
+            onPin: { [weak self] in self?.pinScreenshot() },
+            showLabels: appState?.preferences.showToolbarLabels ?? false
         )
         let toolbarHosting = NSHostingView(rootView: toolbarView)
         toolbarHosting.translatesAutoresizingMaskIntoConstraints = false
@@ -98,7 +134,9 @@ final class AnnotationEditorWindowController {
             toolbarHosting.topAnchor.constraint(equalTo: contentView.topAnchor),
             toolbarHosting.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             toolbarHosting.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            toolbarHosting.heightAnchor.constraint(equalToConstant: 50),
+            toolbarHosting.heightAnchor.constraint(
+                equalToConstant: (appState?.preferences.showToolbarLabels ?? false) ? 60 : 50
+            ),
 
             canvas.topAnchor.constraint(equalTo: toolbarHosting.bottomAnchor),
             canvas.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -259,12 +297,16 @@ final class AnnotationEditorWindowController {
         Task {
             do {
                 let text = try await OCREngine.recognizeText(in: cropped)
-                if !text.isEmpty {
-                    let resultPanel = OCRResultPanel(text: text)
-                    resultPanel.makeKeyAndOrderFront(nil)
+                guard !text.isEmpty else {
+                    StatusToast.show("No text found in selection")
+                    return
                 }
+                // Matches the ⇧⌘6 path, which copies straight away.
+                ClipboardManager.copyToClipboard(text: text, concealed: true)
+                let resultPanel = OCRResultPanel(text: text)
+                resultPanel.makeKeyAndOrderFront(nil)
             } catch {
-                print("OCR failed: \(error)")
+                CaptureLog.report(error, action: "Text recognition")
             }
         }
     }
@@ -274,48 +316,55 @@ final class AnnotationEditorWindowController {
     private func pinScreenshot() {
         guard let appState else { return }
 
-        let finalImage: NSImage
+        let image: NSImage
         if store.annotations.isEmpty {
-            finalImage = baseImage
+            image = baseImage
         } else {
-            guard let rendered = AnnotationRenderer.renderFinalImage(
-                baseImage: baseImage, annotations: store.annotations
-            ) else { return }
-            finalImage = rendered
+            guard let rendered = finalImage() else { return }
+            image = rendered
         }
 
-        _ = PinnedScreenshotManager.pinImage(finalImage, appState: appState)
+        _ = PinnedScreenshotManager.pinImage(image, appState: appState)
     }
 
     // MARK: - Actions
 
     private func copyToClipboard() {
-        guard let finalImage = AnnotationRenderer.renderFinalImage(
-            baseImage: baseImage, annotations: store.annotations
-        ) else { return }
-        ClipboardManager.copyToClipboard(finalImage)
+        guard let image = finalImage() else { return }
+        ClipboardManager.copyToClipboard(image)
         close()
     }
 
+    /// Saves into the configured folder, in the configured format.
+    ///
+    /// This used to write a PNG to the Desktop regardless of both settings, and to
+    /// overwrite the clipboard as a side effect. If auto-save already wrote this capture,
+    /// that file is updated rather than a second one created.
     private func save() {
-        guard let finalImage = AnnotationRenderer.renderFinalImage(
-            baseImage: baseImage, annotations: store.annotations
-        ) else { return }
-        ClipboardManager.copyToClipboard(finalImage)
-        ClipboardManager.saveToDesktop(finalImage)
+        guard let image = finalImage() else { return }
+
+        if autoSavedURL != nil {
+            close()
+            return
+        }
+
+        guard let prefs = appState?.preferences else {
+            CaptureLog.report("No preferences available", message: "Could not save screenshot")
+            return
+        }
+        guard prefs.saveImage(image) != nil else { return }
         close()
     }
 
     private func saveAs() {
-        guard let finalImage = AnnotationRenderer.renderFinalImage(
-            baseImage: baseImage, annotations: store.annotations
-        ) else { return }
+        guard let image = finalImage() else { return }
 
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.png]
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         let timestamp = formatter.string(from: Date())
         savePanel.nameFieldStringValue = "MikaSnap_annotated_\(timestamp).png"
 
@@ -323,7 +372,7 @@ final class AnnotationEditorWindowController {
         savePanel.beginSheetModal(for: win) { response in
             MainActor.assumeIsolated {
                 if response == .OK, let url = savePanel.url {
-                    ClipboardManager.saveToFile(finalImage, url: url)
+                    ClipboardManager.saveToFile(image, url: url)
                 }
             }
         }
@@ -356,6 +405,13 @@ final class AnnotationEditorWindowController {
     }
 
     private func close() {
+        // A redacted region must not survive as plain pixels in the auto-saved original,
+        // even when the user never exported.
+        if hasRedactions, let url = autoSavedURL,
+           let rendered = AnnotationRenderer.renderFinalImage(baseImage: baseImage, annotations: store.annotations) {
+            appState?.historyManager.replaceSaved(at: url, with: rendered)
+        }
+
         // Save last used tool if enabled
         if let prefs = appState?.preferences, prefs.rememberLastTool {
             prefs.defaultAnnotationTool = store.selectedTool.rawValue
