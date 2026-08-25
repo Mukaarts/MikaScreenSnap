@@ -34,6 +34,21 @@ open "build/Mika+ScreenSnap.app"
 - **SwiftUI in AppKit** — Toolbar and BottomBar are `NSHostingView` with `@Observable` store binding
 - **Onboarding flow** — `OnboardingWindowController` follows AboutWindowController pattern; SwiftUI `TabView` with paged navigation, conditional permission screen, live permission polling
 
+## SDD-Artefakte
+
+**Artefaktpfad: `docs/`** — alle `sdd-`-Skills lesen ihn hier.
+
+- `docs/prd.md` · `docs/datenmodell.md` · `docs/design-system.md` · `docs/app-shell.md`
+- `features/index.md` — Statustabelle aller Features, `features/NN-slug/` je Feature
+
+Das Projekt wurde am 2026-08-25 über `sdd-erfassen` rückwirkend erfasst. Alle 15 Features
+tragen das `B`-Präfix (`B01`…`B15`): Sie existierten vor der Kette und wurden nie gegen
+eine Anforderung gebaut. Ihre Specs sind Rekonstruktionen und können selbst falsch sein.
+
+Ein Bestandsfeature läuft **nie** durch `sdd-tasks` oder den regulären `sdd-build` — es
+ist gebaut. Wer ein `B`-Feature erweitern will, legt ein neues Feature mit eigener Nummer
+an, das unter *Abhängigkeiten* darauf verweist.
+
 ## File Organization
 
 All source files in `Sources/`, tools in `Sources/Tools/`, onboarding screens in `Sources/Onboarding/`, preferences tabs in `Sources/Preferences/`. Resources (Info.plist, entitlements) in `Resources/`. Build/distribution scripts in `scripts/`. Generated installer assets (DMGs, backgrounds) in `installer/` (gitignored except `.gitkeep`).
