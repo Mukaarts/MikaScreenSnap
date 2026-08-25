@@ -8,47 +8,46 @@ einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst falsch se
 
 | ID | Feature | Prio | Status | Abhängig von | Zuletzt |
 |---|---|---|---|---|---|
-| B01 | Bildschirmaufnahme | P0 | rekonstruiert | B02, B03, B09, B10, B12 | 2026-08-25 |
-| B02 | App-Ausschluss von Aufnahmen | P0 | rekonstruiert | B01, B11 | 2026-08-25 |
-| B03 | Anmerkungs-Editor | P0 | rekonstruiert | B01, B04, B05, B07, B08, B09, B11 | 2026-08-25 |
-| B04 | Bereiche zensieren | P0 | rekonstruiert | B01, B03, B09 | 2026-08-25 |
-| B05 | Bildschirmtext erfassen (OCR) | P1 | rekonstruiert | B01, B02, B03, B10 | 2026-08-25 |
-| B06 | Farbpipette | P1 | rekonstruiert | B01, B02, B10, B15 | 2026-08-25 |
-| B07 | Lineal / Bildschirm vermessen | P1 | rekonstruiert | B03, B10 | 2026-08-25 |
-| B08 | Screenshots anheften | P1 | rekonstruiert | B03, B09, B15 | 2026-08-25 |
-| B09 | Screenshot-Verlauf | P0 | rekonstruiert | B01, B03, B08, B11 | 2026-08-25 |
-| B10 | Tastenkombinationen | P0 | rekonstruiert | B01, B05, B06, B07, B09, B11 | 2026-08-25 |
-| B11 | Einstellungen | P0 | rekonstruiert | B02, B09, B10, B12, B13, B14 | 2026-08-25 |
-| B12 | Ersteinrichtung | P1 | rekonstruiert | B01, B11, B13 | 2026-08-25 |
-| B13 | Automatischer Start bei Login | P2 | rekonstruiert | B11, B12 | 2026-08-25 |
-| B14 | Automatische Updates | P1 | rekonstruiert | B11, B15 | 2026-08-25 |
-| B15 | Menüleisten-Hub & Programminfo | P0 | rekonstruiert | alle | 2026-08-25 |
+| B01 | Bildschirmaufnahme | P0 | approved | B02, B03, B09, B10, B12 | 2026-08-25 · QA bestanden |
+| B02 | App-Ausschluss von Aufnahmen | P0 | approved | B01, B11 | 2026-08-25 · QA bestanden |
+| B03 | Anmerkungs-Editor | P0 | approved | B01, B04, B05, B07, B08, B09, B11 | 2026-08-25 · QA bestanden |
+| B04 | Bereiche zensieren | P0 | approved | B01, B03, B09 | 2026-08-25 · QA bestanden |
+| B05 | Bildschirmtext erfassen (OCR) | P1 | approved | B01, B02, B03, B10 | 2026-08-25 · QA bestanden |
+| B06 | Farbpipette | P1 | approved | B01, B02, B10, B15 | 2026-08-25 · QA bestanden |
+| B07 | Lineal / Bildschirm vermessen | P1 | approved | B03, B10 | 2026-08-25 · QA bestanden |
+| B08 | Screenshots anheften | P1 | approved | B03, B09, B15 | 2026-08-25 · QA bestanden |
+| B09 | Screenshot-Verlauf | P0 | approved | B01, B03, B08, B11 | 2026-08-25 · QA bestanden |
+| B10 | Tastenkombinationen | P0 | approved | B01, B05, B06, B07, B09, B11 | 2026-08-25 · QA bestanden |
+| B11 | Einstellungen | P0 | approved | B02, B09, B10, B12, B13, B14 | 2026-08-25 · QA bestanden |
+| B12 | Ersteinrichtung | P1 | approved | B01, B11, B13 | 2026-08-25 · QA bestanden |
+| B13 | Automatischer Start bei Login | P2 | approved | B11, B12 | 2026-08-25 · QA bestanden |
+| B14 | Automatische Updates | P1 | approved | B11, B15 | 2026-08-25 · QA bestanden |
+| B15 | Menüleisten-Hub & Programminfo | P0 | approved | alle | 2026-08-25 · QA bestanden |
 
-**Alle fünfzehn Features sind rückerfasst.** Je Feature liegen `spec.md` und `design.md`
-vor. Nächster Schritt: `/sdd-qa B01` und so fort, in der Reihenfolge unten.
+**Alle fünfzehn Features sind rückerfasst und geprüft.** Je Feature liegen `spec.md`,
+`design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung von 3.5.0.
 
-## Stand der Rückerfassung
+## Stand
 
-Die Specs beschreiben, **was der Code tut**. Sie sind auf 3.5.0 nachgeführt: Alle Befunde
-der Erfassung sind entweder behoben oder mit Begründung und Datum akzeptiert, und alle
-markierten Kriterien sind entschieden.
-
-| | Erfassung (3.4.1) | Jetzt (3.5.0) |
+| | Erfassung (3.4.1) | Nach Reparatur und QA (3.5.0) |
 |---|---|---|
-| Einträge unter *Fehlbestand* | 89 | 0 offen — 23 behoben, 15 akzeptiert (zusammengefasst in `befunde.md`) |
+| Einträge unter *Fehlbestand* | 89 | 0 offen — 25 behoben, 15 akzeptiert (`befunde.md`) |
 | Kriterien mit ⚠ | 51 | 0 |
 | Offene Fragen in den Specs | 40 | 0 |
 | Offene Punkte im PRD | 6 | 0 |
-| Tests | keine | 28 |
+| Tests | keine | 59, alle grün |
+| Akzeptanzkriterien geprüft | — | 269: **124 bestanden, 0 durchgefallen, 145 nicht prüfbar** |
 
-Die vollständige Liste mit Fundstellen, Graden und Begründungen steht in
-`features/befunde.md`, einschließlich der Muster, die erst projektweit sichtbar wurden.
+**Die 145 nicht prüfbaren Kriterien sind kein Nebensatz.** Sie brauchen Mausereignisse,
+Fensterlebenszyklen, eine erteilte Bildschirmaufnahme-Berechtigung oder ein zweites
+Display — nichts davon war hier ausführbar. Sie stehen in den Berichten ausdrücklich
+**nicht** unter *bestanden*, und jeder Bericht endet mit einer benannten manuellen Auflage.
 
-**Was noch aussteht: die QA.** Die Befunde stammen aus dem Lesen des Codes, nicht aus dem
-Prüfen. `sdd-qa` weist jedes Kriterium einzeln nach — das ist der Schritt, der aus
-„beschrieben" ein „belegt" macht.
+Die vier wichtigsten davon stehen in `features/befunde.md` unter *Offen*. Ohne sie ist die
+Auslieferung nicht abgeschlossen — insbesondere B02/AK-03, die einzige Zugriffsregel der
+Anwendung.
 
-## Prüfreihenfolge
+## Reihenfolge der Prüfung (wie durchlaufen)
 
 **B01 → B02 → B04 → B09 → B05 → B06 → B08 → B14 → B12 → B03 → B10 → B11 → B13 → B07 → B15**
 
@@ -85,17 +84,20 @@ erfasst. Sie existiert jetzt.
 
 ## Nächster Schritt
 
-```
-/sdd-qa B01
-```
+**Auslieferung von 3.5.0.** Reihenfolge nach `README.md`, Abschnitt *Auto-Update*:
 
-In der Prüfreihenfolge oben. Findet die QA nichts, geht das Feature auf `deployed` mit
-Auditvermerk — ausgeliefert wird nichts, der Code läuft ja. Ein kritischer oder hoher
-Befund unterbricht die Reihe, bis die Reparatur draußen ist.
+1. `bash build.sh` — erledigt, Bundle liegt unter `build/`
+2. `bash scripts/notarize.sh` — **ausstehend und zwingend.** Nachgewiesen: Das gebaute DMG
+   ist ad-hoc signiert, und `spctl -a -vv -t install` antwortet
+   `rejected — source=no usable signature`. Auf einem fremden Rechner startet die Anwendung
+   damit nicht. Der Schritt braucht ein Notary-Profil im Schlüsselbund, das einmalig
+   interaktiv angelegt wird (`xcrun notarytool store-credentials`) — ein
+   app-spezifisches Passwort, das niemand außer dem Autor eingeben kann
+3. GitHub-Release mit dem beglaubigten DMG
+4. `sign_update` über das **von GitHub geladene** DMG
+5. `appcast.xml` ergänzen, mergen, `main:master` mitpushen
 
-Nach allen fünfzehn: `/sdd-erfassen abschluss` für den Auditbericht, dessen Eingabe
-`features/befunde.md` ist.
+Davor: die vier manuellen Prüfungen aus `features/befunde.md`.
 
-**Zur Auslieferung von 3.5.0** siehe die Reihenfolge in `README.md` unter *Auto-Update* —
-Version, Bau, Beglaubigung, GitHub-Release, Signatur über das geladene DMG, dann der
-Appcast-Eintrag als letzter Schritt. Und `main:master` mitpushen.
+Danach `/sdd-erfassen abschluss` für den Auditbericht und `/sdd-betrieb` für die Nachsorge —
+dessen Eingabe ist der Abschnitt *Muster* in `features/befunde.md`.
