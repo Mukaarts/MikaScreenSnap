@@ -101,8 +101,14 @@ Daraus folgen App-weite Regeln, die in jeder Feature-Spec konkretisiert werden:
 
 - **Kein Bildinhalt geht ins Log.** Weder Pixel, noch erkannter Text, noch Dateinamen
   mit erkennbarem Inhalt. `CaptureLog` protokolliert Fehler, keine Daten.
-- **Kein Bildinhalt verlässt das Gerät.** Nicht an Sparkle, nicht an einen Crash-Melder,
-  nirgendwohin. Jede künftige Funktion, die das bräuchte, hebt Stufe A auf.
+- **Kein Bildinhalt verlässt das Gerät — mit einer Einschränkung, die bei der
+  Rückerfassung gefunden wurde.** Die Anwendung selbst baut außer dem Sparkle-Update-Check
+  keine Verbindung auf. Sie legt jedoch Bilder, erkannten Text und Farbwerte in die
+  allgemeine Zwischenablage, ohne sie als vertraulich zu kennzeichnen. Ist die
+  geräteübergreifende Zwischenablage aktiviert, überträgt **macOS** diese Inhalte an die
+  anderen Geräte des Nutzers. Das ist keine Übertragung der Anwendung, aber eine Folge ihres
+  Verhaltens — und die Zusage muss so genau formuliert bleiben. Fundstellen und
+  Kriterien: B03/AK-33, B05/AK-17, B06/AK-16.
 - **Was der Nutzer unkenntlich macht, bleibt unkenntlich.** Ein verpixelter Bereich darf
   im Export nicht rekonstruierbar sein — und kein Nebenpfad darf das unbearbeitete
   Original ablegen, ohne dass die Person das weiß.
@@ -160,3 +166,12 @@ der Nummer.
 - **OF-04** (2026-08-25) — Es existieren **keine Tests** (`Tests/` fehlt). Für die
   Rückerfassung heißt das: Jedes Akzeptanzkriterium braucht in der QA einen manuellen
   Nachweis oder einen neu geschriebenen Test. Soll `swift test` als Ziel etabliert werden?
+- **OF-05** (2026-08-25, aus der Rückerfassung) — Soll die Zwischenablage als vertraulich
+  gekennzeichnet werden, damit erkannter Text und Screenshots nicht über die
+  geräteübergreifende Zwischenablage weitergereicht werden? Das ist die einzige Stelle, an
+  der Nutzerinhalte den Rechner verlassen können. Betrifft B03, B05 und B06.
+- **OF-06** (2026-08-25, aus der Rückerfassung) — Die Anwendung fordert die
+  Bildschirmaufnahme-Berechtigung nie an (`CGRequestScreenCaptureAccess` kommt nirgends
+  vor), und der Aufruf, der sie in die Systemliste einträgt, läuft beim Erststart nicht.
+  Soll das geändert werden? Betrifft B01, B12 und B15 und ist der wahrscheinlichste Grund
+  für einen misslungenen ersten Start.

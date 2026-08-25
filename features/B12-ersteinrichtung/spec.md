@@ -81,11 +81,13 @@ einsatzbereit — oder der Nutzer weiß zumindest, was ihm fehlt.
   sie **nie beim System angefordert** — es wird nur abgefragt und in die Systemeinstellungen
   verwiesen.
   *(Im gesamten Quelltext gibt es fünf Aufrufe von `CGPreflightScreenCaptureAccess()` und
-  **keinen einzigen** von `CGRequestScreenCaptureAccess()`. Folge: Der Systemdialog
-  erscheint nicht; die Anwendung wird erst dann in die Liste der Systemeinstellungen
-  eingetragen, wenn sie zum ersten Mal tatsächlich eine Aufnahme versucht. Ein Nutzer, der
-  im Einrichtungsablauf auf *Open System Settings* klickt, kann dort also vor einer Liste
-  stehen, in der die Anwendung noch gar nicht auftaucht. Zur Klärung vorgelegt.)*
+  **keinen einzigen** von `CGRequestScreenCaptureAccess()`. Der einzige Aufruf, der die
+  Anwendung in die Systemliste einträgt — `SCShareableContent.current` in
+  `MikaScreenSnapApp.swift:112` — steht in einem Zweig, der beim Erststart **nicht** läuft
+  (`:44-48`). Folge: Der Systemdialog erscheint nicht, und die Anwendung wird erst beim
+  zweiten Start oder beim ersten Aufnahmeversuch eingetragen. Ein Nutzer, der im
+  Einrichtungsablauf auf *Open System Settings* klickt, steht dort vor einer Liste, in der
+  die Anwendung noch gar nicht auftaucht. Zur Klärung vorgelegt.)*
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -117,11 +119,16 @@ Stufe A.
 
 ## Fehlbestand
 
-- **FB-01 · Die Berechtigung wird nie angefordert.** Fundstelle: kein Aufruf von
-  `CGRequestScreenCaptureAccess()` im gesamten Quelltext. Folge: Der Erstkontakt führt über
-  eine manuelle Suche in den Systemeinstellungen statt über den vorgesehenen Systemdialog —
-  in einer Liste, in der die Anwendung möglicherweise noch nicht steht. Das ist die
-  wahrscheinlichste Ursache für einen misslungenen ersten Start.
+- **FB-01 · Die Berechtigung wird nie angefordert — und beim Erststart nicht einmal
+  angestoßen.** Fundstellen: kein Aufruf von `CGRequestScreenCaptureAccess()` im gesamten
+  Quelltext; zusätzlich `MikaScreenSnapApp.swift:44-48`. Dort steht die Prüfung, die über
+  `SCShareableContent.current` die Anwendung überhaupt erst in die Systemliste einträgt und
+  den Systemdialog auslösen kann — sie läuft aber **nur im `else`-Zweig**, also erst wenn
+  die Ersteinrichtung bereits abgeschlossen ist. Genau beim ersten Start übernimmt die
+  Ersteinrichtung, die ausschließlich abfragt. Folge: Der Nutzer klickt im Onboarding auf
+  *Open System Settings* und steht dort vor einer Liste, in der die Anwendung noch nicht
+  auftaucht — sie wird erst beim zweiten Start oder beim ersten Aufnahmeversuch eingetragen.
+  Das ist die wahrscheinlichste Ursache für einen misslungenen ersten Start.
 - **FB-02 · `permissionSkipped` ist wirkungslos.** Fundstelle: `PermissionScreen.swift:63`,
   ohne Leser. Folge: Der vierte Einstellungsschlüssel ohne Wirkung — die Anwendung könnte
   darauf aufbauend später erinnern, tut es aber nicht.
