@@ -1,8 +1,9 @@
 # B03 · Anmerkungs-Editor — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Von den fünf markierten Kriterien sind vier
+> behoben, eines liegt außerhalb der Anwendung und ist entschärft.
 >
 > Zensieren (Weichzeichnen, Verpixeln) ist als **B04** gesondert erfasst, das Lineal als
 > **B07**. Hier stehen der Rahmen, die neun übrigen Werkzeuge, Zoom, Auswahl und Ausgabe.
@@ -113,25 +114,22 @@ anheftet. Der Editor ist der Weg jeder Aufnahme nach draußen.
 
 - **AK-25** · Angenommen, Anmerkungen bestehen, wenn `⌘C` gedrückt wird, dann liegt das
   fertig gerenderte Bild in der Zwischenablage und der Editor schließt sich.
-- **AK-26** ⚠ · Angenommen, `⌘S` wird gedrückt, wenn die Aktion ausgeführt wird, dann wird
-  das Bild **auf den Schreibtisch** gesichert — nicht in den eingestellten Verlaufsordner —
-  **und zusätzlich in die Zwischenablage gelegt**.
-  *(`AnnotationEditor.swift:300-306` ruft beides. Der Speicherort ist fest der Schreibtisch
-  (`ClipboardManager.swift:18`) und ignoriert die Einstellung. Zur Klärung vorgelegt.)*
-- **AK-27** ⚠ · Angenommen, `⌘S` oder *Save As* werden benutzt, wenn die Datei entsteht, dann
-  ist sie **immer PNG** — auch wenn in den Einstellungen JPEG gewählt ist.
-  *(`ClipboardManager.swift:33` schreibt ausschließlich PNG. Der Verlauf beachtet die
-  Einstellung, der Editor nicht. Zur Klärung vorgelegt.)*
+- **AK-26** · Angenommen, `⌘S` wird gedrückt, wenn die Aktion ausgeführt wird, dann wird das
+  Bild **in den eingestellten Ordner** gesichert und die Zwischenablage bleibt unberührt.
+  Hat das automatische Sichern die Aufnahme bereits abgelegt, wird **diese Datei ersetzt**,
+  statt eine zweite anzulegen.
+- **AK-27** · Angenommen, `⌘S` wird benutzt, wenn die Datei entsteht, dann trägt sie das in
+  den Einstellungen gewählte Format. *Save As* schreibt weiterhin PNG, weil der Nutzer dort
+  Ort und Namen ohnehin selbst bestimmt.
 - **AK-28** · Angenommen, `⇧⌘S` wird gedrückt, wenn der Dialog erscheint, dann kann Ort und
   Name frei gewählt werden.
 - **AK-29** · Angenommen, keine Anmerkungen bestehen, wenn `Escape` gedrückt wird, dann wird
   das unveränderte Bild in die Zwischenablage gelegt und der Editor schließt sich.
 - **AK-30** · Angenommen, Anmerkungen bestehen und sind ungesichert, wenn `Escape` gedrückt
   wird, dann erscheint die Rückfrage „Discard Changes?".
-- **AK-31** ⚠ · Angenommen, zwei Bilder werden innerhalb derselben Sekunde mit `⌘S`
-  gesichert, wenn beide geschrieben werden, dann **überschreibt das zweite das erste**.
-  *(`ClipboardManager.swift:14` bildet den Namen mit Sekundengenauigkeit — dieselbe
-  Fehlerklasse wie B09/AK-07. Zur Klärung vorgelegt.)*
+- **AK-31** · Angenommen, zwei Bilder werden innerhalb derselben Sekunde mit `⌘S`
+  gesichert, wenn beide geschrieben werden, dann entstehen **zwei Dateien** — der Name trägt
+  Millisekunden und weicht bei Gleichstand über eine Zählnummer aus.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -140,16 +138,14 @@ Stufe A, Abschnitt 1 ausdrücklich in Kraft.
 - **AK-32** · Angenommen, ein Bild wird ausgegeben, wenn gerendert wird, dann enthält das
   Ergebnis alle Anmerkungen flach eingerechnet — keine Ebenen, keine wiederherstellbaren
   Originalbereiche.
-- **AK-33** ⚠ · Angenommen, ein Bild wird in die Zwischenablage gelegt, wenn die
-  geräteübergreifende Zwischenablage aktiv ist, dann überträgt das System **den gesamten
-  Screenshot** an die anderen Geräte des Nutzers.
-  *(`ClipboardManager.swift:8`, ohne Vertraulichkeitsmarkierung. Gewichtiger als bei B05,
-  weil es um das vollständige Bild geht. Zur Klärung vorgelegt.)*
-- **AK-34** ⚠ · Angenommen, das Sichern schlägt fehl, wenn der Fehler auftritt, dann erfährt
-  der Nutzer nichts — der Editor schließt sich trotzdem.
-  *(`ClipboardManager.swift:32` und `:40` schreiben in ein `print()`; `save()` ruft
-  anschließend `close()` unabhängig vom Ergebnis. Zur Klärung vorgelegt — dies bedeutet
-  stillen Datenverlust.)*
+- **AK-33** · Angenommen, ein Bild wird in die Zwischenablage gelegt, wenn die
+  geräteübergreifende Zwischenablage aktiv ist, dann überträgt **das System** den Screenshot
+  an die anderen Geräte des Nutzers. Für Bilder kennt macOS keine
+  Vertraulichkeitskennzeichnung, mit der sich das unterbinden ließe — anders als für Text
+  (B05/AK-17). Bewusst so belassen, Begründung unter *Befunde*, BF-07; im PRD als
+  Einschränkung der Datenschutzzusage ausgewiesen.
+- **AK-34** · Angenommen, das Sichern schlägt fehl, wenn der Fehler auftritt, dann erscheint
+  eine Kurzmeldung und **der Editor bleibt offen**, damit die Arbeit nicht verloren geht.
 - **AK-35** · Angenommen, Anmerkungen bestehen, wenn der Editor geschlossen wird, dann
   werden sie nirgends gespeichert.
 
@@ -165,41 +161,45 @@ Stufe A, Abschnitt 1 ausdrücklich in Kraft.
 - **EC-06** · Anheften bei erreichter Obergrenze → der Editor schließt sich, kein Fenster
   erscheint (B08/AK-11).
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Kein bearbeitbarer Projektstand.** Anmerkungen leben ausschließlich im
-  Arbeitsspeicher (`AnnotationStore`). Folge: Ein geschlossener Editor verliert alles; ein
-  exportiertes PNG ist nicht wieder bearbeitbar. *Open in Editor* aus dem Verlauf öffnet
-  das Originalbild ohne die früheren Anmerkungen.
-- **FB-02 · `⌘S` sichert an einen festen Ort und im festen Format.** Fundstellen:
-  `ClipboardManager.swift:18` (Schreibtisch), `:33` (immer PNG). Folge: Die Einstellungen
-  zu Ordner und Format gelten nur für das automatische Sichern; der Nutzer hat zwei Orte
-  mit unterschiedlichem Verhalten.
-- **FB-03 · `⌘S` kopiert zusätzlich in die Zwischenablage.** Fundstelle:
-  `AnnotationEditor.swift:304`. Folge: Ein Sichern überschreibt unerwartet den
-  Zwischenablageinhalt.
-- **FB-04 · Fehlgeschlagenes Sichern bleibt unbemerkt und schließt trotzdem.** Fundstellen:
-  `ClipboardManager.swift:32`, `:40`, `AnnotationEditor.swift:306`. Folge: stiller
-  Datenverlust — die schwerste Ausprägung des projektweiten Befunds FB-AS-03.
-- **FB-05 · Namenskollision beim Sichern auf den Schreibtisch.** Fundstelle:
-  `ClipboardManager.swift:14`. Wie B09/FB-02.
-- **FB-06 · `AnnotationSnapshot.data` ist untypisiert.** Fundstelle:
-  `AnnotationModels.swift:104`. Folge: Fehler im Rückgängig-Pfad fallen erst zur Laufzeit
-  auf, und nur wenn genau dieser Pfad läuft.
-- **FB-07 · Die Zwischenablage ist nicht als vertraulich markiert.** Fundstelle:
-  `ClipboardManager.swift:6-9`. Folge: siehe AK-33.
-- **FB-08 · Keine Tests.** Die Koordinatenumrechnung zwischen Ansicht und Bildpixeln
-  (`viewToImage`, `imageToView`) ist reine Rechnung und ideal prüfbar — sie trägt AK-23,
-  von dem jede Anmerkung abhängt.
+### Behoben
+
+- **FB-02 · `⌘S` sicherte an einen festen Ort und im festen Format** — behoben 2026-08-25.
+  Es folgt den Einstellungen und ersetzt die automatisch gesicherte Datei.
+- **FB-03 · `⌘S` kopierte zusätzlich in die Zwischenablage** — behoben 2026-08-25.
+- **FB-04 · Fehlgeschlagenes Sichern blieb unbemerkt und schloss trotzdem** — behoben
+  2026-08-25. `CaptureLog` meldet, und der Editor bleibt offen.
+- **FB-05 · Namenskollision beim Sichern** — behoben 2026-08-25 über
+  `AppPreferences.uniqueCaptureURL(in:)`.
+- **FB-08 · Keine Tests** — teilweise behoben 2026-08-25: Die Umrechnung zwischen Ansicht
+  und Bildpixeln bleibt an `NSView` gebunden und damit manuell zu prüfen, die Zensurstärke
+  und die Namensbildung sind abgedeckt.
+
+### Akzeptiert
+
+- **BF-01 · Kein bearbeitbarer Projektstand** — akzeptiert 2026-08-25. Der Editor ist ein
+  Durchgangsschritt zwischen Aufnahme und Ergebnis; ein eigenes Dateiformat wäre ein
+  Produkt für sich und gehört als neues Feature durch die volle Kette.
+- **BF-06 · `AnnotationSnapshot.data` ist untypisiert** — akzeptiert 2026-08-25. Eine
+  typisierte Momentaufnahme je Annotationsart wäre neun zusätzliche Typen für einen Pfad,
+  der ausschließlich innerhalb einer Annotation gelesen und geschrieben wird.
+- **BF-07 · Die Zwischenablage trägt keine Vertraulichkeitskennzeichnung für Bilder** —
+  akzeptiert 2026-08-25. Für Text gibt es die Kennzeichnung und sie wird gesetzt (B05); für
+  Bilder kennt macOS keine, und die geräteübergreifende Zwischenablage lässt sich von einer
+  Anwendung nicht abwählen. Im PRD als Einschränkung der Datenschutzzusage ausgewiesen.
 
 ## Offene Fragen
 
-- **OF-01** · Soll `⌘S` in den eingestellten Ordner sichern und das eingestellte Format
-  benutzen? — entscheidet der Autor.
-- **OF-02** · Soll `⌘S` weiterhin zusätzlich kopieren? — entscheidet der Autor.
-- **OF-03** · Soll es einen bearbeitbaren Projektstand geben? — entscheidet der Autor.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · `⌘S` in den eingestellten Ordner? | ja, mit dem eingestellten Format — und es ersetzt die automatisch gesicherte Datei | 2026-08-25 |
+| OF-02 · `⌘S` weiterhin zusätzlich kopieren? | nein — Sichern und Kopieren sind zwei Absichten, und die stille Übernahme der Zwischenablage war überraschend | 2026-08-25 |
+| OF-03 · Bearbeitbarer Projektstand? | nein, siehe BF-01 | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -209,4 +209,5 @@ Stufe A, Abschnitt 1 ausdrücklich in Kraft.
 | 4 | Werkzeugleiste in SwiftUI, Zeichenfläche in AppKit | alles in einem | Zeichnen mit Mausereignissen ist in AppKit direkter; die Leisten sind eingebettete SwiftUI-Ansichten |
 | 5 | Wie wird die Leertaste erkannt? | eigener Ereignisbeobachter | ausdrücklich kommentiert: `flagsChanged` meldet die Leertaste nicht |
 | 6 | Warum schließt der Editor nach Kopieren und Sichern? | Aufnahme ist ein Durchgangsvorgang | erkennbar bewusst — der Editor ist kein Arbeitsplatz, sondern ein Zwischenschritt |
-| 7 | `⌘S` auf den Schreibtisch statt in den Verlaufsordner | in den eingestellten Ordner | **Grund nicht erkennbar** (FB-02) |
+| 7 | `⌘S` in den eingestellten Ordner (3.5.0) | auf den Schreibtisch | zwei Speicherorte mit verschiedenen Regeln waren nicht erklärbar; die Einstellung gab es bereits |
+| 8 | Fehlschlag hält den Editor offen (3.5.0) | trotzdem schließen | ein geschlossener Editor ohne Datei bedeutet Datenverlust ohne Rettungsweg |

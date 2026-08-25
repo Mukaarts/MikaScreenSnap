@@ -1,6 +1,6 @@
 # Datenmodell — Mika+ScreenSnap
 
-Stand: 2026-08-25 · rückwirkend erfasst aus Version 3.4.1
+Stand: 2026-08-25 · rückwirkend erfasst · **auf Stand 3.5.0 nachgeführt**
 
 **Es gibt keine Datenbank.** Die App hält vier Arten von Zustand: Einstellungen in
 `UserDefaults`, Bilddateien im Dateisystem, flüchtigen Zustand im Speicher und ein paar
@@ -22,22 +22,22 @@ jeweils per `didSet`.
 | `imageFormat` | String | `PNG` | `PNG` oder `JPEG` |
 | `jpegQuality` | CGFloat | `0.85` | nur bei JPEG wirksam |
 | `hasCompletedOnboarding` | Bool | `false` | steuert den Erststart-Flow |
-| `permissionSkipped` | Bool | `false` | **wirkungslos**, siehe Fehlbestand |
 | `captureSoundEnabled` | Bool | `true` | Auslöseton **— wird konsumiert** |
-| `floatingPreviewEnabled` | Bool | `false` | **wirkungslos**, siehe Fehlbestand |
-| `previewDismissDuration` | Int | `5` | **wirkungslos**, siehe Fehlbestand |
 | `defaultAnnotationTool` | String | `arrow` | Startwerkzeug im Editor **— wird konsumiert** |
 | `defaultStrokeColorData` | Data | `nil` | archivierte `NSColor` |
-| `defaultStrokeWidth` | CGFloat | `3.0` | Strichstärke |
+| `defaultStrokeWidth` | CGFloat | `4.0` | Strichstärke — einer der drei angebotenen Werte |
 | `rememberLastTool` | Bool | `true` | überschreibt beim Schließen `defaultAnnotationTool` **— wird konsumiert** |
-| `showToolbarLabels` | Bool | `false` | **wirkungslos**, siehe Fehlbestand |
+| `showToolbarLabels` | Bool | `false` | Werkzeugsymbole tragen ihre Bezeichnung |
 | `excludedBundleIdentifiers` | [String] | `[]` | Bundle-IDs, die in keiner Aufnahme erscheinen |
 | `hotkeyBindings` | Data (JSON) | `nil` | `[String: HotkeyBinding]`, siehe unten |
 | `colorHistory` | [String] | `[]` | HEX-Werte, **max. 10** |
 | `colorPalette` | [String] | `[]` | HEX-Werte, **max. 20** |
 
-`resetAll()` (`AppPreferences.swift:135`) entfernt eine **fest verdrahtete Liste** von
-Schlüsseln. `colorHistory` und `colorPalette` stehen nicht darin — siehe Fehlbestand.
+`resetAllPreferences()` entfernt alle Schlüssel aus `AppPreferences.ownedDefaultsKeys` —
+einer Liste, die neben den Eigenschaften steht, die sie schreiben, und `colorHistory` sowie
+`colorPalette` einschließt. Ein Test hält das fest
+(`Tests/CaptureFilenameTests.swift`). Sparkles eigene Schlüssel bleiben bewusst unberührt
+(`features/befunde.md`, BF-A13).
 
 ### `HotkeyBinding`
 
@@ -60,7 +60,7 @@ Persistiert als JSON-Wörterbuch unter `hotkeyBindings`, Schlüssel ist der `raw
 
 | Was | Wo | Benennung | Gelöscht durch |
 |---|---|---|---|
-| Aufnahme | `<saveLocation>/` | Zeitstempel + `.png`/`.jpg` | Verlauf-Browser (einzeln), *Clear History* (alle) |
+| Aufnahme | `<saveLocation>/` | `MikaSnap_JJJJ-MM-TT_HH-mm-ss-SSS` + `.png`/`.jpg`, bei Gleichstand mit Zählnummer | Verlauf-Browser (einzeln), *Clear History* (alle Dateien im Ordner) |
 | Vorschaubild | `<saveLocation>/.thumbnails/` | gleicher Dateiname wie das Original | dieselben Pfade |
 
 `HistoryItem` wird beim Start **aus dem Verzeichnis rekonstruiert**, nicht aus einem
@@ -85,11 +85,12 @@ erscheint im Verlauf; eine gelöschte verschwindet. Das ist robust und hat den P
 
 | Was | Benennung | Gelöscht durch |
 |---|---|---|
-| PNG des angehefteten Bildes | `pin_JJJJ-MM-TT_HH-mm-ss-SSS.png` | **nichts** — siehe Fehlbestand |
+| PNG des angehefteten Bildes | `pin_JJJJ-MM-TT_HH-mm-ss-SSS.png` | Schließen des Fensters · *Close All* · *Clear* im Reiter *Advanced* · überzählige beim Start |
 
 Gespeichert wird **ausschließlich das Bild**. Position, Größe und Deckkraft des Panels
-werden nicht abgelegt; beim Neustart erscheinen wiederhergestellte Pins in Standardgröße
-an Standardposition.
+werden nicht abgelegt; beim Neustart erscheinen wiederhergestellte Pins in Standardgröße an
+Standardposition (bewusst, `features/befunde.md`, BF-A8). Wiederhergestellt werden die
+**zwanzig neuesten**; ältere Dateien werden beim Start entfernt.
 
 ---
 
@@ -175,77 +176,24 @@ Auswahl nicht unbemerkt aus der Liste fällt — der Name kommt dann über
 |---|---|---|
 | Aufnahmen + Vorschaubilder | ja | Verlauf-Browser einzeln, *Advanced → Clear History* für alle |
 | Einstellungen | ja | *Advanced → Reset All Preferences* |
-| Farbverlauf und Palette | **nein** | von `resetAll()` nicht erfasst |
-| Angeheftete Bilder | **nein** | kein Löschpfad im Code |
+| Farbverlauf und Palette | ja | Untermenüs *Color History* und *Colour Palette*, dazu *Reset All Preferences* |
+| Angeheftete Bilder | ja | Fenster schließen, *Close All*, oder *Clear* im Reiter *Advanced* |
 | Hotkey-Belegungen | ja | *Restore Defaults* im Shortcuts-Tab |
 
 ---
 
 ## Fehlbestand
 
-Was hier steht, sind **Befunde, keine Kriterien.** Sie werden in der Spec des jeweiligen
-Features aufgenommen und von `sdd-qa` bewertet — nicht hier repariert.
+**Keiner offen.** Die acht Einträge dieses Dokuments sind in 3.5.0 behoben oder mit
+Begründung akzeptiert; die vollständige Liste steht in `features/befunde.md`.
 
-**FB-DM-01 · Angeheftete Bilder werden nie gelöscht.** `PinnedScreenshotManager`
-schreibt bei jedem Anheften ein PNG nach
-`~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`. Es existiert kein
-einziger `removeItem`-Aufruf: `unpinPanel` und `unpinAll` rufen nur `orderOut(nil)`, und
-`closePanel` im Panel selbst ebenso. Folgen:
-
-1. Bildschirminhalte sammeln sich dort **unbegrenzt** an, auch von längst geschlossenen Pins.
-2. `maxPins = 20` begrenzt nur gleichzeitig offene Panels und die Wiederherstellung
-   (`prefix(maxPins)`), nicht die Dateimenge.
-3. `restorePins` sortiert alphabetisch — bei Zeitstempel-Dateinamen also **aufsteigend nach
-   Alter** — und stellt die ersten 20 wieder her. Ein bewusst geschlossener Pin kann beim
-   nächsten Start zurückkehren, während ein neuerer nicht erscheint.
-4. Weder `storageUsage()` noch `clearAll()` kennen diesen Ordner: Die Speicheranzeige im
-   Advanced-Tab arbeitet ausschließlich über `historyManager`, also über `saveLocation`.
-   Der Nutzer sieht diese Daten nicht und kann sie in der App nicht entfernen.
-
-Gemessen an der Datenschutzregel des PRD („was der Nutzer unkenntlich macht, bleibt
-unkenntlich" und „lokale Ablagen sind eine bewusste Entscheidung") ist das der schwerste
-Einzelbefund der Kartierung. Gehört in die Spec von **B08**.
-
-**FB-DM-02 · Vier Schlüssel ohne Wirkung.** `floatingPreviewEnabled`,
-`previewDismissDuration` und `showToolbarLabels` werden gespeichert, geladen,
-zurückgesetzt und in der Oberfläche angeboten — aber von keinem Feature gelesen. Die
-Gegenprobe mit `captureSoundEnabled`, `rememberLastTool` und `defaultAnnotationTool`
-zeigt, dass die übrigen Schalter sehr wohl greifen. Der Nutzer stellt etwas ein, das
-nichts tut. Gehört in die Spec von **B11**.
-
-Hinzu kommt `permissionSkipped`: geschrieben in `Onboarding/PermissionScreen.swift:63`,
-gelesen von niemandem. Anders als die drei anderen taucht er in keiner Oberfläche auf —
-er ist ein Vermerk, auf den nie zurückgegriffen wird. Gehört in die Spec von **B12**.
-
-**FB-DM-03 · `resetAll()` erfasst Farbverlauf und Palette nicht.** Die Schlüsselliste in
-`AppPreferences.swift:135` ist von Hand gepflegt; `colorHistory` und `colorPalette`
-werden von `ColorHistoryManager` unter eigenen Schlüsseln geschrieben und überleben ein
-*Reset All Preferences*. Gehört in die Spec von **B06**.
-
-**FB-DM-04 · `HistoryItem.id` ist bei jedem Start neu.** Die UUID wird beim Einlesen des
-Verzeichnisses vergeben. Solange sie nur zur Darstellung in einer Liste dient, ist das
-folgenlos — sie darf aber nie zur Referenzierung über einen Start hinweg benutzt werden.
-`date` ist das Änderungsdatum der Datei, nicht der Aufnahmezeitpunkt: Ein Kopiervorgang
-verschiebt es. Gehört in die Spec von **B09**.
-
-**FB-DM-05 · `AnnotationSnapshot.data` ist untypisiert.** `[String: any Sendable]` mit
-Schlüsseln, die jede Annotation für sich definiert. Ein falscher Schlüssel oder ein
-Typwechsel scheitert stumm zur Laufzeit statt beim Übersetzen — bei einem Undo-Pfad, der
-selten läuft, fällt das lange nicht auf. Gehört in die Spec von **B03**.
-
-**FB-DM-07 · `resetAll()` erfasst Sparkles Schlüssel nicht.** Das
-Aktualisierungswerk führt eigene Einträge in den Benutzereinstellungen — Zeitpunkt der
-letzten Prüfung, automatische Prüfung, übersprungene Fassungen. Die von Hand gepflegte
-Liste in `AppPreferences.swift:135` kennt sie nicht. Folge: *Reset All Preferences* setzt
-die Aktualisierungseinstellungen nicht zurück. Gehört in die Spec von **B11**.
-
-**FB-DM-08 · Die Standard-Strichstärke steht nicht zur Auswahl.**
-`AppPreferences.swift:114` und `:162` setzen `3.0`; die Auswahl in
-`Preferences/AnnotationTabView.swift:64-66` bietet `2`, `4` und `6`. Folge: Beim ersten
-Öffnen zeigt die Auswahl keinen ausgewählten Wert. Gehört in die Spec von **B11**.
-
-**FB-DM-06 · Kein Migrationspfad für die Einstellungen.** Es gibt keine Schemaversion in
-`UserDefaults`. Das Stack-Profil `swiftui-macos` benennt das ausdrücklich als Risiko:
-Ändert sich das Format eines Schlüssels — etwa `hotkeyBindings` —, verliert der Nutzer
-beim Update seine Konfiguration, ohne dass es auffällt. Gehört ins **Design des
-nächsten Features**, das ein Format ändert; bis dahin projektweiter Befund.
+| Ursprünglich | Ausgang |
+|---|---|
+| FB-DM-01 · Angeheftete Bilder wurden nie gelöscht | behoben — jedes Panel kennt seine Datei, Schließen löscht sie, Wiederherstellung nimmt die neuesten |
+| FB-DM-02 · Vier Schlüssel ohne Wirkung | behoben — `showToolbarLabels` wirkt, die drei anderen sind entfernt |
+| FB-DM-03 · `resetAll()` erfasste Farbverlauf und Palette nicht | behoben — `ownedDefaultsKeys` steht neben den Eigenschaften und ist getestet |
+| FB-DM-04 · `HistoryItem.id` neu bei jedem Start, `date` ist das Änderungsdatum | akzeptiert — Folge daraus, dass das Verzeichnis die Wahrheit ist; die Kennung dient nur der Darstellung |
+| FB-DM-05 · `AnnotationSnapshot.data` untypisiert | akzeptiert — rein interner Pfad, neun typisierte Momentaufnahmen wären Aufwand ohne Ertrag |
+| FB-DM-06 · Keine Schemaversion | akzeptiert — kein Formatwechsel steht an, und der häufigste Fehlerfall (die Rücksetzliste) ist jetzt zentralisiert und geprüft |
+| FB-DM-07 · Sparkles Schlüssel nicht erfasst | akzeptiert — sie gehören dem Rahmenwerk |
+| FB-DM-08 · Standard-Strichstärke nicht wählbar | behoben — Standard ist 4 |

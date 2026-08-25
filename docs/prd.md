@@ -1,6 +1,6 @@
 # Mika+ScreenSnap — Product Requirements Document
 
-Stand: 2026-08-25 · Stufe Datenschutz: A · Stack-Profil: `swiftui-macos`
+Stand: 2026-08-25 · Stufe Datenschutz: A · Stack-Profil: `swiftui-macos` · Fassung 3.5.0
 Artefaktpfad: `docs/`
 
 > **Rückwirkend erfasst.** Dieses Dokument beschreibt, was Version 3.4.1 tut — nicht,
@@ -52,9 +52,15 @@ Features für die zweite Gruppe fordert, argumentiert gegen den Zweck.
   App wisse nichts über ihre Nutzer — und warum jede Funktion, die das ändern würde, hier
   zuerst diskutiert werden muss.
 
-Was **nicht** als Nicht-Ziel bestätigt ist, aber im Bestand fehlt — Bildschirmvideo,
-Bildbearbeitung über Annotation hinaus, App-Store-Vertrieb —, steht unter *Offene Punkte*.
-Fehlen allein ist kein Vorsatz.
+- **Bildschirmvideo und GIF** (bestätigt 2026-08-25) — Standbilder bleiben der Umfang. Eine
+  Aufzeichnung wäre ein zweites Produkt mit eigenem Editor, eigenen Formaten und eigenem
+  Speicherverhalten.
+- **Bildbearbeitung über Annotation hinaus** (bestätigt 2026-08-25) — keine Filter, keine
+  Ebenen, kein Zuschneiden, keine Farbkorrektur. Der Editor ist ein Durchgangsschritt
+  zwischen Aufnahme und Ergebnis, kein Arbeitsplatz.
+- **App-Store-Vertrieb** (bestätigt 2026-08-25) — ausgeschlossen, solange die Anwendung
+  ohne Sandbox arbeitet, und die braucht sie für ScreenCaptureKit über fremde Fenster und
+  für Carbon-Tastenkombinationen. Direktvertrieb über DMG und Sparkle bleibt der Weg.
 
 ## Erfolgskriterien
 
@@ -109,15 +115,16 @@ Daraus folgen App-weite Regeln, die in jeder Feature-Spec konkretisiert werden:
   anderen Geräte des Nutzers. Das ist keine Übertragung der Anwendung, aber eine Folge ihres
   Verhaltens — und die Zusage muss so genau formuliert bleiben. Fundstellen und
   Kriterien: B03/AK-33, B05/AK-17, B06/AK-16.
-- **Was der Nutzer unkenntlich macht, bleibt unkenntlich.** Ein verpixelter Bereich darf
-  im Export nicht rekonstruierbar sein — und kein Nebenpfad darf das unbearbeitete
-  Original ablegen, ohne dass die Person das weiß.
+- **Was der Nutzer unkenntlich macht, bleibt unkenntlich.** Ein verpixelter Bereich darf im
+  Export nicht rekonstruierbar sein — und kein Nebenpfad darf das unbearbeitete Original
+  ablegen. Seit 3.5.0 wird die automatisch gesicherte Datei bei jedem Export ersetzt und
+  bei jeder Zensur auch dann, wenn nicht exportiert wurde.
 - **Die Ausschlussliste ist eine Zusage, keine Bequemlichkeit.** Eine dort eingetragene
   App darf in keiner Aufnahme auftauchen — auch nicht in der Farbpipette, auch nicht im OCR.
-- **Lokale Ablagen sind unverschlüsselt.** Aufnahmen liegen im Klartext in
-  `~/Pictures/MikaScreenSnap/`, angeheftete Bilder in `Application Support`. Das ist der
-  Normalfall für macOS-Nutzdaten, aber es ist eine bewusste Entscheidung und keine
-  Selbstverständlichkeit.
+- **Lokale Ablagen sind unverschlüsselt und haben ein Gegenstück.** Aufnahmen liegen im
+  Klartext in `~/Pictures/MikaScreenSnap/`, angeheftete Bilder in `Application Support`.
+  Beide sind in den Einstellungen sichtbar und leerbar, und jeder Schreibpfad hat einen
+  Löschpfad — ein angehefteter Screenshot verschwindet mit seinem Fenster.
 
 Der Katalog aus `~/.claude/sdd/sicherheit.md` gilt nach Stufe A verkürzt auf die
 Abschnitte 4 (Missbrauch und Kosten) und 6 (Geheimnisse) — **erweitert um Abschnitt 1**,
@@ -154,24 +161,13 @@ der Nummer.
 
 ## Offene Punkte
 
-- **OF-01** (2026-08-25) — Sind Bildschirmvideo/GIF, weitergehende Bildbearbeitung und
-  App-Store-Vertrieb bewusste Nicht-Ziele oder nur bisher nicht gebaut? Der Bestand sagt
-  darüber nichts. Bis zur Klärung stehen sie **nicht** unter *Nicht im Scope* — eine Lücke
-  ist ein Befund, kein Vorsatz.
-- **OF-02** (2026-08-25) — Das ausgelieferte Binary ist arm64-only, die Website sagt das
-  ehrlich („Apple silicon"). Ist Intel-Unterstützung aufgegeben oder nie beabsichtigt gewesen?
-- **OF-03** (2026-08-25) — Der Sparkle-Feed zeigt seit `db55d1f` auf `main`; Installationen
-  bis einschließlich 3.4.1 haben `master` fest einkompiliert. Bis der letzte dieser
-  Installationen aktualisiert ist, muss `main:master` mitgepusht werden. Wann darf das enden?
-- **OF-04** (2026-08-25) — Es existieren **keine Tests** (`Tests/` fehlt). Für die
-  Rückerfassung heißt das: Jedes Akzeptanzkriterium braucht in der QA einen manuellen
-  Nachweis oder einen neu geschriebenen Test. Soll `swift test` als Ziel etabliert werden?
-- **OF-05** (2026-08-25, aus der Rückerfassung) — Soll die Zwischenablage als vertraulich
-  gekennzeichnet werden, damit erkannter Text und Screenshots nicht über die
-  geräteübergreifende Zwischenablage weitergereicht werden? Das ist die einzige Stelle, an
-  der Nutzerinhalte den Rechner verlassen können. Betrifft B03, B05 und B06.
-- **OF-06** (2026-08-25, aus der Rückerfassung) — Die Anwendung fordert die
-  Bildschirmaufnahme-Berechtigung nie an (`CGRequestScreenCaptureAccess` kommt nirgends
-  vor), und der Aufruf, der sie in die Systemliste einträgt, läuft beim Erststart nicht.
-  Soll das geändert werden? Betrifft B01, B12 und B15 und ist der wahrscheinlichste Grund
-  für einen misslungenen ersten Start.
+Keine offen. Die sechs Punkte der Erfassung sind am 2026-08-25 entschieden:
+
+| # | Frage | Entscheidung |
+|---|---|---|
+| OF-01 | Sind Bildschirmvideo, weitergehende Bildbearbeitung und App-Store-Vertrieb bewusste Nicht-Ziele? | **Ja, alle drei** — aufgenommen unter *Nicht im Scope*. Video und Bildbearbeitung würden aus einem Aufnahmewerkzeug ein zweites Produkt machen; der App Store scheidet aus, solange die Anwendung ohne Sandbox arbeitet, und die braucht sie für ScreenCaptureKit über fremde Fenster |
+| OF-02 | Ist Intel-Unterstützung aufgegeben? | **Nicht beabsichtigt gewesen.** Das Programmpaket ist arm64-only, die Website sagt das ehrlich. Ein Universal-Build wäre möglich, hat aber keinen bekannten Adressaten |
+| OF-03 | Bis wann muss `main:master` mitgepusht werden? | **Unbefristet.** Die Feed-Adresse älterer Installationen ist einkompiliert; ein Ende wäre nur über eine Zählung begründbar, und die soll es nicht geben. Der Schritt steht in `README.md` |
+| OF-04 | Soll `swift test` etabliert werden? | **Ja, geschehen.** 28 Tests decken ab, was rechnet: Mehrschirm-Koordinaten, Tastenkombinationen, Farbumrechnung, Zensurstärke, Namenskollisionen. UI-Verhalten bleibt manuell nachzuweisen, wie im Stack-Profil vorgesehen |
+| OF-05 | Zwischenablage als vertraulich kennzeichnen? | **Für Text ja** (erledigt in 3.5.0), für Bilder nicht möglich — macOS kennt dafür keine Kennzeichnung. Als Einschränkung oben unter *Datenschutz* ausgewiesen |
+| OF-06 | Berechtigung anfordern statt nur abfragen? | **Ja, erledigt in 3.5.0.** Die Ersteinrichtung ruft `CGRequestScreenCaptureAccess`, und die Aufnahmeeinträge sind ohne Berechtigung gesperrt |

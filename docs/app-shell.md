@@ -1,6 +1,6 @@
 # App-Shell — Mika+ScreenSnap
 
-Stand: 2026-08-25 · rückwirkend aus dem Code gelesen, Version 3.4.1
+Stand: 2026-08-25 · rückwirkend aus dem Code gelesen · **auf Stand 3.5.0 nachgeführt**
 
 Bei einer Menüleisten-App ist die Shell nicht Navigation, sondern **Erreichbarkeit**: Es
 gibt kein Hauptfenster, keinen Zurück-Weg und keinen Ort, an dem die App „offen" ist. Was
@@ -46,6 +46,7 @@ Measure                       ⇧⌘8
 ─────────────────────────────
 Pinned Screenshots      ▸     ← Untermenü, leer: „No pinned screenshots"
 Color History           ▸     ← Untermenü, leer: „No colors picked yet"
+Colour Palette          ▸     ← Untermenü, leer: Hinweis auf Umschalt+Klick
 Screenshot History            ⇧⌘H
 ─────────────────────────────
 Preferences…                    ⌘,
@@ -60,7 +61,9 @@ Drei Muster, die durchgehalten sind:
 2. **Untermenüs zeigen ihren Leerzustand als Text**, statt zu verschwinden.
 3. **Der Berechtigungshinweis erscheint nur bei Bedarf**, geprüft über
    `CGPreflightScreenCaptureAccess()` bei jedem Öffnen des Menüs, und führt per
-   `x-apple.systempreferences:`-Deeplink direkt in die Systemeinstellung.
+   `x-apple.systempreferences:`-Deeplink direkt in die Systemeinstellung. Fehlt die
+   Berechtigung, sind seit 3.5.0 **alle sieben Aufnahme- und Zusatzeinträge deaktiviert** —
+   der Weg dorthin führt nicht mehr durch einen misslungenen Versuch.
 
 Der Menüpunkt `Capture Window…` hat bewusst **keine** Tastenkombination: Er öffnet die
 interaktive Fensterauswahl, während `⌃⇧⌘5` das vorderste Fenster ohne Rückfrage nimmt.
@@ -135,8 +138,11 @@ Hotkey oder Menü
         └→ postCapture
              ├→ Auslöseton                     (wenn captureSoundEnabled)
              ├→ automatisches Sichern + Vorschaubild   (wenn autoSaveEnabled)
+             │    └→ die geschriebene Datei wandert als Verweis in den Editor
              └→ Annotations-Editor öffnet sich
                   └→ Kopieren · Sichern · Sichern unter · Anheften · Verwerfen
+                       └→ jeder Ausgabeweg **ersetzt** die automatisch gesicherte Datei,
+                          ebenso das Schließen, sobald eine Zensur im Bild liegt
 ```
 
 Der Editor öffnet sich **immer**, auch wenn nichts annotiert werden soll. Der schnelle
@@ -147,29 +153,11 @@ schließt; mit Annotationen erscheint eine Rückfrage.
 
 ## Fehlbestand
 
-**FB-AS-01 · Kein Weg zurück ins Onboarding außer über die Einstellungen.** Der
-Erststart-Flow wird über `hasCompletedOnboarding` gesteuert; wer ihn abbricht, erreicht
-ihn nur über *Preferences → Show Onboarding Again* wieder. Das ist auffindbar, aber nicht
-naheliegend, wenn die Berechtigung fehlt — dort führt der Menüeintrag stattdessen direkt
-in die Systemeinstellungen.
+**Keiner offen.**
 
-**FB-AS-02 · Der Berechtigungshinweis prüft, aber blockiert nicht.** Fehlt die
-Bildschirmaufnahme-Berechtigung, erscheint der Warneintrag im Menü — die Aufnahme-Punkte
-bleiben trotzdem aktiv und anklickbar. Der Fehlschlag wird seit 3.4.1 als Toast
-gemeldet („Screen Recording permission required"), aber der Weg dorthin führt durch einen
-misslungenen Versuch. Gehört in die Spec von **B01** und **B12**.
-
-**FB-AS-03 · Sechs `print()`-Aufrufe in Fehlerpfaden.** 3.4.1 hat das Protokollieren auf
-`OSLog` umgestellt, aber nur im Aufnahmepfad. Verblieben sind:
-`AnnotationEditor.swift:267` (OCR fehlgeschlagen), `LaunchAtLoginManager.swift:24`,
-`ClipboardManager.swift:32` und `:40` (Speichern fehlgeschlagen),
-`AppPreferences.swift:196` (automatisches Sichern fehlgeschlagen),
-`PinnedScreenshotManager.swift:21` (Höchstzahl erreicht). In einem
-`LSUIElement`-Bundle, das aus dem Finder gestartet wird, erreichen diese Meldungen
-niemanden — **der Nutzer erfährt nicht, dass sein Screenshot nicht gespeichert wurde.**
-Betrifft die Specs von **B03**, **B05**, **B08**, **B09** und **B13**.
-
-**FB-AS-04 · Kein Fenster-Wiederherstellungsverhalten.** Editor, Verlauf und
-Einstellungen merken sich Größe und Position nicht über einen Neustart hinweg. Bei einer
-App, die mehrmals stündlich benutzt wird, ist das spürbar — es ist aber nirgends als
-Entscheidung festgehalten.
+| Ursprünglich | Ausgang |
+|---|---|
+| FB-AS-01 · Onboarding nur über die Einstellungen wiederauffindbar | **akzeptiert** 2026-08-25 — der Ablauf ist eine Einführung, kein Werkzeug; der dauerhafte Schutz ist der Menühinweis und die gesperrten Aufnahmeeinträge |
+| FB-AS-02 · Der Berechtigungshinweis blockierte nicht | **behoben** 2026-08-25 — die Einträge sind ohne Berechtigung deaktiviert, und das Onboarding fordert sie an |
+| FB-AS-03 · Sechs `print()` in Fehlerpfaden | **behoben** 2026-08-25 — alle sechs gehen über `CaptureLog`, das protokolliert und eine Kurzmeldung zeigt |
+| FB-AS-04 · Keine Fensterwiederherstellung | **akzeptiert** 2026-08-25 — der Editor öffnet sich zu einem jeweils anderen Bild und wird auf dessen Größe gebracht; eine gemerkte Fenstergröße wäre für den nächsten Screenshot meist die falsche |

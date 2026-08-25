@@ -1,11 +1,10 @@
 # B08 · Screenshots anheften — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde behoben in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
->
-> **Hier sitzt der schwerste Einzelbefund der Kartierung** (FB-01): Angeheftete Bilder
-> werden auf die Festplatte geschrieben und niemals gelöscht.
+> Beschrieben ist, **was der Code tut**. Der schwerste Befund der Kartierung saß hier:
+> Angeheftete Bilder wurden geschrieben und niemals gelöscht. Alle fünf markierten
+> Kriterien sind in 3.5.0 behoben.
 
 ## Zweck
 
@@ -61,40 +60,28 @@ Programm arbeitet.
 - **AK-10** · Angenommen, Bilder waren beim Beenden angeheftet, wenn die Anwendung neu
   startet, dann erscheinen sie wieder — in Standardgröße an Standardposition, **nicht** an
   ihrem vorherigen Platz und nicht mit ihrer vorherigen Durchsichtigkeit.
-- **AK-11** ⚠ · Angenommen, bereits 20 Bilder sind angeheftet, wenn ein weiteres angeheftet
-  werden soll, dann **geschieht nichts** — ohne jede Rückmeldung.
-  *(`PinnedScreenshotManager.swift:21` schreibt in ein `print()` und gibt `nil` zurück. Der
-  Nutzer wählt *Pin*, der Editor schließt sich womöglich, und kein Fenster erscheint. Zur
-  Klärung vorgelegt.)*
+- **AK-11** · Angenommen, bereits 20 Bilder sind angeheftet, wenn ein weiteres angeheftet
+  werden soll, dann erscheint die Kurzmeldung „Already 20 pinned screenshots".
 
 ### Datenschutz und Missbrauchsschutz
 
 Stufe A, Abschnitt 1 des Katalogs ausdrücklich in Kraft. **Dieses Feature schreibt
 Bildschirminhalte dauerhaft an einen Ort, den der Nutzer nicht kennt.**
 
-- **AK-12** ⚠ · Angenommen, ein Bild wird angeheftet, wenn die Aktion ausgeführt ist, dann
+- **AK-12** · Angenommen, ein Bild wird angeheftet, wenn die Aktion ausgeführt ist, dann
   wird es als PNG nach `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`
-  geschrieben — **auch dann, wenn das automatische Sichern in den Einstellungen abgeschaltet
-  ist**.
-  *(`PinnedScreenshotManager.swift:30` ruft `savePinnedImage` ohne Prüfung von
-  `autoSaveEnabled`. Wer das automatische Sichern bewusst abgeschaltet hat, legt hier
-  trotzdem Dateien an. Zur Klärung vorgelegt.)*
-- **AK-13** ⚠ · Angenommen, ein angeheftetes Bild wird geschlossen — über die Schaltfläche,
+  geschrieben — unabhängig von der Einstellung zum automatischen Sichern, weil die Datei
+  die Wiederherstellung trägt und beim Schließen wieder verschwindet (siehe *Befunde*,
+  BF-02).
+- **AK-13** · Angenommen, ein angeheftetes Bild wird geschlossen — über die Schaltfläche,
   das Kontextmenü, den Doppelklick oder *Close All* —, wenn die Aktion ausgeführt ist, dann
-  **bleibt die Datei auf der Festplatte**.
-  *(Im gesamten Feature existiert kein einziger Löschaufruf. `unpinPanel`, `unpinAll` und
-  `closePanel` entfernen nur das Fenster. Zur Klärung vorgelegt.)*
-- **AK-14** ⚠ · Angenommen, mehr Dateien liegen im Ablageordner als 20, wenn die Anwendung
-  startet, dann werden die **alphabetisch ersten zwanzig** wiederhergestellt — bei
-  Zeitstempel-Dateinamen also die **ältesten**. Ein bewusst geschlossenes Bild kann dabei
-  zurückkehren, während ein neueres ausbleibt.
-  *(`PinnedScreenshotManager.swift:62-64` sortiert nach Dateinamen aufsteigend und nimmt
-  die ersten `maxPins`. Zur Klärung vorgelegt.)*
-- **AK-15** ⚠ · Angenommen, der Nutzer öffnet die Speicherverwaltung in den Einstellungen,
-  wenn die Größe angezeigt wird, dann sind die angehefteten Bilder **nicht enthalten**; und
-  *Clear History* löscht sie nicht.
-  *(`AdvancedTabView.swift:85` und `:157` arbeiten ausschließlich über den Verlaufsverwalter,
-  der nur den Bilderordner kennt. Zur Klärung vorgelegt.)*
+  **ist auch die Datei gelöscht**.
+- **AK-14** · Angenommen, mehr Dateien liegen im Ablageordner als 20, wenn die Anwendung
+  startet, dann werden die **zwanzig neuesten** wiederhergestellt und die übrigen gelöscht —
+  eine Datei, die ohnehin nie wieder erscheinen könnte, bleibt nicht liegen.
+- **AK-15** · Angenommen, der Nutzer öffnet die Speicherverwaltung in den Einstellungen,
+  wenn sie angezeigt wird, dann steht dort eine eigene Zeile *Pinned screenshots* mit
+  Größe und einer Schaltfläche, die diesen Speicher leert.
 - **AK-16** · Angenommen, ein Bild wird angeheftet, wenn es gespeichert wird, dann enthält
   kein Protokoll seinen Inhalt.
 - **AK-17** · Angenommen, ein Bild ist angeheftet, wenn es sichtbar ist, dann verlässt es
@@ -115,41 +102,43 @@ Bildschirminhalte dauerhaft an einen Ort, den der Nutzer nicht kennt.**
 - **EC-06** · Bild wird angeheftet, geschlossen, erneut angeheftet → **zwei** Dateien im
   Ablageordner.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Angeheftete Bilder werden nie gelöscht.** Fundstellen:
-  `PinnedScreenshotManager.swift:37-46` (`unpinPanel`, `unpinAll` — nur `orderOut`),
-  `PinnedScreenshotPanel.swift:125` (`closePanel` — nur `orderOut`), sowie das Fehlen jedes
-  `removeItem` im Feature. Folge, in vier Stufen:
-  1. Bildschirminhalte sammeln sich **unbegrenzt** in `Application Support` an.
-  2. Die Obergrenze von 20 gilt für gleichzeitig offene Fenster, nicht für Dateien.
-  3. Geschlossene Bilder kehren beim Neustart zurück (AK-14).
-  4. Der Nutzer sieht diesen Speicher nirgends und kann ihn in der Anwendung nicht leeren
-     (AK-15) — nur über den Finder, wenn er den Ort kennt.
-  Gemessen an der Datenschutzregel des PRD („lokale Ablagen sind eine bewusste
-  Entscheidung") ist das der schwerste Befund der Erfassung.
-- **FB-02 · Das Anheften ignoriert die Einstellung zum automatischen Sichern.** Fundstelle:
-  `PinnedScreenshotManager.swift:30`. Folge: Eine ausdrückliche Entscheidung des Nutzers,
-  nichts auf die Festplatte zu schreiben, wird an dieser Stelle übergangen.
-- **FB-03 · Nur das Bild wird gesichert, nicht seine Anordnung.** Fundstelle:
-  `savePinnedImage` speichert ein PNG, sonst nichts. Folge: Das im README beschriebene
-  „persistent across app restarts" gilt für den Inhalt, nicht für die Anordnung — Position,
-  Größe und Durchsichtigkeit gehen verloren.
-- **FB-04 · Das Erreichen der Obergrenze ist unsichtbar.** Fundstelle:
-  `PinnedScreenshotManager.swift:21`. Folge: *Pin* tut scheinbar nichts.
-- **FB-05 · Die Wiederherstellung sortiert nach Dateinamen, nicht nach Aktualität.**
-  Fundstelle: `PinnedScreenshotManager.swift:62`. Folge: siehe AK-14.
-- **FB-06 · Keine Tests.**
+### Behoben
+
+- **FB-01 · Angeheftete Bilder wurden nie gelöscht** — behoben 2026-08-25. Jedes Panel
+  kennt seine Datei (`PinnedScreenshotPanel.persistedURL`); `unpinPanel`, `unpinAll` und
+  das Schließen im Panel löschen sie. **Dies war der schwerste Befund der Kartierung.**
+- **FB-03 · Nur das Bild wurde gesichert, nicht die Anordnung** — bewusst beibehalten,
+  siehe BF-03; die Beschreibung im README ist entsprechend genauer gefasst.
+- **FB-04 · Das Erreichen der Obergrenze war unsichtbar** — behoben 2026-08-25.
+  `CaptureLog.report` zeigt eine Kurzmeldung.
+- **FB-05 · Wiederherstellung sortierte nach Dateinamen aufsteigend** — behoben
+  2026-08-25. Sie ist umgekehrt und räumt überzählige Dateien ab.
+
+### Akzeptiert
+
+- **BF-02 · Anheften folgt nicht der Einstellung zum automatischen Sichern** — akzeptiert
+  2026-08-25. Die Datei ist kein Archiv, sondern der Träger der Wiederherstellung, und sie
+  verschwindet mit dem Fenster (FB-01). Wer beides nicht will, schließt den Pin.
+- **BF-03 · Position, Größe und Deckkraft überleben keinen Neustart** — akzeptiert
+  2026-08-25. Ein angehefteter Screenshot ist ein Arbeitsmittel für den Moment; die
+  Anordnung mitzuführen wäre eine eigene Funktion mit eigener Spec.
+- **BF-06 · Keine Tests** — akzeptiert 2026-08-25. Der Lebenszyklus hängt an
+  `NSPanel`-Fenstern und lässt sich ohne Oberfläche nicht sinnvoll prüfen; der Nachweis
+  bleibt manuell (siehe *Übergabe an die QA* in `design.md`).
 
 ## Offene Fragen
 
-- **OF-01** · Soll das Schließen eines angehefteten Bildes seine Datei löschen? —
-  entscheidet der Autor. Dies ist die Kernfrage des Features.
-- **OF-02** · Soll die Anordnung mitgesichert werden? — entscheidet der Autor.
-- **OF-03** · Soll die Speicherverwaltung in den Einstellungen diesen Ordner einbeziehen? —
-  entscheidet der Autor. Betrifft B11.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Löscht das Schließen die Datei? | ja — das war die Kernfrage des Features und ist der Befund, der die Reparatur ausgelöst hat | 2026-08-25 |
+| OF-02 · Anordnung mitsichern? | nein, siehe BF-03 | 2026-08-25 |
+| OF-03 · Speicherverwaltung erweitern? | ja — eigene Zeile mit Größe und Leeren im Reiter *Advanced* | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -159,4 +148,5 @@ Bildschirminhalte dauerhaft an einen Ort, den der Nutzer nicht kennt.**
 | 4 | Obergrenze 20 | unbegrenzt | Schutz gegen zugestellten Bildschirm |
 | 5 | Anzeigegröße höchstens 400 Punkte breit | Originalgröße | ein Vollbild-Screenshot als schwebendes Fenster wäre unbrauchbar |
 | 6 | Durchsichtigkeit über das Scrollrad | nur über das Kontextmenü | schnell erreichbar, ohne Menü |
-| 7 | Kein Löschen beim Schließen | Datei mit entfernen | **Grund nicht erkennbar.** Erkennbar ist nur, dass Wiederherstellung gewollt war — dass sie auch geschlossene Bilder erfasst, wirkt unbeabsichtigt (FB-01) |
+| 7 | Schließen löscht die Datei (3.5.0) | Datei behalten | ein geschlossener Pin ist erledigt; alles andere sammelt Bildschirminhalte an einem Ort, den der Nutzer nicht sieht |
+| 8 | Wiederherstellung neueste zuerst (3.5.0) | alphabetisch aufsteigend | bei Zeitstempel-Namen holte die alte Sortierung die ältesten zwanzig zurück |

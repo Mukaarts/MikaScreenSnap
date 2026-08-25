@@ -1,8 +1,9 @@
 # B06 · Farbpipette — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Von den vier markierten Kriterien sind drei
+> behoben, eines ist eine bewusste Entscheidung.
 
 ## Zweck
 
@@ -57,21 +58,12 @@ Lupe zeigt vergrößert, welches Pixel getroffen wird.
 - **AK-08** · Angenommen, mehrere Displays sind angeschlossen, wenn die Pipette über eines
   davon geführt wird, dann zeigt sie die Farbe des Pixels unter dem Zeiger — auf jedem
   Display, unabhängig von der Skalierung.
-- **AK-09** ⚠ · Angenommen, die Pipette ist aktiv, wenn sich der Bildschirminhalt ändert —
-  ein Video läuft, eine Animation spielt —, dann zeigt die Lupe **weiterhin den Stand vom
-  Start der Pipette**.
-  *(`ColorPickerEngine.swift:81` nimmt beim Start je Display **einen** Schnappschuss auf und
-  liest danach nur noch daraus. Der Dateikommentar begründet das mit der Notwendigkeit,
-  synchron zu bleiben. Zur Klärung vorgelegt: Der Nutzer greift damit eine Farbe ab, die so
-  gerade nicht mehr auf dem Bildschirm steht.)*
-- **AK-10** ⚠ · Angenommen, mit gedrückter Umschalttaste wird geklickt, wenn die Aktion
-  ausgeführt ist, dann wird die Farbe zusätzlich in eine Palette aufgenommen — **die
-  nirgends angezeigt wird**. Kurzmeldung und Verhalten sind von einem gewöhnlichen Klick
-  nicht unterscheidbar.
-  *(`ColorLoupePanel.swift:137` ruft `addToPalette`; `ColorHistoryManager.palette` wird
-  gespeichert, aber von keiner Oberfläche gelesen — das Menü zeigt ausschließlich den
-  Verlauf. Der Toast lautet in beiden Fällen „Copied …". Die Funktion ist im README
-  beschrieben. Zur Klärung vorgelegt.)*
+- **AK-09** · Angenommen, die Pipette ist aktiv, wenn sich der Bildschirminhalt ändert — ein
+  Video läuft, eine Animation spielt —, dann zeigt die Lupe **weiterhin den Stand vom Start
+  der Pipette**. Das ist eine bewusste Entscheidung, Begründung unter *Befunde*, BF-02.
+- **AK-10** · Angenommen, mit gedrückter Umschalttaste wird geklickt, wenn die Aktion
+  ausgeführt ist, dann wird die Farbe zusätzlich in eine Palette aufgenommen, die im
+  Menüleistenmenü unter *Colour Palette* steht und dort auch geleert werden kann.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -87,14 +79,16 @@ dieses Feature den gesamten Inhalt aller Bildschirme auf** und hält ihn im Spei
   dann sind die Bildschirmaufnahmen aus dem Speicher entfernt.
 - **AK-14** · Angenommen, eine Farbe wird abgegriffen, wenn der Vorgang läuft, dann enthält
   kein Protokoll Bildinhalte.
-- **AK-15** ⚠ · Angenommen, *Reset All Preferences* wird ausgeführt, wenn die Anwendung
-  danach startet, dann sind Farbverlauf und Palette **weiterhin vorhanden**.
-  *(`AppPreferences.swift:135` führt eine von Hand gepflegte Schlüsselliste; die Schlüssel
-  des Farbverlaufs stehen nicht darin. Zur Klärung vorgelegt.)*
-- **AK-16** ⚠ · Angenommen, ein Hex-Wert wird in die Zwischenablage gelegt, wenn die
+- **AK-15** · Angenommen, *Reset All Preferences* wird ausgeführt, wenn die Anwendung danach
+  startet, dann sind Farbverlauf und Palette **geleert** — beide Schlüssel stehen in der
+  Rücksetzliste.
+- **AK-16** · Angenommen, ein Hex-Wert wird in die Zwischenablage gelegt, wenn die
   geräteübergreifende Zwischenablage aktiv ist, dann überträgt das System ihn an andere
-  Geräte des Nutzers. *(Wie B05/AK-17; hier von geringer Tragweite, weil ein Farbwert kein
-  Geheimnis ist — der Vollständigkeit halber aufgenommen.)*
+  Geräte des Nutzers. Anders als bei erkanntem Text (B05) wird hier **keine**
+  Vertraulichkeitskennzeichnung gesetzt: Ein Farbwert ist kein Geheimnis, und die
+  Kennzeichnung würde Zwischenablage-Verwaltungen daran hindern, ihn aufzubewahren.
+- **AK-17** · Angenommen, Farben stehen im Verlauf, wenn im Untermenü *Clear History*
+  gewählt wird, dann ist der Verlauf leer; dasselbe gilt für *Clear Palette*.
 
 *Abschnitt 4 (Rate Limits): trifft nicht zu. Abschnitt 6 (Geheimnisse): trifft nicht zu.*
 
@@ -109,42 +103,50 @@ dieses Feature den gesamten Inhalt aller Bildschirme auf** und hält ihn im Spei
 - **EC-05** · Farbe wird zweimal abgegriffen → erscheint zweimal im Verlauf, es gibt keine
   Zusammenfassung gleicher Werte.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Die Palette hat keine Anzeige.** Fundstellen: `ColorHistoryManager.swift:16`
-  (gespeichert, höchstens 20), `ColorLoupePanel.swift:137` (befüllt),
-  `MikaScreenSnapApp.swift:219` (das Menü zeigt nur den Verlauf). Folge: Eine im README
-  beworbene Funktion („Shift+Click adds to palette") ist ohne Wirkung für den Nutzer — die
-  Daten sammeln sich, ohne je sichtbar zu werden.
-- **FB-02 · Die Lupe zeigt einen eingefrorenen Bildschirm.** Fundstelle:
-  `ColorPickerEngine.swift:81`. Folge: Bei bewegten Inhalten wird die falsche Farbe
-  abgegriffen, ohne Hinweis. Die Entscheidung ist begründet (Synchronität), die fehlende
-  Kennzeichnung nicht.
-- **FB-03 · Der gesamte Bildschirminhalt liegt unkomprimiert im Speicher.** Fundstelle:
-  `ColorPickerEngine.swift:96` hält je Display die rohen Bilddaten. Folge: Bei mehreren
-  großen Displays erheblicher Speicherbedarf, solange die Pipette aktiv ist — und eine
-  vollständige Kopie fremder Bildschirminhalte im Prozessspeicher.
-- **FB-04 · Farbverlauf und Palette überstehen das Zurücksetzen.** Fundstelle:
-  `AppPreferences.swift:135`. Folge: „Alle Einstellungen zurücksetzen" tut nicht, was es
-  sagt; abgegriffene Farben bleiben nachvollziehbar.
-- **FB-05 · Kein Weg, den Farbverlauf zu leeren.** Weder Menü noch Einstellungen bieten
-  das an; `clearPalette` existiert im Verwalter, wird aber von niemandem aufgerufen. Folge:
-  Der Verlauf lässt sich nur durch zehn neue Farben verdrängen.
-- **FB-06 · RGB und HSL werden berechnet und angezeigt, aber nie kopiert.** Fundstelle:
-  `ColorPickerEngine.swift:13-14`. Folge: Wer den RGB-Wert braucht, muss ihn abschreiben.
-- **FB-07 · Keine Tests.** Die Farbumrechnung (Hex, RGB, HSL) ist reine Rechnung und ideal
-  prüfbar; geprüft wird sie nicht.
+### Behoben
+
+- **FB-01 · Die Palette hatte keine Anzeige** — behoben 2026-08-25. Untermenü *Colour
+  Palette* mit farbigem Punkt, Hex-Wert und *Clear Palette*.
+- **FB-04 · Farbverlauf und Palette überstanden das Zurücksetzen** — behoben 2026-08-25.
+  `ColorHistoryManager.historyDefaultsKey` und `.paletteDefaultsKey` sind öffentlich und
+  stehen in `AppPreferences.ownedDefaultsKeys`; ein Test hält das fest.
+- **FB-05 · Kein Weg, den Farbverlauf zu leeren** — behoben 2026-08-25 über *Clear
+  History* und *Clear Palette* im Menü. *(Die erste Fassung behauptete, `clearPalette`
+  existiere bereits im Verwalter — das war falsch; die Methode gab es nicht und wurde
+  angelegt.)*
+
+### Akzeptiert
+
+- **BF-02 · Die Lupe zeigt einen eingefrorenen Bildschirm** — akzeptiert 2026-08-25. Die
+  Lupe zeichnet bei jeder Mausbewegung neu; ein Rundweg zum System je Abtastung würde
+  ruckeln, und ein regelmäßiges Neulesen hieße, den gesamten Bildschirminhalt fortlaufend
+  im Speicher zu erneuern. Für den Zweck — eine Farbe aus einer stehenden Oberfläche
+  greifen — ist der Schnappschuss richtig.
+- **BF-03 · Der Bildschirminhalt liegt unkomprimiert im Speicher** — akzeptiert
+  2026-08-25. Folge von BF-02; der Speicher wird mit dem Controller freigegeben, sobald die
+  Pipette endet.
+- **BF-06 · RGB und HSL werden angezeigt, aber nie kopiert** — akzeptiert 2026-08-25. Hex
+  ist das Format, das in Code und Werkzeugen eingefügt wird; eine Auswahl beim Klicken
+  würde den einen Handgriff verdoppeln, um den es geht.
+
+### Behoben (Tests)
+
+- **FB-07 · Keine Tests** — behoben 2026-08-25. Fünf Tests über Hex-, RGB- und
+  HSL-Umrechnung in `Tests/ColorConversionTests.swift`.
 
 ## Offene Fragen
 
-- **OF-01** · Soll die Palette eine Anzeige bekommen — oder soll Shift+Klick entfallen? —
-  entscheidet der Autor.
-- **OF-02** · Soll der Farbverlauf leerbar sein und vom Zurücksetzen erfasst werden? —
-  entscheidet der Autor.
-- **OF-03** · Soll die Lupe den Bildschirm fortlaufend neu lesen? — entscheidet der Autor;
-  die jetzige Lösung ist bewusst gewählt, die Folge (AK-09) aber unsichtbar.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Palette anzeigen oder Shift+Klick entfernen? | anzeigen — als eigenes Untermenü neben dem Verlauf | 2026-08-25 |
+| OF-02 · Verlauf leerbar und vom Zurücksetzen erfasst? | beides ja | 2026-08-25 |
+| OF-03 · Lupe fortlaufend neu lesen? | nein, siehe BF-02 | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -155,4 +157,4 @@ dieses Feature den gesamten Inhalt aller Bildschirme auf** und hält ihn im Spei
 | 5 | Wie wird die Klickfläche unsichtbar gemacht? | Deckkraft 0,001 statt völliger Transparenz | ein vollständig durchsichtiges Fenster nimmt keine Mausereignisse entgegen |
 | 6 | Welche Ebene hat die Lupe? | eine über den Klickflächen | sonst verdeckte die eigene Klickfläche die Lupe |
 | 7 | Was wird kopiert? | nur Hex | **Grund nicht erkennbar** (FB-06) |
-| 8 | Wofür die Palette? | dauerhafte Sammlung neben dem Verlauf | **Zweck nicht rekonstruierbar** — es gibt keine Anzeige dazu (FB-01) |
+| 8 | Wofür die Palette? | dauerhafte Sammlung neben dem Verlauf, seit 3.5.0 im Menü sichtbar | der Verlauf verdrängt nach zehn Farben; die Palette hält, was bleiben soll |

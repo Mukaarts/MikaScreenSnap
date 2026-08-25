@@ -1,8 +1,8 @@
 # B15 · Menüleisten-Hub & Programminfo — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Beide markierten Kriterien sind behoben.
 
 ## Zweck
 
@@ -60,13 +60,14 @@ Hinweis auf eine fehlende Berechtigung, und dort wird die Anwendung beendet.
 - **AK-12** · Angenommen, ein Fenster wird aus dem Menü geöffnet, wenn es erscheint, dann
   kommt es nach vorn und nimmt den Tastaturfokus — obwohl die Anwendung kein Dock-Symbol
   hat.
-- **AK-13** ⚠ · Angenommen, die Berechtigung fehlt, wenn ein Aufnahmeeintrag angeklickt
-  wird, dann ist er **trotzdem anklickbar** und führt zu einem fehlgeschlagenen Versuch mit
-  Kurzmeldung.
-  *(`MikaScreenSnapApp.swift:159` zeigt den Warneintrag, deaktiviert aber keinen der
-  Aufnahmeeinträge. Zur Klärung vorgelegt.)*
-- **AK-14** ⚠ · Angenommen, das Aktualisierungswerk ist nicht bereit, wenn *Check for
-  Updates…* angezeigt wird, dann ist der Eintrag trotzdem anklickbar (siehe B14/AK-07).
+- **AK-13** · Angenommen, die Berechtigung fehlt, wenn das Menü geöffnet wird, dann sind
+  **alle sieben Aufnahme- und Zusatzeinträge deaktiviert** und nur der Warneintrag führt
+  weiter — in die Systemeinstellungen.
+- **AK-14** · Angenommen, das Aktualisierungswerk ist nicht bereit, wenn *Check for
+  Updates…* angezeigt wird, dann ist der Eintrag deaktiviert (siehe B14/AK-07).
+- **AK-17** · Angenommen, Farben wurden mit gedrückter Umschalttaste abgegriffen, wenn das
+  Menü geöffnet wird, dann steht neben *Color History* ein zweites Untermenü *Colour
+  Palette*; beide lassen sich dort leeren.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -91,33 +92,37 @@ Stufe A.
 - **EC-04** · Berechtigung wird bei geöffnetem Menü erteilt → der Warneintrag verschwindet
   erst beim nächsten Öffnen.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Der Warnhinweis warnt, hindert aber nicht.** Fundstelle:
-  `MikaScreenSnapApp.swift:159`. Folge: siehe AK-13 und B01/FB-03.
-- **FB-02 · Beim Erststart wird die Berechtigung nicht angestoßen.** Fundstelle:
-  `MikaScreenSnapApp.swift:44-48` — `checkScreenCapturePermission()`, das über
-  `SCShareableContent.current` die Anwendung überhaupt erst in die Systemliste einträgt,
-  läuft **nur im `else`-Zweig**, also wenn die Ersteinrichtung bereits abgeschlossen ist.
-  Beim ersten Start übernimmt die Ersteinrichtung, die ausschließlich abfragt. Folge: Der
-  Nutzer wird im Onboarding in die Systemeinstellungen geschickt, bevor die Anwendung dort
-  gelistet sein kann. Siehe B12/FB-01 — hier ist die Fundstelle für das *Warum*.
-- **FB-03 · Angeheftete Bilder heißen nur „Pin 1", „Pin 2".** Fundstelle:
-  `MikaScreenSnapApp.swift:206`. Folge: Bei mehreren angehefteten Bildern ist nicht
-  erkennbar, welches gemeint ist; ein Vorschaubild oder ein Zeitstempel fehlt.
-- **FB-04 · Kein Weg zur Projektseite oder Hilfe.** Weder Menü noch „Über"-Fenster
-  verlinken auf das Projekt. Folge: Wer einen Fehler melden will, findet den Weg nicht aus
-  der Anwendung heraus — bei „keine Fehlerberichte" als Erfolgskriterium (`docs/prd.md`)
-  ist das bemerkenswert.
-- **FB-05 · Keine Tests.**
+### Behoben
+
+- **FB-01 · Der Warnhinweis warnte, hinderte aber nicht** — behoben 2026-08-25. Die
+  Aufnahmeeinträge sind ohne Berechtigung deaktiviert.
+- **FB-02 · Beim Erststart wurde die Berechtigung nicht angestoßen** — behoben in B12: Die
+  Ersteinrichtung fordert sie an, statt sie nur abzufragen.
+
+### Akzeptiert
+
+- **BF-03 · Angeheftete Bilder heißen nur „Pin 1", „Pin 2"** — akzeptiert 2026-08-25. Der
+  Eintrag holt ein Fenster nach vorn, das ohnehin sichtbar ist; ein Vorschaubild im Menü
+  wäre Aufwand für einen Weg, den man selten geht.
+- **BF-04 · Kein Weg zur Projektseite aus der Anwendung** — akzeptiert 2026-08-25. Das
+  „Über"-Fenster nennt Name und Fassung; wer ein Problem meldet, findet das Projekt über
+  dieselbe Quelle, aus der er die Anwendung bezogen hat. Ein Verweis wäre eine Zeile — er
+  fehlt bewusst, weil das Menü bereits fünfzehn Einträge trägt.
+- **BF-05 · Keine Tests** — akzeptiert 2026-08-25. Das Menü ist eine SwiftUI-Ansicht ohne
+  eigene Logik.
 
 ## Offene Fragen
 
-- **OF-01** · Sollen Aufnahmeeinträge bei fehlender Berechtigung deaktiviert sein? —
-  entscheidet der Autor. Betrifft B01 und B12.
-- **OF-02** · Soll das „Über"-Fenster auf das Projekt verweisen? — entscheidet der Autor.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Aufnahmeeinträge ohne Berechtigung sperren? | ja, im Menü. Tastenkombinationen bleiben aktiv und melden den Fehlschlag | 2026-08-25 |
+| OF-02 · Verweis auf das Projekt im „Über"-Fenster? | nein, siehe BF-04 | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -128,3 +133,4 @@ Stufe A.
 | 5 | Leerzustände als Text statt ausgeblendeter Untermenüs | Untermenü ausblenden | ein verschwundener Eintrag sieht aus wie ein Fehler |
 | 6 | Fassungsnummer aus dem Programmpaket | fest verdrahtet | seit 3.1.0; verhindert Abweichungen zwischen Anzeige und Paket |
 | 7 | `Capture Window…` ohne Kombination | eigene Kombination vergeben | die interaktive Auswahl braucht ohnehin die Maus; `⌃⇧⌘5` deckt den schnellen Fall ab |
+| 8 | Einträge ohne Berechtigung sperren (3.5.0) | anklickbar lassen | der Weg zur Berechtigung führte zuvor durch einen misslungenen Versuch |

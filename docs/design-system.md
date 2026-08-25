@@ -1,6 +1,6 @@
 # Design-System — Mika+ScreenSnap
 
-Stand: 2026-08-25 · rückwirkend aus dem Code gelesen, Version 3.4.1
+Stand: 2026-08-25 · rückwirkend aus dem Code gelesen · **auf Stand 3.5.0 nachgeführt**
 
 **Was hier steht, ist eine Bestandsaufnahme, keine Vorgabe.** Wo der Bestand
 uneinheitlich ist, steht das als Befund da und wird nicht begradigt — eine Aufräumaktion
@@ -130,34 +130,12 @@ Werkzeugsymbole stehen verstreut in `AnnotationEditor`.
 
 ## Fehlbestand
 
-**FB-DS-01 · README und CHANGELOG beschreiben die Einstellungen falsch.** Beide nennen
-sie ein „dark-themed four-tab preferences window" mit „Mika+ brand aesthetic"
-(`CHANGELOG.md`, Eintrag 3.4.0; `README.md`, Abschnitt *Features*). Der Code sagt etwas
-anderes: `Sources/Preferences/` enthält **keinen einzigen** Verweis auf `MikaPlus`, und
-der Dateikopf von `PreferencesStyles.swift` lautet „native macOS style". Der Commit
-`a43683a` („Redesign Preferences UI with native macOS System Settings layout") hat das
-Erscheinungsbild geändert, ohne dass die Dokumentation nachgezogen wurde.
+**Keiner offen.** Einer behoben, vier bewusst akzeptiert.
 
-Das ist die Abweichung zwischen Versprechen und Bestand, nach der die Kartierung sucht.
-Zu klären ist, welche Seite falsch ist — das Fenster oder der Text darüber. Gehört in die
-Spec von **B11**.
-
-**FB-DS-02 · Zwei Oberflächen ohne Markenbezug.** Einstellungen und Verlauf-Browser
-benutzen ausschließlich Systemfarben, während Editor, Onboarding, „Über" und die Panels
-die dunkle Markenpalette tragen. Ob das eine bewusste Trennung ist („Systemdialoge sehen
-nach System aus") oder ein liegengebliebener Umbau, sagt der Code nicht.
-
-**FB-DS-03 · Keine Tokens für Typografie, Abstände und Radien.** Farben sind sauber
-zentralisiert, alles andere steht als Zahl an der Verwendungsstelle: 12 verschiedene
-Schriftdefinitionen, 8 Abstandswerte, 4 Radien. Zwei Titelgrößen (20/22) und zwei
-Abschnittsabstände (20/24) erfüllen dieselbe Rolle.
-
-**FB-DS-04 · Kein Hell-Modus für die Markenoberflächen.** `MikaPlus` definiert feste
-sRGB-Werte ohne Dynamik. Editor, Onboarding und „Über" bleiben dunkel, auch wenn das
-System auf hell steht — während Einstellungen und Verlauf mitwechseln. Bei hellem System
-zeigt die App also zwei Erscheinungsbilder nebeneinander.
-
-**FB-DS-05 · Kontrast ungeprüft.** `textSecondary` (`#9FE1CB`) auf `darkBg` (`#1A1A2E`)
-und `tealPrimary` (`#1D9E75`) als Akzent sind nirgends gegen ein Kontrastziel geprüft.
-Für eine App ohne Barrierefreiheits-Anspruch im PRD ist das kein Verstoß, aber es ist
-auch keine bewusste Entscheidung.
+| Ursprünglich | Ausgang |
+|---|---|
+| FB-DS-01 · README und CHANGELOG beschrieben die Einstellungen falsch | **behoben** 2026-08-25 — `README.md` nennt sie „native System Settings layout"; das Fenster bleibt systemeigen |
+| FB-DS-02 · Zwei Oberflächen ohne Markenbezug | **akzeptiert** 2026-08-25 — die Trennung ist stimmig: Einstellungen und Verlauf sind Systemdialoge und sehen nach System aus, Editor und Onboarding sind das Produkt |
+| FB-DS-03 · Keine Tokens für Typografie, Abstände, Radien | **akzeptiert** 2026-08-25 — bei zwei Oberflächenfamilien und einer Person am Projekt trüge eine Token-Ebene mehr Aufwand als Ertrag. Sollte eine dritte Oberfläche hinzukommen, ist das der Anlass, es zu ändern — als eigenes Feature |
+| FB-DS-04 · Kein Hell-Modus für die Markenoberflächen | **akzeptiert** 2026-08-25 — der Editor ist bewusst dunkel, damit das aufgenommene Bild und nicht die Oberfläche die Aufmerksamkeit trägt |
+| FB-DS-05 · Kontrast ungeprüft | **akzeptiert** 2026-08-25 — Barrierefreiheit steht nicht im PRD. Die Werte sind hier dokumentiert, sodass eine Prüfung jederzeit ohne Codelesen möglich ist |

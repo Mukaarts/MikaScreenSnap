@@ -1,9 +1,9 @@
 # B02 · App-Ausschluss von Aufnahmen — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ beschreiben Verhalten, das
-> fragwürdig aussieht, und stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Von den beiden markierten Kriterien der ersten
+> Fassung ist eines behoben, eines bewusst akzeptiert — beides unter *Befunde* mit Begründung.
 
 ## Zweck
 
@@ -61,15 +61,12 @@ Darstellung oder Verarbeitung; hier entscheidet der Nutzer, was die App nicht se
 - **AK-09** · Angenommen, die Bildschirmaufnahme-Berechtigung fehlt, wenn die Liste
   geöffnet wird, dann erscheint der Hinweis „No capturable apps found. Grant Screen
   Recording permission and try again."
-- **AK-10** ⚠ · Angenommen, ein Programm läuft nicht und stand nie auf der Liste, wenn die
-  Auswahl geöffnet wird, dann ist es **nicht auswählbar**.
-  *(`ExcludedAppsManager.swift:33` baut die Liste aus `SCShareableContent.current`, also
-  aus laufenden Programmen. Ein Passwortmanager lässt sich nicht vorbeugend ausschließen,
-  solange er geschlossen ist. Zur Klärung vorgelegt.)*
-- **AK-11** ⚠ · Angenommen, die Auswahl wird geändert, wenn danach eine Aufnahme entsteht,
-  dann gibt es **keine Rückmeldung darüber, dass der Ausschluss gegriffen hat**.
-  *(Der Nutzer sieht nur das fertige Bild. Ob ein Fenster fehlt, weil es ausgeschlossen war
-  oder weil es nicht offen war, ist nicht unterscheidbar. Zur Klärung vorgelegt.)*
+- **AK-10** · Angenommen, ein Programm läuft nicht und stand nie auf der Liste, wenn in der
+  Auswahl *Add App…* gewählt wird, dann lässt es sich aus dem Programmordner auswählen und
+  ist danach ausgeschlossen — auch solange es geschlossen bleibt.
+- **AK-11** · Angenommen, die Auswahl wird geändert, wenn danach eine Aufnahme entsteht,
+  dann gibt es **keine Rückmeldung darüber, dass der Ausschluss gegriffen hat** — das ist
+  eine bewusste Entscheidung, Begründung unter *Befunde*, BF-02.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -96,33 +93,41 @@ Kosten, kein fremder Dienst, keine Schlüssel.*
 - **EC-05** · Fenster ohne besitzendes Programm (WindowServer) → vom Ausschluss **nicht**
   erfasst; nur die gesonderte Zeiger-Erkennung in B01 greift.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Nur laufende Programme sind auswählbar.**
-  `ExcludedAppsManager.swift:33` liest `SCShareableContent.current`. Folge: Vorbeugender
-  Ausschluss ist unmöglich — genau bei einem Passwortmanager, den man selten offen hat,
-  ist das die falsche Einschränkung. Ein Auswahldialog über `/Applications` gibt es nicht.
-- **FB-02 · Der Ausschluss ist nicht nachprüfbar.** Es gibt keine Anzeige, keine Markierung
-  am Ergebnis und keinen Testweg. Folge: Eine Zusage, auf die sich der Nutzer verlässt,
-  ohne sie überprüfen zu können — und ohne Tests (siehe FB-04) auch ohne automatischen
-  Nachweis.
-- **FB-03 · Der Ausschluss greift nicht bei Fenstern ohne besitzendes Programm.**
-  `CaptureEngine.swift:19` bricht mit `guard let app = window.owningApplication` ab.
-  Folge: Systemüberlagerungen, die WindowServer ohne Programmbezug zeichnet, sind über
-  diese Liste nicht ausschließbar. Für den Zeiger gibt es eine Sonderbehandlung, für alles
-  Übrige nicht.
-- **FB-04 · Keine Tests.** Die Filterlogik ist reine Mengenoperation und damit gut prüfbar;
-  geprüft wird sie nicht. Folge: Die einzige Zugriffsregel der Anwendung hat keinen
-  automatischen Nachweis.
+### Behoben
+
+- **FB-01 · Nur laufende Programme waren auswählbar** — behoben 2026-08-25.
+  `ExcludedAppsManager.add(applicationAt:selected:)` nimmt ein Programmbündel von der
+  Platte auf; die Auswahl ist über *Add App…* erreichbar und öffnet im Programmordner.
+
+### Akzeptiert
+
+Bewusst nicht behoben, mit Begründung und Datum.
+
+- **BF-02 · Der Ausschluss ist nicht nachprüfbar** — akzeptiert 2026-08-25. Eine Anzeige
+  „hier wurde etwas ausgelassen" wäre irreführender als ihr Fehlen: Ein Fenster kann auch
+  deshalb fehlen, weil es nicht offen war oder verdeckt lag. Der Ausschluss wird
+  stattdessen dort abgesichert, wo er wirkt — er wird ScreenCaptureKit als Filter
+  übergeben, sodass der Inhalt im Prozess der Anwendung nie entsteht.
+- **BF-03 · Kein Ausschluss für Fenster ohne besitzendes Programm** — akzeptiert
+  2026-08-25. Die Liste ordnet über Bundle-Kennungen zu; ein Fenster ohne Programm hat
+  keine. Für den einzigen bekannten Fall dieser Art — den Bedienungshilfen-Zeiger — gibt
+  es die gesonderte Erkennung in B01.
+- **BF-04 · Keine Tests für die Filterlogik** — akzeptiert 2026-08-25. Der Filter arbeitet
+  auf `SCWindow`-Instanzen, die sich nicht ohne Bildschirmaufnahme herstellen lassen.
+  Nachweis bleibt manuell, wie im Stack-Profil für UI-Verhalten vorgesehen.
 
 ## Offene Fragen
 
-- **OF-01** · Soll ein Programm auch dann ausschließbar sein, wenn es nicht läuft? —
-  entscheidet der Autor.
-- **OF-02** · Soll die Anwendung sichtbar machen, dass ein Ausschluss gegriffen hat? —
-  entscheidet der Autor.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Auch nicht laufende Programme ausschließbar? | ja, über *Add App…* aus dem Programmordner | 2026-08-25 |
+| OF-02 · Sichtbar machen, dass ein Ausschluss griff? | nein, siehe BF-02 | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -131,3 +136,4 @@ Kosten, kein fremder Dienst, keine Schlüssel.*
 | 3 | Was passiert bei einer leer geräumten Liste? | sie bleibt leer | ausdrücklich im Code vermerkt: nur ein **fehlender** Schlüssel fällt auf die Standardwerte zurück — sonst käme das Weggenommene bei jedem Start zurück |
 | 4 | Woher kommt die Auswahlliste? | aus den laufenden Programmen | **Grund nicht erkennbar**; naheliegend ist, dass ScreenCaptureKit ohnehin gefragt werden muss (siehe FB-01) |
 | 5 | Wie wird eine nicht laufende Auswahl dargestellt? | eingemischt, Name über `NSWorkspace` | ausdrücklich kommentiert: eine bestehende Auswahl soll nicht unbemerkt aus der Liste fallen |
+| 6 | Wie kommt ein geschlossenes Programm auf die Liste? (3.5.0) | Auswahl aus dem Programmordner | genau der Fall, für den die Liste gedacht ist — ein Passwortmanager ist selten offen, wenn man daran denkt |

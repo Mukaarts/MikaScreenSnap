@@ -1,8 +1,9 @@
 # B09 · Screenshot-Verlauf — Spezifikation
 
-Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst**
+Status: `rekonstruiert` · Stand: 2026-08-25 · **rückwirkend erfasst, Befunde bearbeitet in 3.5.0**
 
-> Beschrieben ist, **was Version 3.4.1 tut**. Kriterien mit ⚠ stehen zur Klärung.
+> Beschrieben ist, **was der Code tut**. Von den fünf markierten Kriterien der ersten
+> Fassung sind vier behoben, eines bewusst beibehalten.
 
 ## Zweck
 
@@ -53,18 +54,12 @@ den Screenshot von vorgestern wieder.
 - **AK-06** · Angenommen, eine Aufnahme wird gesichert, wenn sie fertig ist, dann entsteht
   zusätzlich ein Vorschaubild von höchstens 200 Punkten Kantenlänge im Unterordner
   `.thumbnails`.
-- **AK-07** ⚠ · Angenommen, zwei Aufnahmen entstehen **innerhalb derselben Sekunde**, wenn
-  beide gesichert werden, dann trägt die zweite denselben Dateinamen und **überschreibt die
-  erste ersatzlos**.
-  *(`AppPreferences.swift:172` bildet den Namen aus einem Zeitstempel mit
-  Sekundengenauigkeit; `:194` schreibt ohne Prüfung auf Vorhandensein. Das Anheften
-  verwendet an vergleichbarer Stelle Millisekunden, das Sichern nicht. Zur Klärung
-  vorgelegt.)*
-- **AK-08** ⚠ · Angenommen, das Sichern schlägt fehl — etwa weil der Ordner nicht
-  beschreibbar ist —, wenn der Fehler auftritt, dann **erfährt der Nutzer nichts davon**:
-  Es erscheint keine Meldung, und die Aufnahme ist nach dem Schließen des Editors verloren.
-  *(`AppPreferences.swift:196` schreibt in ein `print()`, das in einem Programm ohne
-  Dock-Symbol niemanden erreicht. Zur Klärung vorgelegt.)*
+- **AK-07** · Angenommen, zwei Aufnahmen entstehen **innerhalb derselben Sekunde**, wenn
+  beide gesichert werden, dann entstehen **zwei Dateien**: Der Zeitstempel trägt
+  Millisekunden, und bei gleichem Namen wird eine Zählnummer angehängt.
+- **AK-08** · Angenommen, das Sichern schlägt fehl — etwa weil der Ordner nicht
+  beschreibbar ist —, wenn der Fehler auftritt, dann erscheint eine Kurzmeldung am
+  Bildschirm und der Fehler steht in der Konsole.
 
 ### Verlauf-Browser
 
@@ -90,14 +85,14 @@ den Screenshot von vorgestern wieder.
   wird, dann stehen dort Anzahl und Gesamtgröße der Aufnahmen.
 - **AK-16** · Angenommen, *Clear History* wird bestätigt, wenn die Aktion läuft, dann sind
   alle Aufnahmen und der gesamte `.thumbnails`-Ordner gelöscht.
-- **AK-17** ⚠ · Angenommen, die Speichergröße wird angezeigt, wenn sie berechnet wird, dann
-  zählt sie **nur die Originaldateien** — die Vorschaubilder fehlen in der Summe.
-  *(`ScreenshotHistoryManager.swift:110` summiert über `items`, also über Originale. Zur
-  Klärung vorgelegt.)*
-- **AK-18** ⚠ · Angenommen, Aufnahmen werden gelöscht, wenn die Aktion läuft, dann werden
-  sie **endgültig entfernt**, nicht in den Papierkorb gelegt.
-  *(`ScreenshotHistoryManager.swift:92` und `:101` benutzen `removeItem`. Zur Klärung
-  vorgelegt.)*
+- **AK-17** · Angenommen, die Speichergröße wird angezeigt, wenn sie berechnet wird, dann
+  umfasst sie Aufnahmen **und** Vorschaubilder; angeheftete Bilder stehen als eigene Zeile
+  daneben.
+- **AK-18** · Angenommen, Aufnahmen werden gelöscht, wenn die Aktion läuft, dann werden sie
+  **endgültig entfernt**, nicht in den Papierkorb gelegt — bewusst beibehalten, Begründung
+  unter *Befunde*, BF-05.
+- **AK-24** · Angenommen, Dateien liegen im Verlaufsordner, die beim Start nicht eingelesen
+  wurden, wenn *Clear History* ausgeführt wird, dann werden auch sie gelöscht.
 
 ### Datenschutz und Missbrauchsschutz
 
@@ -105,11 +100,10 @@ Stufe A, Abschnitt 1 des Katalogs ausdrücklich in Kraft. Dieses Feature legt
 Bildschirminhalte **dauerhaft und unverschlüsselt** auf der Festplatte ab — es ist die
 Stelle, an der aus einem flüchtigen Bild eine Datei wird.
 
-- **AK-19** ⚠ · Angenommen, eine Aufnahme entsteht, wenn sie gesichert wird, dann geschieht
-  das **vor** dem Öffnen des Editors — also mit dem **unbearbeiteten Original**. Zensiert
-  der Nutzer anschließend einen Bereich, bleibt die unzensierte Datei bestehen.
-  *(`CaptureEngine.swift:427`. Gegenstück zu B04/AK-12. Zur Klärung vorgelegt — dies ist
-  der schwerwiegendste Einzelbefund der Erfassung.)*
+- **AK-19** · Angenommen, eine Aufnahme entsteht, wenn sie gesichert wird, dann geschieht
+  das **vor** dem Öffnen des Editors — als Sicherheitsnetz gegen einen Absturz. Sobald der
+  Nutzer exportiert oder etwas zensiert, wird **dieselbe Datei durch das bearbeitete Bild
+  ersetzt**, statt eine zweite anzulegen. Gegenstück zu B04/AK-12 und B04/AK-15.
 - **AK-20** · Angenommen, eine Aufnahme wird gesichert, wenn die Datei entsteht, dann
   enthält kein Protokoll ihren Inhalt oder ihren Dateinamen.
 - **AK-21** · Angenommen, Aufnahmen liegen im Verlaufsordner, wenn darauf zugegriffen wird,
@@ -133,50 +127,56 @@ Stelle, an der aus einem flüchtigen Bild eine Datei wird.
   siehe AK-08.
 - **EC-06** · Vorschaubild fehlt → der Eintrag verweist ersatzweise auf das Original.
 
-## Fehlbestand
+## Befunde
 
-- **FB-01 · Das automatisch Gesicherte ist immer das Original, nie das Bearbeitete.**
-  Fundstelle: `CaptureEngine.swift:427`. Folge: siehe B04/FB-01 — die Zensur schützt nur
-  das Weitergegebene. Zusätzlich: Annotationen gehen verloren, wenn der Nutzer den Editor
-  schließt, ohne zu exportieren; im Verlauf liegt dann nur die rohe Aufnahme.
-- **FB-02 · Namenskollision innerhalb einer Sekunde führt zu Datenverlust.** Fundstelle:
-  `AppPreferences.swift:172` (Format ohne Millisekunden), `:194` (Schreiben ohne Prüfung).
-  Folge: Zwei schnell aufeinanderfolgende Aufnahmen hinterlassen nur eine Datei — ohne
-  Meldung. Dass `PinnedScreenshotManager.swift:79` an gleicher Stelle Millisekunden
-  verwendet, zeigt, dass das Problem an anderer Stelle erkannt wurde.
-- **FB-03 · Fehlgeschlagenes Sichern bleibt unbemerkt.** Fundstelle:
-  `AppPreferences.swift:196`. Folge: Datenverlust ohne Hinweis — die schwerste Ausprägung
-  des projektweiten Befunds FB-AS-03.
-- **FB-04 · Der Verlauf wird beim Start vollständig und synchron eingelesen.** Fundstelle:
-  `ScreenshotHistoryManager.swift:26` (`loadHistory()` im Initialisierer), `:75`
-  (`imageSize(at:)` öffnet **jede** Datei einzeln). Folge: Der Programmstart wird mit
-  wachsendem Verlauf spürbar langsamer, weil für jede Datei die Bildgröße aus dem Dateikopf
-  gelesen wird — auf dem Hauptthread.
-- **FB-05 · Kein Aufräumen, keine Obergrenze.** Es gibt weder Höchstzahl noch Höchstalter
-  noch Höchstgröße. Folge: Der Ordner wächst unbegrenzt; die einzige Bereinigung ist
-  „alles löschen".
-- **FB-06 · Vorschaubilder tragen die Endung des Originals.** Fundstelle:
-  `ScreenshotHistoryManager.swift:134` — der Name wird vom Original übernommen, der Inhalt
-  ist immer JPEG. Folge: Ein Vorschaubild heißt `….png` und enthält JPEG-Daten. Funktioniert
-  unter macOS, ist aber irreführend.
-- **FB-07 · `HistoryItem.id` und `date` bedeuten nicht, wonach sie aussehen.** Die Kennung
-  wird bei jedem Start neu vergeben, das Datum ist das Änderungsdatum der Datei. Folge:
-  Kennungen dürfen nie über einen Programmstart hinweg verwendet werden; ein Kopiervorgang
-  ändert das angezeigte Datum.
-- **FB-08 · `clearAll()` löscht nur, was geladen wurde.** Fundstelle:
-  `ScreenshotHistoryManager.swift:99`. Folge: Dateien im Ordner, die beim Start nicht
-  eingelesen wurden, bleiben liegen, obwohl der Nutzer „alles löschen" gewählt hat.
-- **FB-09 · Keine Tests.**
+### Behoben
+
+- **FB-01 · Das automatisch Gesicherte war immer das Original** — behoben 2026-08-25.
+  `autoSave` gibt die geschriebene Datei zurück, `replaceSaved(at:with:)` ersetzt sie, und
+  der Editor ruft das bei jedem Export sowie beim Schließen mit Zensur.
+- **FB-02 · Namenskollision innerhalb einer Sekunde** — behoben 2026-08-25.
+  `uniqueCaptureURL(in:)` bildet den Namen mit Millisekunden und hängt eine Zählnummer an,
+  falls die Datei doch existiert. Abgedeckt in `Tests/CaptureFilenameTests.swift`.
+- **FB-03 · Fehlgeschlagenes Sichern blieb unbemerkt** — behoben 2026-08-25. Alle Pfade
+  melden über `CaptureLog`, das protokolliert **und** eine Kurzmeldung zeigt.
+- **FB-04 · Der Verlauf wurde synchron beim Start eingelesen** — teilweise entschärft, im
+  Kern akzeptiert, siehe BF-04.
+- **FB-06 · Vorschaubilder mit der Endung des Originals** — akzeptiert, siehe BF-06.
+- **FB-08 · `clearAll()` löschte nur Geladenes** — behoben 2026-08-25. Es räumt jetzt das
+  Verzeichnis selbst ab, nicht die Liste im Speicher.
+- **FB-09 · Keine Tests** — behoben 2026-08-25 für Namensbildung und Rücksetzliste.
+
+### Akzeptiert
+
+- **BF-04 · Der Verlauf wird beim Start vollständig eingelesen** — akzeptiert 2026-08-25.
+  Das Verzeichnis **ist** das Datenmodell; ein Index müsste gepflegt werden und könnte von
+  der Wirklichkeit abweichen. Erst wenn ein spürbar langsamer Start gemeldet wird, lohnt
+  ein Zwischenspeicher — und der wäre ein eigenes Feature mit eigener Nummer.
+- **BF-05 · Endgültiges Löschen statt Papierkorb** — akzeptiert 2026-08-25. *Clear History*
+  fragt vorher und benennt die Endgültigkeit; einzelne Einträge löscht der Nutzer bewusst.
+  Ein Papierkorbweg würde die Daten an einem zweiten Ort weiterleben lassen, was dem Zweck
+  der Aktion widerspricht.
+- **BF-06 · Vorschaubilder tragen die Endung des Originals** — akzeptiert 2026-08-25. Der
+  gleiche Name ist die Zuordnung zwischen Original und Vorschau; macOS liest das Format aus
+  dem Inhalt. Eine Umbenennung würde bestehende Vorschauordner verwaisen lassen.
+- **BF-07 · `HistoryItem.id` ist bei jedem Start neu, `date` ist das Änderungsdatum** —
+  akzeptiert 2026-08-25. Beides folgt daraus, dass das Verzeichnis die Wahrheit ist. Die
+  Kennung wird nur zur Darstellung benutzt; das dokumentiert `design.md`.
+- **BF-05a · Kein Aufräumen, keine Obergrenze** (vormals FB-05) — akzeptiert 2026-08-25.
+  Eine automatische Löschung würde Aufnahmen entfernen, die der Nutzer noch braucht; die
+  Speicheranzeige und *Clear History* machen den Verbrauch sichtbar und beherrschbar.
 
 ## Offene Fragen
 
-- **OF-01** · Soll das automatische Sichern erst beim Schließen des Editors geschehen — mit
-  dem bearbeiteten Bild? — entscheidet der Autor. Betrifft B04 unmittelbar.
-- **OF-02** · Sollen gelöschte Aufnahmen in den Papierkorb wandern? — entscheidet der Autor.
-- **OF-03** · Soll es eine Obergrenze oder automatisches Aufräumen geben? — entscheidet der
-  Autor.
+Keine offen.
 
-## Decision Log
+| Frage | Entscheidung | Datum |
+|---|---|---|
+| OF-01 · Erst beim Schließen sichern? | nein — sofort sichern bleibt das Sicherheitsnetz. Die Datei wird bei Export und Zensur ersetzt, womit der Datenschutzgrund für die Frage entfällt | 2026-08-25 |
+| OF-02 · Gelöschtes in den Papierkorb? | nein, siehe BF-05 | 2026-08-25 |
+| OF-03 · Obergrenze oder automatisches Aufräumen? | nein, siehe BF-05a | 2026-08-25 |
+
+## Decision Log## Decision Log
 
 | # | Frage | Entscheidung | Begründung |
 |---|---|---|---|
@@ -185,4 +185,5 @@ Stelle, an der aus einem flüchtigen Bild eine Datei wird.
 | 3 | Vorschaubilder als JPEG mit Qualität 0,7 | PNG wie das Original | kleiner; Vorschaubilder brauchen keine Verlustfreiheit |
 | 4 | Vorschaubilder in einem versteckten Unterordner | eigener Ort in *Application Support* | sie bleiben beim Original, ohne im Finder aufzufallen |
 | 5 | Suche über Datum und Dateiname | Inhaltssuche über die Texterkennung | einfach zu bauen; die Texterkennung ist zwar vorhanden (B05), wird hier aber nicht genutzt |
-| 6 | Zeitstempel ohne Millisekunden | mit Millisekunden wie beim Anheften | **Grund nicht erkennbar** — siehe FB-02 |
+| 6 | Zeitstempel mit Millisekunden und Zählnummer (3.5.0) | auf die Sekunde | zwei Aufnahmen in derselben Sekunde sind über `⌃⇧⌘5` mühelos zu erzeugen |
+| 7 | Bearbeitetes ersetzt das Original (3.5.0) | zweite Datei anlegen | ein Verlauf mit Original *und* Bearbeitung nebeneinander würde bei einer Zensur genau das Bild behalten, das verschwinden soll |
