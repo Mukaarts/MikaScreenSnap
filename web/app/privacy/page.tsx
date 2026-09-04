@@ -7,7 +7,7 @@ import { product } from "@/lib/content";
 export const metadata: Metadata = {
   title: `Privacy — ${product.name}`,
   description:
-    "Mika+ScreenSnap collects nothing. Screenshots stay on your Mac and the app has no backend.",
+    "Mika+ScreenSnap collects nothing itself. Screenshots stay on your Mac and the app has no backend.",
 };
 
 function Section({
@@ -68,8 +68,24 @@ export default function Privacy() {
 
           <Section title="Analytics">
             <p>
-              There are none. No usage statistics, no crash reporting, no
-              identifiers, no cookies inside the app.
+              The app collects none. No usage statistics, no crash reporting, no
+              identifiers, no cookies inside the app — whichever way you
+              installed it.
+            </p>
+            <p>
+              One thing changes if you install from the{" "}
+              <strong className="font-semibold text-foreground">
+                Mac App Store
+              </strong>
+              : Apple then collects its own crash reports and usage figures for
+              this app and shows them to the developer in aggregate. That
+              happens only if you have allowed it under{" "}
+              <em>System Settings &rsaquo; Privacy &amp; Security &rsaquo;
+              Analytics &amp; Improvements</em>, it is Apple&apos;s collection
+              rather than the app&apos;s, and the developer never sees anything
+              that identifies you. The direct download has no equivalent. We
+              mention it because &ldquo;collects nothing&rdquo; would otherwise
+              be quietly untrue for App Store users.
             </p>
           </Section>
 
@@ -85,6 +101,11 @@ export default function Privacy() {
               optional system profiling is not enabled, so no hardware or usage
               details are attached. Downloading an update fetches a file from
               GitHub Releases.
+            </p>
+            <p>
+              The App Store version does not do this at all: it contains no
+              updater, and makes no network connection of its own. Updates
+              arrive through the App Store.
             </p>
           </Section>
 

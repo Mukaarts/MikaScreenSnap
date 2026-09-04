@@ -1,5 +1,51 @@
 # Changelog
 
+## [Unreleased] — Mac App Store edition
+
+Mika+ScreenSnap is now built in two editions from the same source. The direct download is
+unchanged; a second edition runs inside the App Sandbox and is distributed through the Mac
+App Store. Which edition you have decides what applies below.
+
+### Added
+
+- **Mac App Store edition, sandboxed.** Screen capture, global hotkeys, the annotation
+  editor, OCR, the colour picker and pinning all work the same — none of them needed the
+  app to run outside the sandbox
+- **You choose the screenshot folder once**, during first-run setup. The sandbox has no
+  path to `~/Pictures` the app can take on its own, and writing into a hidden container
+  folder would leave your screenshots somewhere you would never find them. The permission
+  survives restarts, so you are asked exactly once. You can change the folder later in
+  Settings
+
+### Changed — App Store edition only
+
+- **Updates come from the App Store**, not from the app. The bundled updater is gone
+  entirely: the App Store edition contains no updater, checks no feed, and makes no
+  network connection of its own. Settings shows a note where the update controls used to be
+- **Apple collects its own crash reports and usage figures** for apps installed from the
+  App Store, if you have allowed that under System Settings › Privacy & Security ›
+  Analytics & Improvements. The app still collects nothing itself, and the developer never
+  sees anything that identifies you. The direct download has no equivalent — see the
+  privacy page for the full wording
+
+### Moving from the direct download
+
+- **Your settings should come with you.** When the bundle identifier is unchanged, macOS
+  copies an app's existing preferences into its sandbox container the first time it runs
+  sandboxed — so hotkeys, the exclusion list and drawing defaults are expected to be there
+  on first launch. Nothing asks you to import anything, because nothing needs to. **We have
+  measured this, but not yet with a build signed for the App Store**, so treat anything
+  missing as a bug worth reporting rather than as intended — re-entering a hotkey takes a
+  moment, and your old install is untouched either way
+- **Pinned screenshots do not come with you.** They live outside the sandbox container,
+  where the App Store edition cannot reach them — not even to check whether any exist. So
+  it does not ask, and they do not reappear. **This is expected, not a failure:** the
+  originals are untouched in
+  `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`, and so are all your
+  captures in their old folder. Pin them again from there if you want them back
+- Both editions carry the same version number and the same bundle identifier, so
+  installing one replaces the other rather than running alongside it
+
 ## [3.5.0] - 2026-08-25
 
 Everything here came out of the SDD reconstruction (#31, #32), which read the shipped code

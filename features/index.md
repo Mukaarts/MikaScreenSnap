@@ -1,10 +1,11 @@
 # Features
 
-Stand: 2026-08-25 · Stack-Profil: `swiftui-macos` · Artefaktpfad: `docs/` · Fassung 3.5.0
+Stand: 2026-09-03 · Stack-Profil: `swiftui-macos` · Artefaktpfad: `docs/` · Fassung 3.5.0
 
-Alle Einträge sind **Bestand**: Sie existieren im ausgelieferten Code (Version 3.4.1) und
-sind nie durch die SDD-Kette gelaufen. Das `B`-Präfix hält das dauerhaft sichtbar — bei
-einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst falsch sein.
+Die Einträge mit `B`-Präfix sind **Bestand**: Sie existieren im ausgelieferten Code
+(Version 3.4.1) und sind nie durch die SDD-Kette gelaufen. Das Präfix hält das dauerhaft
+sichtbar — bei einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst
+falsch sein. Einträge ohne Präfix sind regulär durch die Kette gebaut.
 
 | ID | Feature | Prio | Status | Abhängig von | Zuletzt |
 |---|---|---|---|---|---|
@@ -23,9 +24,16 @@ einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst falsch se
 | B13 | Automatischer Start bei Login | P2 | approved | B11, B12 | 2026-08-25 · QA bestanden |
 | B14 | Automatische Updates | P1 | approved | B11, B15 | 2026-08-25 · QA bestanden |
 | B15 | Menüleisten-Hub & Programminfo | P0 | approved | alle | 2026-08-25 · QA bestanden |
+| 16 | App-Store-Auslieferung | P1 | review | B01, B02, B08, B09, B11, B12, B14 | 2026-09-03 · 0 Befunde, 26 AK ungeprüft |
 
-**Alle fünfzehn Features sind rückerfasst und geprüft.** Je Feature liegen `spec.md`,
-`design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung von 3.5.0.
+**Alle fünfzehn Bestandsfeatures sind rückerfasst und geprüft.** Je Feature liegen
+`spec.md`, `design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung
+von 3.5.0.
+
+**16 ist das erste reguläre Feature der Kette.** Es hebt eine PRD-Entscheidung auf
+(App-Store-Vertrieb stand unter *Nicht im Scope*, OF-01) und berührt sieben
+Bestandsfeatures, ohne eines davon zu ersetzen. Das PRD ist noch nicht nachgeführt —
+bis dahin widersprechen sich `docs/prd.md` und `features/16-app-store-auslieferung/spec.md`.
 
 ## Stand
 
@@ -83,6 +91,12 @@ fehlenden Tests: Eine Prüfung der Koordinatenrechnung hätte alle vier Stellen 
 erfasst. Sie existiert jetzt.
 
 ## Nächster Schritt
+
+**Auslieferung von 3.5.0 als DMG — am 2026-09-03 bestätigt und vorgezogen.** Sie hängt
+nicht am App Store: 3.5.0 enthält den Fix, dass eine Zensur nicht mehr das unbearbeitete
+Original im Verlaufsordner zurücklässt. Wer heute auf 3.4.1 ein Passwort verpixelt, hat es
+weiterhin im Klartext auf der Platte. Die Store-Fassung kommt später als **3.6.0**,
+gemeinsam mit dem DMG derselben Nummer.
 
 **Auslieferung von 3.5.0.** Reihenfolge nach `README.md`, Abschnitt *Auto-Update*:
 
