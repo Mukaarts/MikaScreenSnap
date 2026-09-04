@@ -1,0 +1,10 @@
+First release in the Mac App Store.
+
+• Full screen, region and window capture, each on its own global shortcut
+• An annotation editor that opens straight onto the capture — eleven tools, one letter each
+• Blur and pixelate replace the saved original, not just the exported copy
+• Text extraction in English, German and French, recognised on your own Mac
+• An 8× colour loupe and a full-screen pixel ruler
+• Pinned screenshots that float above everything and survive a restart
+• Auto-save into a folder you choose, with a searchable history
+• No Dock icon, no account, no network access

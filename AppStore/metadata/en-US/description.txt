@@ -1,0 +1,45 @@
+Mika+ScreenSnap takes the screenshot and hands you the pen. Press Control-Shift-Command-4, drag a region, and the annotation editor is already open on it — before you have switched windows.
+
+BEFORE YOU DOWNLOAD
+
+Two things set this edition apart from the direct download, and both are worth knowing in advance. It asks you once, during setup, for a folder to save into: a sandboxed app has no path to your Pictures folder it can take on its own, and filing your screenshots inside a hidden container folder would leave them somewhere you would never look. And if you are moving over from the direct download, nothing comes with you — not your settings, not your pinned images. Your files stay exactly where they are, untouched; this edition simply cannot see them.
+
+THREE WAYS TO CAPTURE
+Full screen, a dragged region, or a single window — each on its own global shortcut, straight from the menu bar. Point at the window you want, or take the frontmost one outright.
+
+ELEVEN ANNOTATION TOOLS
+Arrow, rectangle, ellipse, line, freehand, text, highlight, blur, pixelate, selection and a ruler. Hold Shift to snap to 45°, squares and circles. Every tool is one letter away.
+
+REDACTION THAT ACTUALLY REDACTS
+Blur a password and it is gone from the saved file too, not only from the copy you export — even if you close the editor without exporting. The readable original never stays behind on disk.
+
+TEXT EXTRACTION
+Drag over any region and the recognised text lands on your clipboard. English, German and French, recognised on your own Mac.
+
+COLOUR PICKER
+A magnifying loupe follows the cursor at 8× zoom. Click to copy, Shift-click to keep it in a palette, with a history of the last ten.
+
+PIXEL MEASUREMENT
+A full-screen ruler with guide lines, in point-to-point or rectangle mode. Available inside the editor as well — and never part of the exported image.
+
+PINNED SCREENSHOTS
+Float any capture above every other window. Scroll to fade it, Shift-drag to resize. Pins survive a restart, and closing one deletes it rather than hiding it.
+
+AUTO-SAVE AND HISTORY
+Captures are filed away by themselves. A searchable thumbnail browser is one shortcut away.
+
+YOURS TO CONFIGURE
+Rebind every shortcut with conflict detection, set the annotation defaults, choose the output folder and format, and start at login.
+
+MENU BAR ONLY
+No Dock icon, no window of its own, no background service. It sits in the menu bar and stays out of the way.
+
+
+NOTHING LEAVES YOUR MAC
+
+No account, no analytics, no telemetry, no ads. This edition makes no network connection at all — it does not even carry an updater, because the App Store handles that. Your screenshots are files in a folder you chose, and nowhere else.
+
+Screen recording is the only permission it asks for, and it is what a screenshot is: reading what is on your screen. macOS grants it in System Settings, and setup walks you through it.
+
+
+Free and open source under the MIT licence. Requires macOS 14 Sonoma or later.

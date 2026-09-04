@@ -1,4 +1,4 @@
-# Mika+ScreenSnap v3.5.0
+# Mika+ScreenSnap v3.6.0
 
 A lightweight macOS menubar screenshot tool with a professional annotation editor and power features. Capture your screen, annotate it with 11 tools, extract text via OCR, pick colors, measure pixels, pin screenshots, and manage your history — all without leaving your workflow.
 
@@ -221,6 +221,36 @@ is what offers the update to every existing install:
    will actually fetch
 6. Add the `<item>` to `appcast.xml` with that signature and length, merge it, and push
    `main:master`
+
+### Mac App Store edition
+
+The same source builds a second, sandboxed edition without Sparkle. `MIKA_APPSTORE=1`
+drops the dependency in `Package.swift` and defines the `APPSTORE` compilation
+condition; both editions read the same `Resources/Info.plist`, and the two Sparkle keys
+are deleted from the store bundle's copy.
+
+```bash
+bash scripts/build-appstore.sh    # ad-hoc signed, local testing only — runs 10 self-checks
+bash scripts/package-appstore.sh  # signs with the distribution identity, builds the .pkg
+```
+
+`package-appstore.sh` needs an `Apple Distribution` and a `3rd Party Mac Developer
+Installer` certificate under team `CWJM4J4HFN`, and reads its identifiers from
+`scripts/appstore-credentials.sh` (template: `…-credentials.example.sh`, the real file is
+gitignored). It prints the upload command rather than running it — uploading stays a
+deliberate step.
+
+Xcode is only needed for the archive that App Store Connect accepts. The project is
+generated, not committed:
+
+```bash
+xcodegen generate      # from project.yml — the .xcodeproj is gitignored
+```
+
+Everything App Store Connect asks for — the texts, both questionnaires, the review
+notes, the screenshots and the tooling to regenerate them — lives in
+[`AppStore/`](AppStore/README.md). Before submitting, work through
+`AppStore/CHECKLISTE.md`.
 
 ## Project Structure
 

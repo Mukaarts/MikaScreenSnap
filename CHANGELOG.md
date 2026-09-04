@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — Mac App Store edition
+## [3.6.0] - 2026-09-04 — Mac App Store edition
 
 Mika+ScreenSnap is now built in two editions from the same source: the direct download you
 already have, and a sandboxed one distributed through the Mac App Store.

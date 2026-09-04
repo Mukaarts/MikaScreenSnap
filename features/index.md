@@ -24,7 +24,7 @@ falsch sein. Einträge ohne Präfix sind regulär durch die Kette gebaut.
 | B13 | Automatischer Start bei Login | P2 | approved | B11, B12 | 2026-08-25 · QA bestanden |
 | B14 | Automatische Updates | P1 | approved | B11, B15 | 2026-08-25 · QA bestanden |
 | B15 | Menüleisten-Hub & Programminfo | P0 | approved | alle | 2026-08-25 · QA bestanden |
-| 16 | App-Store-Auslieferung | P1 | review | B01, B02, B08, B09, B11, B12, B14 | 2026-09-03 · 0 Befunde, 26 AK ungeprüft |
+| 16 | App-Store-Auslieferung | P1 | review | B01, B02, B08, B09, B11, B12, B14 | 2026-09-04 · Store-Paket unter `AppStore/` angelegt (T29a), Version auf 3.6.0. Offen: Screenshots (T29b), Zertifikate, Upload |
 
 **Alle fünfzehn Bestandsfeatures sind rückerfasst und geprüft.** Je Feature liegen
 `spec.md`, `design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung
@@ -127,6 +127,26 @@ gemeinsam mit dem DMG derselben Nummer.
 3. GitHub-Release mit dem beglaubigten DMG
 4. `sign_update` über das **von GitHub geladene** DMG
 5. `appcast.xml` ergänzen, mergen, `main:master` mitpushen
+
+**Achtung, seit 2026-09-04:** `Resources/Info.plist` trägt auf Anweisung bereits **3.6.0**
+(T34), obwohl die Schritte 3 bis 5 offen sind. `scripts/create-dmg.sh` erzeugt damit ein
+DMG mit 3.6.0 — für ein 3.5.0-DMG wäre die Nummer vorher zurückzusetzen oder das
+vorhandene, bereits notarisierte `installer/Mika+ScreenSnap-v3.5.0.dmg` zu verwenden.
+`web/lib/content.ts` steht bewusst noch auf 3.5.0: Die Download-Adresse der Website
+leitet sich daraus ab und liefe sonst auf ein Release, das es nicht gibt.
+
+**Was am 2026-09-04 dazukam.** Der Ordner `AppStore/` enthält jetzt alles, was App Store
+Connect verlangt und sich im Repository halten lässt: die Texte nach Fastlane-Konvention,
+die Grunddaten samt Kategorie und Prüfungshinweisen, die 24 Antworten des
+Altersfreigabe-Fragebogens mit Codebeleg, die Einreichungscheckliste und die
+Screenshot-Werkzeuge. `Tests/StoreAssetTests.swift` prüft das Paket bei jedem `swift test`
+mit. Aufgebaut wie die Pakete der Schwesterprojekte Mika+Grid und Mika+FileScope, die
+beide bereits im Store stehen.
+
+Die **Bildschirmfotos** fehlen noch, und zwar an einer Stelle, die kein Skript nimmt: Die
+Store-Fassung ist ein anderes Binary als die Direktfassung und braucht einen eigenen
+TCC-Eintrag für die Bildschirmaufnahme; macOS lässt auf diesem Dialog keine synthetische
+Eingabe zu. `AppStore/tools/capture.sh` prüft das und bricht mit Anleitung ab.
 
 Davor: die vier manuellen Prüfungen aus `features/befunde.md`.
 

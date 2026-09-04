@@ -1,0 +1,1 @@
+screenshot,annotation,screen capture,ocr,markup,color picker,ruler,menu bar,blur,snip,pin

@@ -13,7 +13,7 @@
 //   swift scripts/UIDriver.swift click <x> <y>
 //   swift scripts/UIDriver.swift drag <x1> <y1> <x2> <y2>
 //   swift scripts/UIDriver.swift key <combo>        e.g. cmd+shift+7, escape, m
-//   swift scripts/UIDriver.swift crop <in> <out> <x> <y> <w> <h>   (points, 2x aware)
+//   swift scripts/UIDriver.swift drag-shot <x1> <y1> <x2> <y2> <out> [display]\n//   swift scripts/UIDriver.swift screen-shot <out> [display]\n//   swift scripts/UIDriver.swift crop <in> <out> <x> <y> <w> <h>   (points, 2x aware)
 //
 // All coordinates are in screen points (top-left origin), matching the values
 // reported by `list`.
@@ -107,6 +107,16 @@ func click(at point: CGPoint) {
 /// Drags in interpolated steps — a single jump is frequently ignored by
 /// drawing canvases that track incremental mouse movement.
 func drag(from start: CGPoint, to end: CGPoint, steps: Int = 30) {
+    dragHold(from: start, to: end, steps: steps)
+    postMouse(.leftMouseUp, at: end, clickState: 1)
+}
+
+/// Drags but keeps the button down, so the caller decides when to let go.
+///
+/// Split out for `drag-shot`: an area selection only exists while the mouse is
+/// held, and `drag` always ends with mouseUp — by the time it returns there is
+/// nothing left on screen to photograph.
+func dragHold(from start: CGPoint, to end: CGPoint, steps: Int = 30) {
     moveMouse(to: start)
     pause(0.15)
     postMouse(.leftMouseDown, at: start, clickState: 1)
@@ -119,7 +129,6 @@ func drag(from start: CGPoint, to end: CGPoint, steps: Int = 30) {
         pause(0.015)
     }
     pause(0.12)
-    postMouse(.leftMouseUp, at: end, clickState: 1)
 }
 
 // MARK: - Keyboard
@@ -181,6 +190,24 @@ func captureWindow(number: Int, to output: String) -> Bool {
     guard task.terminationStatus == 0,
           FileManager.default.fileExists(atPath: output) else { return false }
     print("captured window \(number) -> \(output)")
+    return true
+}
+
+/// Captures one whole display. Used where the subject is an overlay rather than
+/// a window — a selection rectangle, the colour loupe, the measurement guides.
+func captureDisplay(_ display: Int, to output: String) -> Bool {
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+    task.arguments = ["-x", "-D\(display)", output]
+    do {
+        try task.run()
+        task.waitUntilExit()
+    } catch {
+        return false
+    }
+    guard task.terminationStatus == 0,
+          FileManager.default.fileExists(atPath: output) else { return false }
+    print("captured display \(display) -> \(output)")
     return true
 }
 
@@ -252,7 +279,7 @@ func crop(input: String, output: String, rect: CGRect) {
 
 let args = Array(CommandLine.arguments.dropFirst())
 guard let command = args.first else {
-    print("usage: UIDriver.swift <list|id|move|click|drag|key|crop> ...")
+    print("usage: UIDriver.swift <list|id|move|click|drag|drag-shot|key|shot|hover-shot|screen-shot|crop> ...")
     exit(1)
 }
 
@@ -310,6 +337,33 @@ case "hover-shot":
               minHeight: args.count > 5 ? num(5) : 0,
               maxHeight: args.count > 6 ? num(6) : .greatestFiniteMagnitude,
               output: args[4])
+
+case "drag-shot":
+    // drag-shot <x1> <y1> <x2> <y2> <out> [display]
+    //
+    // Drags and photographs the screen *before* letting go. The area selection
+    // overlay draws its rectangle and size readout only while the button is
+    // down; `drag` returns after mouseUp, when there is nothing left to see.
+    guard args.count > 5 else {
+        FileHandle.standardError.write("usage: drag-shot <x1> <y1> <x2> <y2> <out> [display]\n".data(using: .utf8)!)
+        exit(1)
+    }
+    let ziel = CGPoint(x: num(3), y: num(4))
+    dragHold(from: CGPoint(x: num(1), y: num(2)), to: ziel)
+    let display = args.count > 6 ? Int(args[6]) ?? 1 : 1
+    let ok = captureDisplay(display, to: args[5])
+    // Released whatever happened, so a failed capture does not leave the
+    // pointer stuck holding a selection over the whole screen.
+    postMouse(.leftMouseUp, at: ziel, clickState: 1)
+    if !ok { exit(1) }
+
+case "screen-shot":
+    // screen-shot <out> [display] — the whole display, for overlay subjects.
+    guard args.count > 1 else {
+        FileHandle.standardError.write("usage: screen-shot <out> [display]\n".data(using: .utf8)!)
+        exit(1)
+    }
+    if !captureDisplay(args.count > 2 ? Int(args[2]) ?? 1 : 1, to: args[1]) { exit(1) }
 
 case "crop":
     guard args.count > 6 else {

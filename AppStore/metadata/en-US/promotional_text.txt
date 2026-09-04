@@ -1,0 +1,1 @@
+Drag a region and the editor is already open on it. Arrow, blur, highlight, then Command-C and you are back to work. Nothing ever leaves your Mac.
