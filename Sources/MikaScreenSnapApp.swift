@@ -21,15 +21,17 @@ final class AppState {
     /// Sparkle's controller reaches for the surrounding app bundle as soon as it exists,
     /// which blocks anywhere there is none — a test process, for instance. Nothing needs
     /// the updater before the menu or Preferences ask for it.
-    /// (`@Observable` rules out `lazy`, and observing it would buy nothing: `SparkleUpdater`
+    /// (`@Observable` rules out `lazy`, and observing it would buy nothing: the channel
     /// is not observable itself.)
-    @ObservationIgnored private var storedSparkleUpdater: SparkleUpdater?
+    @ObservationIgnored private var storedUpdateChannel: (any UpdateChannel)?
 
-    var sparkleUpdater: SparkleUpdater {
-        if let storedSparkleUpdater { return storedSparkleUpdater }
-        let updater = SparkleUpdater()
-        storedSparkleUpdater = updater
-        return updater
+    /// How this edition updates. Sparkle in the direct build, nothing in the App Store
+    /// build — the one runtime difference between the two, held in one place.
+    var updateChannel: any UpdateChannel {
+        if let storedUpdateChannel { return storedUpdateChannel }
+        let channel = makeUpdateChannel()
+        storedUpdateChannel = channel
+        return channel
     }
     var launchAtLoginManager: LaunchAtLoginManager
     var onboardingController: OnboardingWindowController?
@@ -64,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PinnedScreenshotManager.restorePins(appState: appState)
 
         // Let the updater ask before it closes an editor holding unsaved annotations.
-        appState.sparkleUpdater.hasUnsavedWork = { [weak appState] in
+        appState.updateChannel.hasUnsavedWork = { [weak appState] in
             appState?.annotationEditorController?.hasUnsavedChanges ?? false
         }
 
@@ -174,10 +176,12 @@ struct MikaScreenSnapApp: App {
                 }
                 appDelegate.appState.aboutController?.showWindow()
             }
-            Button("Check for Updates...") {
-                appDelegate.appState.sparkleUpdater.checkForUpdates()
+            if appDelegate.appState.updateChannel.showsUpdateControls {
+                Button("Check for Updates...") {
+                    appDelegate.appState.updateChannel.checkForUpdates()
+                }
+                .disabled(!appDelegate.appState.updateChannel.canCheckForUpdates)
             }
-            .disabled(!appDelegate.appState.sparkleUpdater.canCheckForUpdates)
             if !hasScreenRecordingAccess {
                 Button("\u{26A0} Screen Recording not granted") {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
@@ -314,7 +318,7 @@ struct MikaScreenSnapApp: App {
                     appDelegate.appState.preferencesController = PreferencesWindowController(
                         preferences: appDelegate.appState.preferences,
                         launchAtLoginManager: appDelegate.appState.launchAtLoginManager,
-                        sparkleUpdater: appDelegate.appState.sparkleUpdater,
+                        updateChannel: appDelegate.appState.updateChannel,
                         historyManager: appDelegate.appState.historyManager,
                         hotkeyManager: appDelegate.hotkeyManager!,
                         appState: appDelegate.appState,

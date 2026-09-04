@@ -9,7 +9,7 @@ import SwiftUI
 struct PreferencesContainerView: View {
     let preferences: AppPreferences
     let launchAtLoginManager: LaunchAtLoginManager
-    let sparkleUpdater: SparkleUpdater
+    let updateChannel: any UpdateChannel
     let historyManager: ScreenshotHistoryManager
     let hotkeyManager: HotkeyManager
     let appState: AppState
@@ -49,7 +49,7 @@ struct PreferencesContainerView: View {
             AdvancedTabView(
                 preferences: preferences,
                 launchAtLoginManager: launchAtLoginManager,
-                sparkleUpdater: sparkleUpdater,
+                updateChannel: updateChannel,
                 historyManager: historyManager,
                 hotkeyManager: hotkeyManager,
                 appState: appState,

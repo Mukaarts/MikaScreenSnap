@@ -11,7 +11,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private let preferences: AppPreferences
     private let launchAtLoginManager: LaunchAtLoginManager
-    private let sparkleUpdater: SparkleUpdater
+    private let updateChannel: any UpdateChannel
     private let historyManager: ScreenshotHistoryManager
     private let hotkeyManager: HotkeyManager
     private let appState: AppState
@@ -20,7 +20,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
     init(
         preferences: AppPreferences,
         launchAtLoginManager: LaunchAtLoginManager,
-        sparkleUpdater: SparkleUpdater,
+        updateChannel: any UpdateChannel,
         historyManager: ScreenshotHistoryManager,
         hotkeyManager: HotkeyManager,
         appState: AppState,
@@ -28,7 +28,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
     ) {
         self.preferences = preferences
         self.launchAtLoginManager = launchAtLoginManager
-        self.sparkleUpdater = sparkleUpdater
+        self.updateChannel = updateChannel
         self.historyManager = historyManager
         self.hotkeyManager = hotkeyManager
         self.appState = appState
@@ -55,7 +55,7 @@ final class PreferencesWindowController: NSObject, NSWindowDelegate {
         let contentView = PreferencesContainerView(
             preferences: preferences,
             launchAtLoginManager: launchAtLoginManager,
-            sparkleUpdater: sparkleUpdater,
+            updateChannel: updateChannel,
             historyManager: historyManager,
             hotkeyManager: hotkeyManager,
             appState: appState,

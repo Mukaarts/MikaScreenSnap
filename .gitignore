@@ -7,3 +7,7 @@ installer/*.dmg
 installer/dmg-background.png
 installer/dmg-background@2x.png
 installer/demo-canvas.png
+
+# App Store signing credentials — never committed
+scripts/appstore-credentials.sh
+build-appstore/
