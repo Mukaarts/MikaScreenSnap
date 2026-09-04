@@ -29,7 +29,7 @@ das der Teil, auf den es ankommt.
 |---|---|
 | `Apple Distribution` und `3rd Party Mac Developer Installer` unter `CWJM4J4HFN` | T27–T30, damit AK-40 bis AK-44 |
 | Ein daraus gebautes, installiertes Paket | T19, T20, T22, T25, T26 — und damit 22 weitere Kriterien und alle acht Randfälle |
-| Notary-Profil im Schlüsselbund (`xcrun notarytool store-credentials`) | Auslieferung von 3.5.0 als DMG, damit T34 |
+| ~~Notary-Profil im Schlüsselbund~~ — **liegt bereits vor** (`MikaScreenSnap`), zusammen mit `Developer ID Application`. Die Auslieferung von 3.5.0 als DMG ist damit **sofort ausführbar**, sie wurde nur nie angestoßen | T34 |
 
 **Keine davon ist Arbeit an diesem Projekt.** Alle drei brauchen ein eingeloggtes
 Entwicklerkonto und ein app-spezifisches Passwort.
@@ -420,11 +420,10 @@ den Anteil, der sich hier prüfen lässt, ausgeschöpft.
 
 Der einzige Weg weiter führt über drei Schritte am Entwicklerkonto:
 
-1. **`xcrun notarytool store-credentials`** — einmalig, interaktiv, mit
-   app-spezifischem Passwort. Schaltet die Auslieferung von 3.5.0 als DMG frei und damit
-   T34. **Das ist der Schritt mit dem größten unmittelbaren Nutzen:** 3.5.0 enthält den
-   Fix, dass eine Zensur nicht mehr das unbearbeitete Original im Verlaufsordner
-   zurücklässt.
+1. **`bash scripts/notarize.sh`** — **keine Einrichtung nötig.** Profil und Zertifikat
+   liegen vor; der Schritt wurde seit dem 2026-08-25 nur nicht ausgeführt. **Größter
+   unmittelbarer Nutzen:** 3.5.0 enthält den Fix, dass eine Zensur nicht mehr das
+   unbearbeitete Original im Verlaufsordner zurücklässt.
 2. **App-ID und Zertifikate unter `CWJM4J4HFN`** — `Apple Distribution` und
    `3rd Party Mac Developer Installer`. Schaltet T27 bis T30 frei.
 3. **Das daraus gebaute Paket installieren** — schaltet T19, T20, T22, T25, T26 frei und

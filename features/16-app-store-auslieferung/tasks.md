@@ -534,7 +534,7 @@ baubar.** Das ist der eigentliche Befund dieses Durchgangs.
 | Aufgabe | Stand | Grund |
 |---|---|---|
 | **T33** | **erledigt** | Zusage abgeschwächt, Zählfehler H-04 berichtigt |
-| T34 | **blockiert** | Setzt die Auslieferung von 3.5.0 als DMG voraus. Nachgeprüft: kein Notary-Profil im Schlüsselbund, `appcast.xml` kennt kein 3.5.0 |
+| T34 | **wartet** | Setzt die Auslieferung von 3.5.0 als DMG voraus, die noch aussteht (`appcast.xml` kennt kein 3.5.0). **Korrigiert am 2026-09-03:** Sie ist nicht blockiert — Notary-Profil `MikaScreenSnap` und `Developer ID Application` liegen vor |
 | T19, T22, T25, T26 | nicht ausführbar | brauchen ein laufendes, sandboxed Programm mit erteilter Bildschirmaufnahme-Berechtigung |
 | T20 | nicht ausführbar | braucht zwei Installationen nebeneinander |
 | T27–T30 | blockiert | `Apple Distribution` und `3rd Party Mac Developer Installer` fehlen unter `CWJM4J4HFN` |
@@ -579,8 +579,8 @@ Nichts. Kein Code, keine Testdatei, kein Artefakt außer diesem Bericht.
 keine davon scheitert an Code oder Text — sie scheitern an drei Dingen, die außerhalb
 dieser Kette liegen:
 
-1. **Die Auslieferung von 3.5.0 als DMG** (blockiert T34) — braucht ein Notary-Profil, das
-   einmalig interaktiv angelegt wird.
+1. **Die Auslieferung von 3.5.0 als DMG** (blockiert T34) — ausführbar, sobald jemand
+   `bash scripts/notarize.sh` anstößt. Profil und Zertifikat liegen bereits vor.
 2. **Zwei Zertifikate unter `CWJM4J4HFN`** (blockiert T27–T30).
 3. **Ein signiertes, sandboxed Programm auf einem echten Rechner** (blockiert T19, T20,
    T22, T25, T26) — das folgt aus 2.

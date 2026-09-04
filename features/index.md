@@ -104,9 +104,11 @@ gemeinsam mit dem DMG derselben Nummer.
 2. `bash scripts/notarize.sh` — **ausstehend und zwingend.** Nachgewiesen: Das gebaute DMG
    ist ad-hoc signiert, und `spctl -a -vv -t install` antwortet
    `rejected — source=no usable signature`. Auf einem fremden Rechner startet die Anwendung
-   damit nicht. Der Schritt braucht ein Notary-Profil im Schlüsselbund, das einmalig
-   interaktiv angelegt wird (`xcrun notarytool store-credentials`) — ein
-   app-spezifisches Passwort, das niemand außer dem Autor eingeben kann
+   damit nicht. **Korrigiert am 2026-09-03:** Das nötige Notary-Profil `MikaScreenSnap`
+   liegt bereits im Schlüsselbund — `xcrun notarytool history` beantwortet damit und
+   zeigt die Einreichung von 3.4.1 vom 2026-08-09. Auch das Zertifikat
+   `Developer ID Application` ist vorhanden. **Es fehlt nichts; der Schritt wurde nur
+   nie ausgeführt**
 3. GitHub-Release mit dem beglaubigten DMG
 4. `sign_update` über das **von GitHub geladene** DMG
 5. `appcast.xml` ergänzen, mergen, `main:master` mitpushen
