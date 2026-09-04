@@ -33,7 +33,24 @@ Runde 3 hat **keinen neuen Codebefund** gefunden. Der Unterschied war ein expliz
 Schritt vor der Behebung: aufzuschreiben, welche anderen Aufrufer sich mitändern. Die
 beiden verbleibenden Befunde BF-34 und BF-35 liegen außerhalb des Codes.
 
-**Kein offener Befund mehr an Feature 16.** BF-26 bis BF-30, BF-32 bis BF-36 sind alle
+### Aus der QA-Runde 6 (2026-09-03)
+
+| ID | Feature | Befund | Grad | Fundstelle |
+|---|---|---|---|---|
+| BF-37 | 16 | Die Versionshinweise sagen, Einstellungen gingen beim Kennungswechsel verloren — `LegacyDefaultsImport` übernimmt sie im Direktvertrieb seit T35. **Der Nutzer richtet daraufhin vorsorglich neu ein und überschreibt genau das, was gerettet wurde** | mittel | `CHANGELOG.md` gegen `LegacyDefaultsImport.swift` |
+| BF-38 | 16 | Die Versionshinweise sagen, angeheftete Bilder gingen verloren — der Ordner heißt `MikaScreenSnap/PinnedScreenshots` und hängt nicht an der Bundle-Kennung. Der Satz stimmt nur für den Wechsel zum App Store; der Abschnitt vermengt zwei Übergänge | mittel | `CHANGELOG.md` gegen `PinnedScreenshotManager.swift:16` |
+| BF-39 | 16 | `checkScreenCapturePermission()` ist seit T36 toter Code — die einzige Aufrufstelle wurde ersetzt | niedrig | `MikaScreenSnapApp.swift:132` |
+
+**Dasselbe Muster zum dritten Mal, und diesmal in die andere Richtung.** BF-36 versprach
+*mehr*, als belegt war; BF-37 und BF-38 versprechen *weniger*, als gebaut wurde. Die
+Ursache ist beide Male dieselbe: Ein Text wird geschrieben, danach ändert sich das
+Verhalten, und niemand liest den Text erneut gegen den Code.
+
+Bei BF-38 kommt eine zweite Ursache dazu, die es vorher nicht gab: eine **ungeprüfte
+technische Annahme** — dass der Pin-Ordner wie `UserDefaults` an der Bundle-Kennung hängt.
+Ein Blick in `PinnedScreenshotManager.swift:16` hätte gereicht.
+
+**Zuvor galt:** Kein offener Befund mehr an Feature 16. BF-26 bis BF-30, BF-32 bis BF-36 sind alle
 behoben; BF-36 zuletzt am 2026-09-03, indem die Zusage in `CHANGELOG.md` auf das
 abgeschwächt wurde, was das Messprotokoll zu TE-07 hergibt.
 

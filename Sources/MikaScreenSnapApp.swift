@@ -1,5 +1,4 @@
 import SwiftUI
-@preconcurrency import ScreenCaptureKit
 
 @Observable
 @MainActor
@@ -129,29 +128,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appState.historyBrowserController?.showWindow()
     }
 
-    private func checkScreenCapturePermission() {
-        Task {
-            do {
-                _ = try await SCShareableContent.current
-            } catch {
-                let alert = NSAlert()
-                alert.messageText = "Screen Capture Permission Required"
-                alert.informativeText = "Mika+ScreenSnap needs screen capture permission to take screenshots. Please grant access in System Settings > Privacy & Security > Screen & System Audio Recording."
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "Open System Settings")
-                alert.addButton(withTitle: "Quit")
-
-                let response = alert.runModal()
-                if response == .alertFirstButtonReturn {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                        NSWorkspace.shared.open(url)
-                    }
-                } else {
-                    NSApplication.shared.terminate(nil)
-                }
-            }
-        }
-    }
 }
 
 @main

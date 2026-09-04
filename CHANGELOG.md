@@ -2,9 +2,13 @@
 
 ## [Unreleased] — Mac App Store edition
 
-Mika+ScreenSnap is now built in two editions from the same source. The direct download is
-unchanged; a second edition runs inside the App Sandbox and is distributed through the Mac
-App Store. Which edition you have decides what applies below.
+Mika+ScreenSnap is now built in two editions from the same source: the direct download you
+already have, and a sandboxed one distributed through the Mac App Store.
+
+**Both change with this release**, and not in the same way. The direct download keeps
+everything except the Screen Recording permission, which has to be granted again. The App
+Store edition starts fresh. The two sections at the bottom say exactly what happens in each
+case — they are not interchangeable.
 
 ### Added
 
@@ -28,23 +32,34 @@ App Store. Which edition you have decides what applies below.
   sees anything that identifies you. The direct download has no equivalent — see the
   privacy page for the full wording
 
-### Moving from the direct download
+### Updating the direct download
 
-- **Your settings do not come with you, and neither do pinned screenshots.** The app moves
-  to a new bundle identifier with this release — `lu.daumedia.screensnap` — which is what
-  macOS uses to find an app's preferences and its Screen Recording permission. Both are
-  therefore starting fresh: **you will be asked for Screen Recording access again, and
-  hotkeys, the exclusion list and drawing defaults return to their defaults.** Everything
-  you saved is untouched; it is the configuration that resets, not your screenshots
-- **Pinned screenshots do not come with you.** They live outside the sandbox container,
-  where the App Store edition cannot reach them — not even to check whether any exist. So
-  it does not ask, and they do not reappear. **This is expected, not a failure:** the
-  originals are untouched in
-  `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`, and so are all your
-  captures in their old folder. Pin them again from there if you want them back
-- **You will be asked for Screen Recording permission again.** macOS ties that permission
-  to the bundle identifier, and this release changes it. Without it the app cannot capture
-  anything, so first-run setup walks you through granting it once more
+The app moves to a new bundle identifier with this release — `lu.daumedia.screensnap`. That
+matters because macOS uses the identifier to find both an app's settings and its Screen
+Recording permission.
+
+- **You will be asked for Screen Recording permission again.** The permission is tied to the
+  old identifier and does not transfer. Without it the app cannot capture anything, so
+  first-run setup runs once more and walks you through granting it. This is the one thing
+  that unavoidably resets
+- **Your settings do come with you.** On first launch under the new identifier the app reads
+  the old ones once and carries over hotkeys, the exclusion list, drawing defaults and your
+  save location. You should not have to set anything up again
+- **So do your pinned screenshots.** They live in
+  `~/Library/Application Support/MikaScreenSnap/`, which is not tied to the identifier —
+  they reappear as they were
+
+### Moving to the App Store edition
+
+Different situation, different answer: the sandbox is what changes here, not the identifier.
+
+- **Nothing carries over.** A sandboxed app cannot read another app's settings, and it
+  cannot see the folder holding your pinned screenshots — not even to check whether any
+  exist. So it does not ask, and starts with defaults
+- **This is expected, not a failure.** Everything you had is untouched where it was: your
+  captures in their folder, your pinned images in
+  `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`. Pin them again from
+  there if you want them back
 - Both editions carry the same version number and the same bundle identifier, so installing
   one replaces the other rather than running alongside it
 

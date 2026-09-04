@@ -1,13 +1,36 @@
 # 16 · App-Store-Auslieferung — Testbericht
 
-Stand: 2026-09-03 · **Runde 5**, nach Behebung von BUG-10 und H-04 · Geprüft gegen
-`spec.md` in der Fassung nach OF-04
+Stand: 2026-09-03 · **Runde 6**, nach dem Kennungswechsel und den Aufgaben T35/T36 ·
+Geprüft gegen `spec.md` mit 55 Kriterien
 
 ## Fazit
 
-**Production-ready: nein — und der Grund hat sich geändert.**
+**Production-ready: nein.**
 
-**Es gibt keinen offenen Befund mehr.** BUG-01 bis BUG-10 sind alle behoben, H-04 auch.
+**Drei neue Befunde, und zwei davon zeigen dasselbe Muster zum dritten Mal.** Der
+Kennungswechsel und die Aufgabe T35 haben das Verhalten geändert; die Versionshinweise,
+die vorher geschrieben wurden, sagen weiterhin das Alte. In Runde 4 versprach der Text
+**mehr**, als belegt war (BF-36). Diesmal verspricht er **weniger**, als gebaut wurde —
+dieselbe Ursache, andere Richtung:
+
+| Der Text sagt | Tatsächlich |
+|---|---|
+| *Your settings do not come with you* | `LegacyDefaultsImport` übernimmt sie im DMG-Build seit T35 — mit fünf Tests belegt |
+| *neither do pinned screenshots* | Der Pin-Ordner heißt `MikaScreenSnap/PinnedScreenshots` und hängt **nicht** an der Bundle-Kennung. Im DMG-Build sind die Bilder nach dem Update unverändert da |
+
+**Für den Nutzer ist das die unangenehmere Fehlerrichtung, als sie klingt.** Wer liest, er
+verliere seine Einstellungen, richtet sie vorsorglich neu ein — und überschreibt damit
+genau das, was der Import gerettet hätte.
+
+**Gut ist:** T35 und T36 selbst sind sauber gebaut. AK-54 ist am Binärstand belegt
+(`nm -a`: 12 Symbole im DMG-Build, **0** im Store-Build), der Kern der Übernahme ist mit
+fünf Tests abgedeckt, und zwei Umkehrproben belegen, dass die Tests ihren Fehler fangen.
+Der Angriffsdurchlauf findet nichts: kein Netzwerkpfad, keine Geheimnisse, und der Import
+liest **genau eine** fremde Domain, nicht mehr.
+
+---
+
+**Aus Runde 5: Es gab keinen offenen Befund mehr.** BUG-01 bis BUG-10 sind alle behoben, H-04 auch.
 Der Angriffsdurchlauf findet nichts: kein Netzwerkpfad im Store-Binary, keine
 Ausnahme-Entitlements, keine Geheimnisse in der Historie. Alle vier Artefakte — Spec,
 Entwurf, Plan, dieser Bericht — decken dieselben 53 Kriterien ab, ohne Verweis ins Leere.
@@ -60,9 +83,10 @@ sandboxed Programm mit erteilter Bildschirmaufnahme-Berechtigung.
 | | Anzahl |
 |---|---|
 | Akzeptanzkriterien geprüft | 53 von 53 |
-| davon bestanden | 23 |
+| Akzeptanzkriterien | **55** (AK-54 und AK-55 neu) |
+| davon bestanden | 25 |
 | davon durchgefallen | 0 |
-| **offene Befunde** | **0** |
+| **offene Befunde** | **3** (BUG-11 bis BUG-13) |
 | **nicht prüfbar** | 27 |
 | trifft nicht zu (begründet) | 3 |
 | Edge Cases belegt | 0 von 8 (EC-05 entfallen) |
@@ -107,7 +131,9 @@ zurückgebauten Importer entfallen. Sie prüften Code, den es nicht mehr gibt.
 | AK-28 | ⚠️ nicht prüfbar | Lesezeichen lassen sich ohne vorherige Nutzerauswahl nicht einmal erzeugen — in der Sandbox-Probe belegt |
 | AK-29 | ⚠️ nicht prüfbar | wie AK-27 |
 | AK-30 | ⚠️ nicht prüfbar | Fehlerzustand im Code angelegt, nicht ausgeführt |
-| AK-31 | ⚠️ nicht prüfbar | T01 hat den Mechanismus an einer Wegwerf-Kennung gemessen, nicht am echten Paket. Die Versionshinweise sagen das seit BUG-10 ausdrücklich mit |
+| AK-31 | ✅ bestanden | `LegacyDefaultsCarryOverTests` — fünf Fälle: was ankommt, was nicht überschrieben wird, was unangetastet bleibt. Umkehrprobe: Schutz entfernt → `("OLD") is not equal to ("NEW")`. **Der Durchlauf mit einer echten Vorgängerinstallation steht aus (T26)** |
+| AK-54 | ✅ bestanden | `nm -a` auf beide Binärstände: 12 `LegacyDefaultsImport`-Symbole im DMG-Build, **0** im Store-Build |
+| AK-55 | ⚠️ nicht prüfbar | Auslösebedingung im Code erweitert; ob die Ersteinrichtung tatsächlich erscheint, ist Oberflächenverhalten |
 | AK-32 | ✅ bestanden | Negativnachweis: `grep` über `Sources/` auf `migrat`, `carry-over`, `Übernahme`, `import.*pin` findet **keine Fundstelle**. Es gibt keine Abfrage, die erscheinen könnte |
 | AK-33 | ✅ bestanden | `CHANGELOG.md`, Abschnitt *Moving from the direct download*: der Satz *Pinned screenshots do not come with you* samt *This is expected, not a failure* und dem Ablageort der Originale |
 | AK-34 | ✅ bestanden | wie AK-32 — dieselbe Negativprüfung. Widerspruchsfrei erfüllbar, seit OF-04 entschieden ist |
@@ -166,6 +192,48 @@ verkürzt auf Abschnitt 4 und 6, erweitert um Abschnitt 1.
 | Geheimnisse im Repository | bestanden | `git log --all -p`: 0 Treffer |
 
 ## Fehler
+
+### BUG-12 · Die Versionshinweise sagen, Einstellungen gingen verloren — sie gehen nicht verloren — mittel *(neu in Runde 6)*
+
+**Betrifft:** AK-31
+**Fundstelle:** `CHANGELOG.md`, Abschnitt `[Unreleased]`, erster Punkt unter *Moving from
+the direct download*: *Your settings do not come with you … hotkeys, the exclusion list and
+drawing defaults return to their defaults.*
+**Tatsächlich:** `LegacyDefaultsImport` übernimmt genau diese drei beim ersten Start unter
+der neuen Kennung. Fünf Tests belegen es, eine Umkehrprobe belegt die Tests.
+**Wie es entstand:** Der Text wurde beim Kennungswechsel geschrieben, als die Übernahme
+noch nicht entschieden war. T35 kam danach und baute das Gegenteil; der Text blieb stehen.
+**Warum es zählt — und zwar mehr, als es klingt:** Wer liest, er verliere seine
+Einstellungen, richtet sie vorsorglich neu ein. Damit überschreibt er genau das, was der
+Import gerettet hätte — die Schutzklausel *nicht überschreiben, was schon da ist* wendet
+sich dann gegen ihn.
+**Vorschlag:** Den Absatz auf das gebaute Verhalten umstellen: Einstellungen kommen im
+Direktvertrieb mit, im App Store nicht; die Aufnahmeberechtigung ist in beiden Fällen weg.
+
+### BUG-13 · Die Versionshinweise sagen, angeheftete Bilder gingen verloren — im Direktvertrieb tun sie das nicht — mittel *(neu in Runde 6)*
+
+**Betrifft:** AK-33, AK-35
+**Fundstelle:** `CHANGELOG.md`, derselbe Abschnitt: *neither do pinned screenshots* und
+*Pinned screenshots do not come with you.*
+**Tatsächlich:** `PinnedScreenshotManager.persistenceDir` löst auf
+`~/Library/Application Support/MikaScreenSnap/PinnedScreenshots` auf — ein **fester
+Ordnername, nicht die Bundle-Kennung** (`Sources/PinnedScreenshotManager.swift:16`). Im
+DMG-Build sind die angehefteten Bilder nach dem Update also unverändert vorhanden.
+**Wo der Satz stimmt:** beim Wechsel **zum App Store**. Dort liegt der Ordner im Container
+und ist unerreichbar. Der Abschnitt vermengt zwei verschiedene Übergänge — Kennungswechsel
+im Direktvertrieb und Wechsel der Vertriebsform —, die sich unterschiedlich verhalten.
+**Warum es entstand:** Beim Schreiben wurde angenommen, der Pin-Ordner hänge wie
+`UserDefaults` an der Bundle-Kennung. Er tut es nicht; das wurde nie nachgesehen.
+**Vorschlag:** Die beiden Übergänge im Text trennen.
+
+### BUG-11 · Toter Code nach der Umstellung von T36 — niedrig *(neu in Runde 6)*
+
+**Betrifft:** kein Kriterium
+**Fundstelle:** `Sources/MikaScreenSnapApp.swift:132`, `checkScreenCapturePermission()`
+**Tatsächlich:** T36 hat die einzige Aufrufstelle durch `showOnboarding()` ersetzt. Die
+Funktion samt Warnfenster und Systemeinstellungs-Verweis steht noch da und wird nie
+aufgerufen — `grep` findet genau eine Fundstelle, die Definition.
+**Vorschlag:** Entfernen. Der Ablauf lebt jetzt in der Ersteinrichtung.
 
 ### Stand aller bisherigen Befunde
 
@@ -413,6 +481,19 @@ noch nicht gibt. **Der ausgelieferte Store-Build ist damit in keiner seiner
 Kernfunktionen geprüft.** Was hier grün steht, betrifft die Verpackung, nicht das Verhalten.
 
 ## Nächster Schritt
+
+`/sdd-build 16` mit dem Auftrag **BUG-11 bis BUG-13**. Alle drei sind Text- und
+Aufräumarbeit, keine braucht ein Zertifikat.
+
+**Ein Hinweis für diesen Durchgang:** BUG-12 und BUG-13 stehen im selben Absatz und haben
+verschiedene Ursachen — der eine Satz wurde vom Code überholt, der andere beruhte auf einer
+ungeprüften Annahme über den Ablageort. Wer sie behebt, sollte den Absatz **entlang der
+zwei Übergänge** neu schneiden, die er heute vermengt: Kennungswechsel im Direktvertrieb
+(Einstellungen und Pins kommen mit, Berechtigung nicht) gegen Wechsel zum App Store (nichts
+kommt mit). Ein Satz, der beide gleichzeitig beschreibt, wird wieder für einen der beiden
+falsch sein.
+
+## Was danach bleibt
 
 **Keiner in dieser Kette.** Es gibt keinen Befund zu beheben, keine Aufgabe, die ohne
 externe Voraussetzung ausführbar wäre, und keine offene Entscheidung. Fünf QA-Runden haben

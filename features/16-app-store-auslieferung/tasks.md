@@ -661,3 +661,62 @@ von 3.5.0), **T19, T20, T22, T25, T26** (brauchen ein laufendes sandboxed Progra
 belegt, aber nicht am echten Programm. Ob eine bestehende 3.5.0-Installation nach dem
 Update tatsächlich ihre Tastenkürzel behält, zeigt erst ein Durchlauf mit einer echten
 Vorgängerfassung — und der gehört zu T26.
+
+
+## Baubericht VII — BUG-11 bis BUG-13, 2026-09-03
+
+Eingang *Fehlerauftrag*. Alle drei Befunde behoben.
+
+| Befund | Behebung |
+|---|---|
+| **BUG-11** | `checkScreenCapturePermission()` entfernt — 23 Zeilen, seit T36 ohne Aufrufer |
+| **BUG-12** | Der Absatz sagt jetzt, dass die Einstellungen im Direktvertrieb **mitkommen** |
+| **BUG-13** | Und dass die angehefteten Bilder es ebenfalls tun — der Ordner hängt nicht an der Kennung |
+
+### Der Absatz ist neu geschnitten, nicht korrigiert
+
+Die QA hatte den Hinweis gegeben, ihn **entlang der zwei Übergänge** zu trennen. Genau das
+ist passiert: aus einem Abschnitt wurden zwei, weil ein Satz, der beide beschreibt, für
+einen von beiden falsch sein muss.
+
+- **Updating the direct download** — Berechtigung weg (das Einzige, was unvermeidlich
+  zurückgesetzt wird), Einstellungen kommen mit, Pins kommen mit.
+- **Moving to the App Store edition** — nichts kommt mit, und zwar weil die Sandbox es
+  verhindert, nicht die Kennung. Mit der Zusicherung, wo alles unangetastet liegt.
+
+### Über den Auftrag hinaus verändert
+
+**Zwei Dinge, beide Folgen derselben Befunde:**
+
+1. **`@preconcurrency import ScreenCaptureKit` in `MikaScreenSnapApp.swift` entfernt.** Er
+   war mit der gelöschten Funktion verwaist — geprüft, nicht vermutet: kein einziges
+   `SC…`-Symbol mehr in der Datei, und der Build trägt ohne ihn.
+2. **Der Einleitungssatz des Abschnitts richtiggestellt.** Er behauptete *The direct
+   download is unchanged* — das war schon vor diesem Durchgang falsch und wurde von der QA
+   nicht erfasst, weil sie auf die Punktliste sah. Mit dem Kennungswechsel ist der
+   Direktvertrieb sehr wohl verändert. Er sagt jetzt, dass sich **beide** Ausgaben ändern,
+   und verweist auf die zwei Abschnitte.
+
+### Verifikation
+
+| Prüfung | Ergebnis |
+|---|---|
+| `swift build -c release` | grün · **2 Warnungen** — nach erzwungener Neuübersetzung gemessen, beide aus dem Bestand (`AnnotationModels.swift:1069`) |
+| `swift test` | 86 grün (DMG) · 76 grün (Store) |
+| `scripts/build-appstore.sh` | 10 von 10 |
+| AK-33 weiterhin erfüllt | *This is expected, not a failure* steht unverändert im Store-Abschnitt |
+| BUG-11 | `grep` findet keinen Rest von `checkScreenCapturePermission` |
+
+**Zur Warnungszahl:** Ein erster Lauf meldete 0, weil inkrementell gebaut wurde und
+`AnnotationModels.swift` unberührt blieb. Nach `touch` und Neuübersetzung sind es die
+bekannten 2. Die 0 wäre eine Falschmeldung gewesen.
+
+### Was weiterhin offen ist
+
+Unverändert acht Aufgaben, alle mit externer Blockade: **T34** (wartet auf die Auslieferung
+von 3.5.0), **T19, T20, T22, T25, T26** (laufendes sandboxed Programm), **T27–T30**
+(Zertifikate unter `CWJM4J4HFN`).
+
+**Und die Einschränkung aus Baubericht VI gilt unverändert:** Ob eine echte
+3.5.0-Installation nach dem Update ihre Tastenkürzel behält, ist im Test belegt, nicht am
+Programm. Das gehört zu T26.
