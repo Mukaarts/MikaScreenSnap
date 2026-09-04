@@ -165,7 +165,7 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 
 ### Einreichung — braucht OF-07
 
-- [ ] **T27** · `scripts/package-appstore.sh`: Signatur mit der Verteilungsidentität,
+- [x] **T27** · `scripts/package-appstore.sh`: Signatur mit der Verteilungsidentität,
       Paket über `productbuild` mit der Installer-Identität — `AK-40`
 - [ ] **T28** · Paket nach App Store Connect hochladen. Klärt zugleich OP-01 des
       Entwurfs: ob ein Bereitstellungsprofil verlangt wird — `AK-41`
@@ -720,3 +720,38 @@ von 3.5.0), **T19, T20, T22, T25, T26** (laufendes sandboxed Programm), **T27–
 **Und die Einschränkung aus Baubericht VI gilt unverändert:** Ob eine echte
 3.5.0-Installation nach dem Update ihre Tastenkürzel behält, ist im Test belegt, nicht am
 Programm. Das gehört zu T26.
+
+
+## Baubericht VIII — T27, 2026-09-04
+
+`scripts/package-appstore.sh` gebaut: signiert mit `Apple Distribution`, paketiert über
+`productbuild` mit der Installer-Identität, und **prüft vor dem Hochladen** gegen App Store
+Connect (`altool --validate-app`) — das fängt abgelehnte Entitlements und eine nicht
+registrierte Bundle-Kennung ab, bevor eine Einreichung daran scheitert.
+
+**Ausführbar ist es noch nicht**, und das meldet es verständlich: Beide Zertifikate fehlen
+unter `CWJM4J4HFN`. Statt abzubrechen, listet es auf, was tatsächlich im Schlüsselbund
+liegt, und sagt, dass `Apple Development` dafür nicht genügt.
+
+### Ein Fehler, den ich zweimal gemacht habe
+
+Der erste Entwurf starb **still**: Unter `set -e` beendet ein `grep` ohne Treffer das
+Skript — und zwar bevor die Fehlermeldung erscheint, die erklärt, was fehlt. Genau dieser
+Fehler steckte schon in der Selbstprüfung von `build-appstore.sh` (Baubericht I). Dass er
+sich wiederholt hat, steht hier, weil ein `|| true` an einer Zertifikatssuche sonst wie
+Dekoration aussieht — es ist der Unterschied zwischen einer Fehlermeldung und einem
+Programm, das kommentarlos nichts tut. Der Kommentar im Skript sagt das jetzt auch.
+
+### Verifikation
+
+| Prüfung | Ergebnis |
+|---|---|
+| `bash -n` | Syntax ok |
+| Lauf ohne Zertifikate | Exit 1, beide fehlenden Zertifikate benannt, vorhandene aufgelistet |
+| Code | unberührt — reines Skript |
+
+### Was noch fehlt
+
+T28–T30 brauchen die Zertifikate. Der Import der vorhandenen `.p12` ist ein Doppelklick des
+Autors: Sie ist passwortgeschützt, und `security import` verlangt das Passwort als
+Argument.
