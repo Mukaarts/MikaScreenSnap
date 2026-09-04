@@ -82,9 +82,17 @@ Ablage  (bestehend, erweitert)
     └── adopt                        übernimmt einen Ordner, den der Nutzer gewählt hat
 ```
 
-**Einen Umzug-Baustein gibt es nicht.** Was von einer Vorgängerinstallation mitkommt,
-bringt macOS mit (Einstellungen); was nicht mitkommt, kommt gar nicht mit (angeheftete
-Bilder). Begründung unter TE-06.
+**Seit dem Kennungswechsel gibt es wieder einen — aber nur für eine Ausgabe:**
+
+```
+LegacyDefaultsImport      NEU    nur DMG-Build; liest beim ersten Start unter neuer
+                                 Kennung die alte Preferences-Domain und übernimmt
+                                 Tastenkürzel, Ausschlussliste, Zeichen-Standards und
+                                 Speicherort. Einmalig, danach nie wieder
+```
+
+Angeheftete Bilder kommen weiterhin nicht mit (TE-06). Die Store-Fassung hat diesen
+Baustein nicht: Sie kann die alte Domain nicht lesen — gemessen, nicht angenommen.
 
 `SparkleUpdater` selbst bleibt unverändert. Er wird nur nicht mehr direkt aus vier Dateien
 angesprochen, sondern über `UpdateChannel` — sonst müssten `MikaScreenSnapApp.swift`,
@@ -193,6 +201,8 @@ Die Präzisierung der Datenschutzseite ist die Konsequenz (AK-46), nicht ein Ver
 | TE-10 | Das Zurücksetzen **meldet zurück**, ob die Ersteinrichtung erneut laufen muss; der Aufrufer öffnet sie | nur ein Merkmal setzen und auf den nächsten Start warten | Das Merkmal wird ausschließlich beim Programmstart gelesen. Bei einer Anwendung, die dauerhaft in der Menüleiste liegt, kann der nächste Start Tage entfernt sein — bis dahin hätte sie keinen Speicherort und keinen Weg zu einem (BUG-04) |
 | TE-11 | **Zwei Klammern statt einer:** eine stille für Lesevorgänge, eine meldende für Schreib- und Löschvorgänge | eine Klammer für alles | Eine Klammer, die immer meldet, macht aus einem Normalzustand einen Fehler: „noch kein Ordner gewählt" ist beim ersten Start richtig, und `loadHistory` läuft beim Programmstart, `storageUsage` bei jedem Neuzeichnen der Einstellungen (BUG-06). Die Regel aus `CLAUDE.md` verlangt sichtbare Fehlerpfade — nicht sichtbare Normalzustände |
 | TE-12 | Löschen hat **drei** Ausgänge, und nur zwei sind Fehlschläge: Ordner unerreichbar · Datei nicht entfernbar · Datei war schon weg | „gelöscht oder nicht" | Der dritte Fall ist das, was der Nutzer wollte. Ihn als Fehlschlag zu behandeln ließ Einträge im Verlauf zurück, die sich nie wieder entfernen ließen (BUG-07) |
+| TE-13 | Die Übernahme der alten Einstellungen gibt es **nur im DMG-Build** | in beiden, im Store über einen Dialog | Gemessen am 2026-09-03: Eine fremde Preferences-Domain ist ohne Sandbox vollständig lesbar, mit Sandbox gar nicht. Ein Dialog im Store-Build wäre derselbe Weg, den OF-04 für angeheftete Bilder verworfen hat — die Anwendung kann nicht wissen, ob es etwas zu holen gibt |
+| TE-14 | Fehlt die Aufnahmeberechtigung, obwohl die Einrichtung als abgeschlossen gilt, läuft sie erneut | nur der bestehende Menühinweis | Nach dem Kennungswechsel ist die TCC-Berechtigung in **jedem** Fall weg. Der Menühinweis setzt voraus, dass jemand ins Menü sieht; bis dahin nimmt ein Aufnahmewerkzeug stumm nichts auf und wirkt defekt |
 | TE-09 | Keine neue Abhängigkeit | — | Alles Nötige ist im System: `NSOpenPanel`, Lesezeichen, `codesign`, `productbuild`, `notarytool` |
 
 ### Messprotokoll zu TE-07 (T01, 2026-09-03)
@@ -268,7 +278,7 @@ Kennung als sandboxed Programmpaket gestartet. Die echte Installation blieb unbe
 | AK-28 | Lesezeichen aus `saveLocationBookmark`, TE-05 | |
 | AK-29 | Ordnerwechsel in den Einstellungen ersetzt nur das Lesezeichen | Alte Dateien bleiben liegen — kein Verschieben |
 | AK-30 | Meldende Klammer (TE-11) über `CaptureLog.report`, Neuwahl angeboten | Deckt EC-02 und EC-03 mit. Lesevorgänge schweigen hier bewusst — der Hinweis kommt bei der nächsten Aufnahme |
-| AK-31 | Container-Übernahme durch macOS, gemessen im Protokoll zu TE-07 | Kein Code der Anwendung beteiligt |
+| AK-31 | `LegacyDefaultsImport`, nur im DMG-Build (TE-13) | Die Container-Übernahme aus TE-07 greift seit dem Kennungswechsel nicht mehr |
 | AK-32 | **Abwesenheit von Code:** es gibt keinen Baustein, der fragen könnte (TE-06) | Negativkriterium — nachweisbar durch Suche über `Sources/` |
 | AK-33 | Abschnitt in `CHANGELOG.md`, der den App Store nennt und das Fehlen der angehefteten Bilder ausdrücklich benennt | **Einziges Kriterium, das außerhalb des Codes erfüllt wird — und das einzige derzeit offene.** Siehe BF-34 |
 | AK-34 | wie AK-32 | Seit OF-04 widerspruchsfrei zu AK-33 erfüllbar |
@@ -291,6 +301,8 @@ Kennung als sandboxed Programmpaket gestartet. Die echte Installation blieb unbe
 | AK-51 | Trifft nicht zu — begründet in der Spec | Keine Umsetzung nötig, Zeile bleibt trotzdem stehen |
 | AK-52 | Trifft nicht zu — begründet in der Spec | Lokale Löschpfade über AK-17 und AK-22 |
 | AK-53 | Entitlement-Tabelle: Schlüssel entfernt (TE-04) | Zusammen mit AK-06 bis AK-08 zu prüfen — Entfernen ohne Funktionsnachweis wäre wertlos |
+| AK-54 | **Abwesenheit** von `LegacyDefaultsImport` im Store-Build (TE-13) | Negativkriterium, am Übersetzungsmerkmal nachweisbar |
+| AK-55 | Ersteinrichtung läuft erneut bei fehlender Berechtigung (TE-14) | Nutzt den bestehenden Ablauf aus B12, nur mit neuer Auslösebedingung |
 
-Alle 53 Kriterien sind zugeordnet. Vier davon (AK-40 bis AK-42, AK-44) sind erst
+Alle 55 Kriterien sind zugeordnet. Vier davon (AK-40 bis AK-42, AK-44) sind erst
 ausführbar, wenn OF-07 der Spezifikation beschafft ist.

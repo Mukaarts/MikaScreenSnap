@@ -171,13 +171,26 @@ müssen. Die sieben oben genannten ändern ihr Verhalten sichtbar.
 > `tasks.md` und `qa-report.md` auf sie verweisen; der Inhalt beschreibt jetzt, was
 > tatsächlich geschieht.
 
-- **AK-31** · ~~Einstellungen wandern mit~~ → **gegenstandslos seit dem Wechsel der
-  Bundle-Kennung am 2026-09-03 (OF-05).** Die Container-Übernahme, die T01 gemessen hat,
-  greift ausschließlich bei gleicher Kennung. Mit `lu.daumedia.screensnap` findet macOS
-  die alten Einstellungen nicht mehr — sie wandern nicht, und das ist gewollt. Ersetzt
-  durch: **Angenommen, eine Vorgängerinstallation ist vorhanden, wenn die neue Fassung zum
-  ersten Mal gestartet wird, dann läuft die Ersteinrichtung vollständig, einschließlich der
-  Abfrage der Bildschirmaufnahme-Berechtigung.**
+> **Zum zweiten Mal neu gefasst, am 2026-09-03 (OF-05).** Die erste Fassung beschrieb eine
+> Übernahme durch die Anwendung, die zweite die Container-Übernahme durch macOS. Beide sind
+> mit dem Wechsel auf `lu.daumedia.screensnap` hinfällig: Die Automatik greift nur bei
+> gleicher Kennung. Was jetzt steht, ist gemessen — die alte Domain ist **ohne** Sandbox
+> vollständig lesbar und **mit** Sandbox gar nicht.
+
+- **AK-31** · Angenommen, eine Installation unter der alten Kennung
+  `com.mika.mikaplusscreensnap` mit sieben belegten Tastenkürzeln, gefüllter
+  Ausschlussliste und geänderten Zeichen-Standards ist vorhanden, wenn die **DMG-Fassung**
+  unter der neuen Kennung zum ersten Mal startet, dann sind alle drei unverändert
+  vorhanden — ohne dass gefragt wurde.
+- **AK-54** · Angenommen wie AK-31, wenn stattdessen die **Store-Fassung** zum ersten Mal
+  startet, dann startet sie mit Standardwerten und fragt zu keinem Zeitpunkt nach einer
+  Übernahme. Sie kann die alte Domain nicht lesen, und ein Dialog, der jeden fragt, wurde
+  mit OF-04 verworfen.
+- **AK-55** · Angenommen, eine Installation unter der alten Kennung hatte die
+  Bildschirmaufnahme-Berechtigung erteilt, wenn die neue Fassung startet, dann läuft die
+  Ersteinrichtung erneut und führt durch die Berechtigung — obwohl sie einmal abgeschlossen
+  war. Ohne die Berechtigung ist die Anwendung funktionslos, und ein stummes Nichtstun sieht
+  aus wie ein Defekt.
 - **AK-32** · Angenommen wie AK-31, wenn die Ersteinrichtung durchlaufen wird, dann
   erscheint an keiner Stelle eine Frage nach der Übernahme alter Daten.
 - **AK-33** · Angenommen, eine DMG-Installation mit zwei angehefteten Bildern ist
@@ -316,15 +329,11 @@ Abschnitt 4 und 6, hier erweitert um Abschnitt 1 (`docs/prd.md`, *Datenschutz*).
   neu gefasst. **Folge für den Code:** `MigrationImporter`, `migrationOffered` und der
   eingebettete `MigrationPrompt` werden nicht gebraucht; T14, T16 und T20 entfallen.
 
-- **OF-05** · **Der Wechsel auf `lu.daumedia.screensnap` (2026-09-03) lässt bestehende
-  Installationen ohne Konfiguration zurück.** `UserDefaults` und die
-  TCC-Bildschirmaufnahme-Berechtigung hängen beide an der Bundle-Kennung; beide sind nach
-  dem Update leer beziehungsweise nicht erteilt. Die Versionshinweise sagen das inzwischen
-  ausdrücklich, aber die Frage bleibt: **Soll es einen Übernahmepfad geben**, der die alten
-  Einstellungen beim ersten Start einliest — im DMG-Build ohne Sandbox technisch
-  unproblematisch, im Store-Build nur über eine Nutzerauswahl? Ohne ihn verliert jeder
-  bestehende Nutzer sieben Tastenkürzel und seine Ausschlussliste. **Entscheidet: der Autor,
-  vor der Auslieferung von 3.6.0.**
+- **OF-05** · ~~Übernahmepfad nach dem Kennungswechsel?~~ **Entschieden am 2026-09-03:
+  ja, aber nur im DMG-Build** (AK-31), und die Ersteinrichtung läuft nach dem Wechsel
+  erneut (AK-55). Die Asymmetrie ist keine Nachlässigkeit, sondern gemessen: Die alte
+  Domain ist ohne Sandbox vollständig lesbar, mit Sandbox gar nicht. Wer über den Store
+  einsteigt, kommt ohnehin meist neu (AK-54).
 - **OF-03** · ~~Lizenz ändern?~~ **Entschieden am 2026-09-03: MIT bleibt.** Es gibt
   keinen Umsatz zu schützen, und Apple verlangt bei der Einreichung ohnehin den Nachweis
   der Rechte an Name und Symbol — die Marke schützt hier, nicht die Lizenz.
@@ -347,6 +356,9 @@ Abschnitt 4 und 6, hier erweitert um Abschnitt 1 (`docs/prd.md`, *Datenschutz*).
 | 12 | Ausnahme-Entitlements erlauben? | Keine | Sie schwächen genau die Grenze, deretwegen die App überhaupt in den Store darf, und machen das Review unvorhersagbar |
 | 13 | Universal Binary für Intel? | Nein, arm64 bleibt | OF-02 unverändert. Keine der 269 Bestandsprüfungen wäre je auf Intel nachweisbar — es gibt kein Testgerät |
 | 14 | Store-Eintrag mehrsprachig? | Nur Englisch | Passend zur englischen Oberfläche. Eine deutsche Beschreibung vor einer englischen App wäre ein Versprechen, das die App nicht einlöst |
+| 23 | Wie erfährt der Nutzer, dass die Aufnahmeberechtigung weg ist? | Die Ersteinrichtung läuft erneut, samt Berechtigungsseite | Der bestehende Hinweis im Menü setzt voraus, dass jemand ins Menü sieht. Ein Aufnahmewerkzeug, das stumm nichts aufnimmt, wirkt defekt statt unkonfiguriert |
+| 22 | Übernahme der alten Einstellungen? | Ja im DMG-Build, nein im Store-Build | **Gemessen, nicht angenommen:** Eine fremde Preferences-Domain ist ohne Sandbox vollständig lesbar (`ALT-WERT` kam an) und mit Sandbox gar nicht (`<NEIN>`). Die Asymmetrie folgt aus der Plattform, nicht aus einer Vorliebe |
+| 21 | Bundle-Kennung? | `lu.daumedia.screensnap` für **beide** Ausgaben | Passt zum Schema der übrigen Apps des Teams und benutzt eine Domain, die dem Autor gehört. Preis: `UserDefaults`, TCC-Berechtigung und Container hängen alle daran und setzen zurück |
 | 20 | Lizenz im Store? | MIT bleibt | Kein Umsatz zu schützen; Apple prüft bei der Einreichung Rechte an Name und Symbol, nicht die Codelizenz |
 | 19 | Store-Kategorie und Alterseinstufung? | *Utilities*, 4+ | Dort suchen Nutzer Screenshot-Werkzeuge; 4+, weil die Anwendung keine fremden Inhalte anzeigt |
 | 18 | Welches Konto trägt den Store-Eintrag? | Team `CWJM4J4HFN` | Dasselbe Team wie der Direktvertrieb — eine Mitgliedschaft, ein Zertifikatssatz, keine Frage, welches Konto die Marke hält |

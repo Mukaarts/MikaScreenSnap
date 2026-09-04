@@ -151,6 +151,14 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
       stünde eine unbelegte Zusage im Text. Wenn T28 später Gewissheit bringt, kann die
       Einschränkung wieder heraus. Dabei ist auch der Zählfehler *the two differences below*
       zu berichtigen (H-04) — **Aus BF-36** — `AK-31`
+- [ ] **T35** · `LegacyDefaultsImport`: liest beim ersten Start unter der neuen Kennung die
+      Domain `com.mika.mikaplusscreensnap` und übernimmt Tastenkürzel, Ausschlussliste,
+      Zeichen-Standards und Speicherort. **Nur im DMG-Build** — im Store-Build gar nicht
+      erst übersetzt. Kopiert, löscht nichts; ein zweiter Start übernimmt nicht erneut —
+      `AK-31, AK-54`
+- [ ] **T36** · Ersteinrichtung erneut auslösen, wenn die Aufnahmeberechtigung fehlt,
+      obwohl sie als abgeschlossen gilt. Nutzt den Ablauf aus B12 mit neuer
+      Auslösebedingung — `AK-55`
 - [ ] **T34** · Version auf **3.6.0** anheben: `Resources/Info.plist` (beide Ausgaben lesen
       daraus, AK-37) und die Überschrift `[Unreleased]` in `CHANGELOG.md`. **Entschieden am
       2026-09-03.** Erst nach der Auslieferung von 3.5.0 als DMG — `AK-37`
@@ -204,7 +212,7 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 | AK-28 | T07 |
 | AK-29 | T17 |
 | AK-30 | T07, T19 |
-| AK-31 | T33, T26 |
+| AK-31 | T35 |
 | AK-32 | T31 |
 | AK-33 | T32 |
 | AK-34 | T31 |
@@ -227,6 +235,8 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 | AK-51 | — |
 | AK-52 | — |
 | AK-53 | T03 |
+| AK-54 | T35 |
+| AK-55 | T36 |
 
 **AK ohne Aufgabe:** AK-51 und AK-52. Beide sind in der Spezifikation als „trifft nicht
 zu, weil …" formuliert — Zugriffsregeln und Kontolöschung setzen Konten und ein Backend
