@@ -9,7 +9,7 @@ import SwiftUI
 struct AdvancedTabView: View {
     let preferences: AppPreferences
     let launchAtLoginManager: LaunchAtLoginManager
-    let sparkleUpdater: SparkleUpdater
+    let updateChannel: any UpdateChannel
     let historyManager: ScreenshotHistoryManager
     let hotkeyManager: HotkeyManager
     let appState: AppState
@@ -44,29 +44,40 @@ struct AdvancedTabView: View {
 
                         Divider()
 
-                        settingsRow {
-                            Label {
-                                Toggle("Automatic updates", isOn: Binding(
-                                    get: { sparkleUpdater.automaticallyChecksForUpdates },
-                                    set: { sparkleUpdater.automaticallyChecksForUpdates = $0 }
-                                ))
-                            } icon: {
-                                Image(systemName: "arrow.triangle.2.circlepath")
+                        // The App Store build has no updater of its own — a disabled
+                        // toggle would raise a question it cannot answer, so the controls
+                        // give way to a sentence that does.
+                        if updateChannel.showsUpdateControls {
+                            settingsRow {
+                                Label {
+                                    Toggle("Automatic updates", isOn: Binding(
+                                        get: { updateChannel.automaticallyChecksForUpdates },
+                                        set: { updateChannel.automaticallyChecksForUpdates = $0 }
+                                    ))
+                                } icon: {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                }
                             }
-                        }
 
-                        Divider()
+                            Divider()
 
-                        settingsRow {
-                            Label("Check for Updates", systemImage: "arrow.down.circle")
-                            Spacer()
-                            if let lastCheck = sparkleUpdater.lastUpdateCheckDate {
-                                Text("\(lastCheck, style: .relative) ago")
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
+                            settingsRow {
+                                Label("Check for Updates", systemImage: "arrow.down.circle")
+                                Spacer()
+                                if let lastCheck = updateChannel.lastUpdateCheckDate {
+                                    Text("\(lastCheck, style: .relative) ago")
+                                        .foregroundStyle(.secondary)
+                                        .font(.caption)
+                                }
+                                Button("Check Now") {
+                                    updateChannel.checkForUpdates()
+                                }
                             }
-                            Button("Check Now") {
-                                sparkleUpdater.checkForUpdates()
+                        } else if let explanation = updateChannel.unavailableExplanation {
+                            settingsRow {
+                                Label(explanation, systemImage: "arrow.down.circle")
+                                    .foregroundStyle(Color.MikaPlus.textSecondary)
+                                Spacer()
                             }
                         }
                     }
@@ -111,7 +122,16 @@ struct AdvancedTabView: View {
                         settingsRow {
                             Spacer()
                             Button {
-                                NSWorkspace.shared.open(preferences.saveLocation)
+                                // Must be the folder actually written to, not the stored
+                                // path: after a reset those differ, and the button would
+                                // open an empty ~/Pictures the App Store build never used.
+                                switch SaveLocationStore.resolve(preferences) {
+                                case .success(let folder):
+                                    NSWorkspace.shared.open(folder)
+                                case .failure(let problem):
+                                    CaptureLog.report("Open Folder: \(problem)",
+                                                      message: problem.message)
+                                }
                             } label: {
                                 Label("Open Folder", systemImage: "folder")
                             }
@@ -179,12 +199,15 @@ struct AdvancedTabView: View {
         .alert("Reset All Preferences", isPresented: $showResetConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Reset", role: .destructive) {
-                preferences.resetAllPreferences()
+                let needsSetupAgain = preferences.resetAllPreferences()
                 var defaults: [HotkeyAction: HotkeyBinding] = [:]
                 for action in HotkeyAction.allCases {
                     defaults[action] = action.defaultBinding
                 }
                 hotkeyManager.reRegisterAll(bindings: defaults)
+                // Without this the App Store build sits there with no save location until
+                // the next launch, telling the user to choose a folder with no way to.
+                if needsSetupAgain { onShowOnboarding() }
             }
         } message: {
             Text("This will reset all settings to their defaults. This action cannot be undone.")

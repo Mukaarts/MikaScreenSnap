@@ -185,8 +185,11 @@ final class PinnedScreenshotPanel: NSPanel {
             CaptureLog.report("No preferences available", message: "Could not save screenshot")
             return
         }
-        guard prefs.saveImage(image) != nil else { return }
-        StatusToast.show("Saved to \(prefs.saveLocation.lastPathComponent)")
+        // The name comes from the file that was actually written, not from the stored
+        // preference — telling the user a folder that was not used is worse than telling
+        // them nothing.
+        guard let written = prefs.saveImage(image) else { return }
+        StatusToast.show("Saved to \(written.deletingLastPathComponent().lastPathComponent)")
     }
 
     @objc private func openInEditor() {

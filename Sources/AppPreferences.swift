@@ -24,6 +24,14 @@ final class AppPreferences {
         didSet { defaults.set(saveLocation.path, forKey: "saveLocation") }
     }
 
+    /// Security-scoped bookmark for the folder the user picked, App Store build only.
+    ///
+    /// A plain path is worthless under the sandbox: it survives a restart but the
+    /// permission to write there does not. The bookmark carries both.
+    var saveLocationBookmark: Data? {
+        didSet { defaults.set(saveLocationBookmark, forKey: "saveLocationBookmark") }
+    }
+
     var imageFormat: ImageFormat {
         didSet { defaults.set(imageFormat.rawValue, forKey: "imageFormat") }
     }
@@ -105,6 +113,8 @@ final class AppPreferences {
                 ?? AppPreferences.defaultExcludedBundleIdentifiers
         )
 
+        self.saveLocationBookmark = defaults.data(forKey: "saveLocationBookmark")
+
         if let savedPath = defaults.string(forKey: "saveLocation") {
             self.saveLocation = URL(fileURLWithPath: savedPath)
         } else {
@@ -127,11 +137,21 @@ final class AppPreferences {
         "defaultAnnotationTool", "defaultStrokeColorData", "defaultStrokeWidth",
         "rememberLastTool", "showToolbarLabels", "hotkeyBindings",
         "excludedBundleIdentifiers",
+        "saveLocationBookmark",
         ColorHistoryManager.historyDefaultsKey,
         ColorHistoryManager.paletteDefaultsKey,
     ]
 
-    func resetAllPreferences() {
+    /// Resets everything the app owns.
+    ///
+    /// - Returns: `true` when the caller must show first-run setup again. Only the App
+    ///   Store build ever needs this: the reset clears the save-location bookmark, and
+    ///   first-run setup is the only place that asks for a folder. Returning it rather
+    ///   than just clearing `hasCompletedOnboarding` matters because that flag is read
+    ///   exactly once, at launch — setting it alone left the running app with nowhere to
+    ///   write until the next restart.
+    @discardableResult
+    func resetAllPreferences() -> Bool {
         for key in AppPreferences.ownedDefaultsKeys {
             defaults.removeObject(forKey: key)
         }
@@ -145,7 +165,15 @@ final class AppPreferences {
         autoSaveEnabled = true
         jpegQuality = 0.85
         imageFormat = .png
-        hasCompletedOnboarding = true // Keep onboarding completed
+        // The direct build keeps onboarding completed: it writes to ~/Pictures and needs
+        // nothing from the user. The App Store build must not — the reset clears the
+        // bookmark below, and first-run setup is the only place that asks for a folder.
+        #if APPSTORE
+        let needsSetupAgain = SaveLocationStore.isSandboxed
+        #else
+        let needsSetupAgain = false
+        #endif
+        hasCompletedOnboarding = !needsSetupAgain
         captureSoundEnabled = true
         defaultAnnotationTool = "arrow"
         defaultStrokeColorData = nil
@@ -154,6 +182,9 @@ final class AppPreferences {
         showToolbarLabels = false
         excludedBundleIdentifiers = Set(AppPreferences.defaultExcludedBundleIdentifiers)
         saveLocation = defaultLocation
+        saveLocationBookmark = nil
+
+        return needsSetupAgain
     }
 
     /// Encodes an image in the configured format.
@@ -194,26 +225,20 @@ final class AppPreferences {
     /// Writes an image into the configured save location.
     /// - Returns: the file it wrote, or `nil` — the caller is expected to tell the user.
     func saveImage(_ image: NSImage) -> URL? {
-        do {
-            try FileManager.default.createDirectory(at: saveLocation, withIntermediateDirectories: true)
-        } catch {
-            CaptureLog.report(error, action: "Saving screenshot")
-            return nil
-        }
-
         guard let imageData = encode(image) else {
             CaptureLog.report("Could not encode capture as \(imageFormat.rawValue)",
                               message: "Could not save screenshot")
             return nil
         }
 
-        let fileURL = uniqueCaptureURL(in: saveLocation)
-        do {
+        // The save folder is resolved and access opened here, not held for the process
+        // lifetime — see SaveLocationStore. A missing folder reports itself instead of
+        // failing silently.
+        return SaveLocationStore.withSaveFolder(self, action: "Saving screenshot") { folder in
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let fileURL = uniqueCaptureURL(in: folder)
             try imageData.write(to: fileURL)
             return fileURL
-        } catch {
-            CaptureLog.report(error, action: "Saving screenshot")
-            return nil
         }
     }
 
@@ -227,12 +252,12 @@ final class AppPreferences {
             CaptureLog.report("Could not encode edited capture", message: "Could not update screenshot")
             return false
         }
-        do {
+        // Goes through the same bracket as saveImage: this is the path that replaces the
+        // auto-saved original with the censored version, and it must not fail quietly in
+        // the sandbox — that would leave the unredacted file behind.
+        return SaveLocationStore.withSaveFolder(self, action: "Updating screenshot") { _ in
             try imageData.write(to: url)
             return true
-        } catch {
-            CaptureLog.report(error, action: "Updating screenshot")
-            return false
-        }
+        } ?? false
     }
 }

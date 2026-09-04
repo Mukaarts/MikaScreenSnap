@@ -125,7 +125,12 @@ struct GeneralTabView: View {
         panel.allowsMultipleSelection = false
 
         if panel.runModal() == .OK, let url = panel.url {
-            preferences.saveLocation = url
+            // Goes through the store so the App Store build records a bookmark; without it
+            // the path survives the restart but the permission to write there does not.
+            if !SaveLocationStore.adopt(url, in: preferences) {
+                CaptureLog.report("Chosen save folder is not writable",
+                                  message: SaveLocationProblem.notWritable.message)
+            }
         }
     }
 }
