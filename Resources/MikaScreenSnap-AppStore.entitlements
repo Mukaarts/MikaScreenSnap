@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Required for the Mac App Store. Screen capture is NOT granted here: it is a TCC
+         decision the user makes in System Settings. The undocumented
+         com.apple.security.screen-capture key the direct build carries is deliberately
+         absent — it never did anything, and unknown com.apple.security.* keys are a
+         needless risk at ingestion. -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <!-- The save folder the user picks in first-run setup. -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <!-- Lets that permission survive a restart, so the folder is picked once, not daily. -->
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+</dict>
+</plist>
