@@ -87,7 +87,22 @@ erfasst. Sie existiert jetzt.
 **Auslieferung von 3.5.0.** Reihenfolge nach `README.md`, Abschnitt *Auto-Update*:
 
 1. `bash build.sh` — erledigt, Bundle liegt unter `build/`
-2. `bash scripts/notarize.sh` — **ausstehend und zwingend.** Nachgewiesen: Das gebaute DMG
+2. `bash scripts/notarize.sh` — **erledigt am 2026-09-03.** Aus dem Stand von `main`
+   gebaut, nicht aus dem Feature-Branch: Der trägt zwar dieselbe Versionsnummer, enthält
+   aber 604 Zeilen Feature-16-Code, deren Laufzeitverhalten nie geprüft wurde.
+
+   | Prüfung | Ergebnis |
+   |---|---|
+   | Notarisierung | `status: Accepted`, Vorgang `e3f78aeb-1bb7-473a-8787-dedb0e2d139f` |
+   | Ticket angeheftet | `stapler validate` — *The validate action worked!* |
+   | `spctl -a -vv -t install` | **`accepted` · `source=Notarized Developer ID`** |
+   | Signatur | `Developer ID Application: Michael Rodrigues (CWJM4J4HFN)` |
+   | Datei | `installer/Mika+ScreenSnap-v3.5.0.dmg`, 2042057 Bytes (appcast-`length`) |
+
+   Damit ist der Befund von der Erfassung geschlossen: Die Anwendung startet jetzt auf
+   fremden Rechnern.
+
+   ~~**ausstehend und zwingend.** Nachgewiesen: Das gebaute DMG
    ist ad-hoc signiert, und `spctl -a -vv -t install` antwortet
    `rejected — source=no usable signature`. Auf einem fremden Rechner startet die Anwendung
    damit nicht. Der Schritt braucht ein Notary-Profil im Schlüsselbund, das einmalig
