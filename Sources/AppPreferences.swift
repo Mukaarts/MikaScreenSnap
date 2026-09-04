@@ -94,6 +94,12 @@ final class AppPreferences {
     }
 
     init() {
+        // Runs before the first read below, so the carried-over values are simply there.
+        // No-op after the first launch, and absent entirely in the App Store build.
+        #if !APPSTORE
+        LegacyDefaultsImport.runIfNeeded()
+        #endif
+
         let defaultLocation = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first!
             .appendingPathComponent("MikaScreenSnap", isDirectory: true)
 

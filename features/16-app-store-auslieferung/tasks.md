@@ -151,12 +151,12 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
       stünde eine unbelegte Zusage im Text. Wenn T28 später Gewissheit bringt, kann die
       Einschränkung wieder heraus. Dabei ist auch der Zählfehler *the two differences below*
       zu berichtigen (H-04) — **Aus BF-36** — `AK-31`
-- [ ] **T35** · `LegacyDefaultsImport`: liest beim ersten Start unter der neuen Kennung die
+- [x] **T35** · `LegacyDefaultsImport`: liest beim ersten Start unter der neuen Kennung die
       Domain `com.mika.mikaplusscreensnap` und übernimmt Tastenkürzel, Ausschlussliste,
       Zeichen-Standards und Speicherort. **Nur im DMG-Build** — im Store-Build gar nicht
       erst übersetzt. Kopiert, löscht nichts; ein zweiter Start übernimmt nicht erneut —
       `AK-31, AK-54`
-- [ ] **T36** · Ersteinrichtung erneut auslösen, wenn die Aufnahmeberechtigung fehlt,
+- [x] **T36** · Ersteinrichtung erneut auslösen, wenn die Aufnahmeberechtigung fehlt,
       obwohl sie als abgeschlossen gilt. Nutzt den Ablauf aus B12 mit neuer
       Auslösebedingung — `AK-55`
 - [ ] **T34** · Version auf **3.6.0** anheben: `Resources/Info.plist` (beide Ausgaben lesen
@@ -596,3 +596,68 @@ dieser Kette liegen:
    T22, T25, T26) — das folgt aus 2.
 
 Solange keines davon vorliegt, findet auch eine weitere QA-Runde nur noch Text.
+
+
+## Baubericht VI — T35 und T36, 2026-09-03
+
+Eingang *Aufgabenplan*. Auftrag: die beiden Aufgaben aus der Entscheidung zu OF-05 — die
+einzigen offenen ohne externe Blockade.
+
+| Aufgabe | Nachweis |
+|---|---|
+| **T35** `LegacyDefaultsImport` | 12 Symbole im DMG-Binary, **0 im Store-Binary** (`nm -a`) — AK-54 damit belegt, nicht behauptet |
+| **T36** Ersteinrichtung bei fehlender Berechtigung | Auslösebedingung in `MikaScreenSnapApp.swift` erweitert; nutzt den bestehenden Ablauf aus B12 |
+
+### Der Zuschnitt der Übernahme
+
+Übernommen wird **jeder Schlüssel aus `ownedDefaultsKeys`** außer zweien. Das ist Absicht:
+Ein Schlüssel, der später dazukommt, wandert mit, ohne dass jemand daran denken muss — und
+die Liste, die ohnehin gepflegt wird, ist die einzige Quelle.
+
+Die zwei Ausnahmen stehen im Code mit Begründung:
+
+- `hasCompletedOnboarding` — die Aufnahmeberechtigung hängt ebenfalls an der Kennung und ist
+  mit ihr weg. Diesen Wert zu übernehmen hieße, eine Anwendung als eingerichtet zu melden,
+  die nichts aufnehmen kann. Genau das verlangt AK-55 andersherum.
+- `saveLocationBookmark` — Store-Build-eigen, und ein Lesezeichen aus einem fremden Bundle
+  würde ohnehin nicht auflösen.
+
+Ein Test prüft, dass beide Ausnahmen **tatsächlich** in `ownedDefaultsKeys` stehen — ein
+Tippfehler würde sonst lautlos gar nichts ausschließen.
+
+### Über den Auftrag hinaus verändert
+
+**Die Quelldomäne wurde injizierbar gemacht.** Ursprünglich war sie eine Konstante; damit
+ließen sich nur die Wächter-Klauseln testen, nicht die Übernahme selbst. Das ist genau die
+Lücke, aus der BUG-01 entstanden ist — eine ungetestete Komponente, in der der Fehler
+saß. Fünf Tests prüfen jetzt den Kern: was ankommt, was nicht überschrieben wird, was
+unangetastet bleibt.
+
+### Zwei Umkehrproben
+
+| Ausgehebelt | Ergebnis |
+|---|---|
+| Schutz gegen Überschreiben entfernt | `testDoesNotOverwriteWhatTheNewInstallAlreadyHas`: `("OLD") is not equal to ("NEW")` |
+| `hasCompletedOnboarding` aus der Ausschlussliste genommen | 2 Fehlschläge |
+
+Nach Wiederherstellung beide grün. Ein Regressionstest, der seinen Fehler nicht fängt,
+wäre wertlos.
+
+### Verifikation
+
+| Prüfung | Ergebnis |
+|---|---|
+| `swift build -c release` | grün · 2 Warnungen, beide aus dem Bestand (`AnnotationModels.swift`), keine neue |
+| `swift test` | **86 grün** (DMG) · 76 grün (Store) — die 10 neuen laufen nur im DMG-Build |
+| `scripts/build-appstore.sh` | 10 von 10 |
+
+### Was weiterhin offen ist
+
+Unverändert acht Aufgaben, alle mit externer Blockade: **T34** (wartet auf die Auslieferung
+von 3.5.0), **T19, T20, T22, T25, T26** (brauchen ein laufendes sandboxed Programm),
+**T27–T30** (Zertifikate unter `CWJM4J4HFN`).
+
+**Und eine Einschränkung, die dieser Durchgang nicht auflösen konnte:** AK-31 ist im Test
+belegt, aber nicht am echten Programm. Ob eine bestehende 3.5.0-Installation nach dem
+Update tatsächlich ihre Tastenkürzel behält, zeigt erst ein Durchlauf mit einer echten
+Vorgängerfassung — und der gehört zu T26.

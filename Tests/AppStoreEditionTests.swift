@@ -202,3 +202,156 @@ final class HistoryWithoutSaveLocationTests: XCTestCase {
                        "\"Clear History\" must not empty the list when it deleted nothing")
     }
 }
+
+// MARK: - Carrying settings over from the old bundle identifier
+
+#if !APPSTORE
+
+/// T35. The App Store build has no equivalent — it cannot read another bundle's
+/// preferences domain, which is why the type does not exist there at all.
+@MainActor
+final class LegacyDefaultsImportTests: XCTestCase {
+
+    private var suiteName: String!
+    private var defaults: UserDefaults!
+
+    override func setUp() async throws {
+        suiteName = "lu.daumedia.screensnap.tests.\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)
+    }
+
+    override func tearDown() async throws {
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    /// Marked done even when there is nothing to carry over, so a fresh install does not
+    /// retry the lookup on every launch.
+    func testMarksItselfDoneEvenWithNothingToCarryOver() {
+        let carried = LegacyDefaultsImport.runIfNeeded(into: defaults)
+        XCTAssertNotNil(carried)
+        XCTAssertTrue(defaults.bool(forKey: LegacyDefaultsImport.completionKey))
+    }
+
+    /// The second launch must not run it again — otherwise a user who deliberately
+    /// cleared a setting would find it back.
+    func testRunsOnlyOnce() {
+        XCTAssertNotNil(LegacyDefaultsImport.runIfNeeded(into: defaults))
+        XCTAssertNil(LegacyDefaultsImport.runIfNeeded(into: defaults),
+                     "a second run must be a no-op")
+    }
+
+    /// The completion marker must survive a preferences reset. Resetting is a request to
+    /// start clean, not to pull the old install's settings back in.
+    func testCompletionMarkerIsDeliberatelyNotOwned() {
+        XCTAssertFalse(AppPreferences.ownedDefaultsKeys.contains(LegacyDefaultsImport.completionKey),
+                       "see LegacyDefaultsImport.completionKey — adding it would re-import after every reset")
+    }
+
+    /// Onboarding must not be carried over: the capture permission is tied to the bundle
+    /// identifier and is gone with it, so setup has to run again (AK-55).
+    func testOnboardingCompletionIsNeverCarriedOver() {
+        LegacyDefaultsImport.runIfNeeded(into: defaults)
+        XCTAssertNil(defaults.object(forKey: "hasCompletedOnboarding"),
+                     "carrying this over would mark setup complete for an app that cannot capture")
+    }
+
+    /// Every key the app owns is a candidate except the two documented exclusions — so a
+    /// key added to AppPreferences later is carried over without anyone remembering to.
+    func testCoversEveryOwnedKeyExceptTheDocumentedExclusions() {
+        let excluded = ["hasCompletedOnboarding", "saveLocationBookmark"]
+        for key in AppPreferences.ownedDefaultsKeys where !excluded.contains(key) {
+            XCTAssertFalse(key.isEmpty)
+        }
+        // The exclusions must actually be owned keys; a typo would silently exclude nothing.
+        for key in excluded {
+            XCTAssertTrue(AppPreferences.ownedDefaultsKeys.contains(key),
+                          "\(key) is excluded from the import but is not an owned key — typo?")
+        }
+    }
+}
+
+#endif
+
+#if !APPSTORE
+
+/// The part that actually matters: does anything arrive? Testable because the source
+/// domain is injectable — without that only the guard clauses would be covered, and the
+/// carry-over itself would ship unverified.
+@MainActor
+final class LegacyDefaultsCarryOverTests: XCTestCase {
+
+    private var oldName: String!
+    private var newName: String!
+    private var old: UserDefaults!
+    private var new: UserDefaults!
+
+    override func setUp() async throws {
+        let id = UUID().uuidString
+        oldName = "com.mika.legacytest.\(id)"
+        newName = "lu.daumedia.newtest.\(id)"
+        old = UserDefaults(suiteName: oldName)
+        new = UserDefaults(suiteName: newName)
+    }
+
+    override func tearDown() async throws {
+        old.removePersistentDomain(forName: oldName)
+        new.removePersistentDomain(forName: newName)
+    }
+
+    func testCarriesHotkeysExclusionListAndDrawingDefaultsAcross() {
+        old.set("OLD-BINDINGS", forKey: "hotkeyBindings")
+        old.set(["com.apple.Safari"], forKey: "excludedBundleIdentifiers")
+        old.set("rectangle", forKey: "defaultAnnotationTool")
+        old.set(9.0, forKey: "defaultStrokeWidth")
+
+        let carried = LegacyDefaultsImport.runIfNeeded(from: oldName, into: new)
+
+        XCTAssertEqual(carried, 4)
+        XCTAssertEqual(new.string(forKey: "hotkeyBindings"), "OLD-BINDINGS")
+        XCTAssertEqual(new.stringArray(forKey: "excludedBundleIdentifiers"), ["com.apple.Safari"])
+        XCTAssertEqual(new.string(forKey: "defaultAnnotationTool"), "rectangle")
+        XCTAssertEqual(new.double(forKey: "defaultStrokeWidth"), 9.0)
+    }
+
+    /// A value the user already changed in the new install wins. Otherwise a first launch
+    /// followed by a settings change, then a crash, would restore the old value.
+    func testDoesNotOverwriteWhatTheNewInstallAlreadyHas() {
+        old.set("OLD", forKey: "defaultAnnotationTool")
+        new.set("NEW", forKey: "defaultAnnotationTool")
+
+        LegacyDefaultsImport.runIfNeeded(from: oldName, into: new)
+
+        XCTAssertEqual(new.string(forKey: "defaultAnnotationTool"), "NEW")
+    }
+
+    /// A key the old install never set must stay unset, so the current default applies
+    /// instead of being overwritten with an empty value.
+    func testLeavesKeysTheOldInstallNeverSetAlone() {
+        old.set("OLD-BINDINGS", forKey: "hotkeyBindings")
+
+        LegacyDefaultsImport.runIfNeeded(from: oldName, into: new)
+
+        XCTAssertNil(new.object(forKey: "defaultAnnotationTool"))
+    }
+
+    /// The old install is read, never modified — a half-finished carry-over must not
+    /// destroy what it came from.
+    func testLeavesTheOldDomainUntouched() {
+        old.set("OLD-BINDINGS", forKey: "hotkeyBindings")
+
+        LegacyDefaultsImport.runIfNeeded(from: oldName, into: new)
+
+        XCTAssertEqual(old.string(forKey: "hotkeyBindings"), "OLD-BINDINGS")
+    }
+
+    func testOnboardingIsNotCarriedOverEvenWhenTheOldInstallCompletedIt() {
+        old.set(true, forKey: "hasCompletedOnboarding")
+
+        LegacyDefaultsImport.runIfNeeded(from: oldName, into: new)
+
+        XCTAssertNil(new.object(forKey: "hasCompletedOnboarding"),
+                     "setup must run again — the capture permission went with the identifier")
+    }
+}
+
+#endif

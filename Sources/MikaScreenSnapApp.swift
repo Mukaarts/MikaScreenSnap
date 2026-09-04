@@ -56,10 +56,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if !appState.preferences.hasCompletedOnboarding {
+        // Setup runs again when the permission is missing, even if it was completed once.
+        // The capture permission is tied to the bundle identifier, so the 3.6 rename takes
+        // it away from every existing install — and it can be revoked at any time. A
+        // capture tool that silently captures nothing looks broken rather than
+        // unconfigured, and the menu hint only helps someone who thinks to open the menu.
+        if !appState.preferences.hasCompletedOnboarding || !CGPreflightScreenCaptureAccess() {
             showOnboarding()
-        } else if !CGPreflightScreenCaptureAccess() {
-            checkScreenCapturePermission()
         }
 
         // Restore pinned screenshots
