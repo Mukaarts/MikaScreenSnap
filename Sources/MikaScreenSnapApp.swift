@@ -1,5 +1,4 @@
 import SwiftUI
-@preconcurrency import ScreenCaptureKit
 
 @Observable
 @MainActor
@@ -21,15 +20,17 @@ final class AppState {
     /// Sparkle's controller reaches for the surrounding app bundle as soon as it exists,
     /// which blocks anywhere there is none — a test process, for instance. Nothing needs
     /// the updater before the menu or Preferences ask for it.
-    /// (`@Observable` rules out `lazy`, and observing it would buy nothing: `SparkleUpdater`
+    /// (`@Observable` rules out `lazy`, and observing it would buy nothing: the channel
     /// is not observable itself.)
-    @ObservationIgnored private var storedSparkleUpdater: SparkleUpdater?
+    @ObservationIgnored private var storedUpdateChannel: (any UpdateChannel)?
 
-    var sparkleUpdater: SparkleUpdater {
-        if let storedSparkleUpdater { return storedSparkleUpdater }
-        let updater = SparkleUpdater()
-        storedSparkleUpdater = updater
-        return updater
+    /// How this edition updates. Sparkle in the direct build, nothing in the App Store
+    /// build — the one runtime difference between the two, held in one place.
+    var updateChannel: any UpdateChannel {
+        if let storedUpdateChannel { return storedUpdateChannel }
+        let channel = makeUpdateChannel()
+        storedUpdateChannel = channel
+        return channel
     }
     var launchAtLoginManager: LaunchAtLoginManager
     var onboardingController: OnboardingWindowController?
@@ -54,17 +55,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if !appState.preferences.hasCompletedOnboarding {
+        // Setup runs again when the permission is missing, even if it was completed once.
+        // The capture permission is tied to the bundle identifier, so the 3.6 rename takes
+        // it away from every existing install — and it can be revoked at any time. A
+        // capture tool that silently captures nothing looks broken rather than
+        // unconfigured, and the menu hint only helps someone who thinks to open the menu.
+        if !appState.preferences.hasCompletedOnboarding || !CGPreflightScreenCaptureAccess() {
             showOnboarding()
-        } else if !CGPreflightScreenCaptureAccess() {
-            checkScreenCapturePermission()
         }
 
         // Restore pinned screenshots
         PinnedScreenshotManager.restorePins(appState: appState)
 
         // Let the updater ask before it closes an editor holding unsaved annotations.
-        appState.sparkleUpdater.hasUnsavedWork = { [weak appState] in
+        appState.updateChannel.hasUnsavedWork = { [weak appState] in
             appState?.annotationEditorController?.hasUnsavedChanges ?? false
         }
 
@@ -124,29 +128,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appState.historyBrowserController?.showWindow()
     }
 
-    private func checkScreenCapturePermission() {
-        Task {
-            do {
-                _ = try await SCShareableContent.current
-            } catch {
-                let alert = NSAlert()
-                alert.messageText = "Screen Capture Permission Required"
-                alert.informativeText = "Mika+ScreenSnap needs screen capture permission to take screenshots. Please grant access in System Settings > Privacy & Security > Screen & System Audio Recording."
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "Open System Settings")
-                alert.addButton(withTitle: "Quit")
-
-                let response = alert.runModal()
-                if response == .alertFirstButtonReturn {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                        NSWorkspace.shared.open(url)
-                    }
-                } else {
-                    NSApplication.shared.terminate(nil)
-                }
-            }
-        }
-    }
 }
 
 @main
@@ -174,10 +155,12 @@ struct MikaScreenSnapApp: App {
                 }
                 appDelegate.appState.aboutController?.showWindow()
             }
-            Button("Check for Updates...") {
-                appDelegate.appState.sparkleUpdater.checkForUpdates()
+            if appDelegate.appState.updateChannel.showsUpdateControls {
+                Button("Check for Updates...") {
+                    appDelegate.appState.updateChannel.checkForUpdates()
+                }
+                .disabled(!appDelegate.appState.updateChannel.canCheckForUpdates)
             }
-            .disabled(!appDelegate.appState.sparkleUpdater.canCheckForUpdates)
             if !hasScreenRecordingAccess {
                 Button("\u{26A0} Screen Recording not granted") {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
@@ -314,7 +297,7 @@ struct MikaScreenSnapApp: App {
                     appDelegate.appState.preferencesController = PreferencesWindowController(
                         preferences: appDelegate.appState.preferences,
                         launchAtLoginManager: appDelegate.appState.launchAtLoginManager,
-                        sparkleUpdater: appDelegate.appState.sparkleUpdater,
+                        updateChannel: appDelegate.appState.updateChannel,
                         historyManager: appDelegate.appState.historyManager,
                         hotkeyManager: appDelegate.hotkeyManager!,
                         appState: appDelegate.appState,

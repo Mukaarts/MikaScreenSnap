@@ -1,10 +1,11 @@
 # Features
 
-Stand: 2026-08-25 · Stack-Profil: `swiftui-macos` · Artefaktpfad: `docs/` · Fassung 3.5.0
+Stand: 2026-09-03 · Stack-Profil: `swiftui-macos` · Artefaktpfad: `docs/` · Fassung 3.5.0
 
-Alle Einträge sind **Bestand**: Sie existieren im ausgelieferten Code (Version 3.4.1) und
-sind nie durch die SDD-Kette gelaufen. Das `B`-Präfix hält das dauerhaft sichtbar — bei
-einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst falsch sein.
+Die Einträge mit `B`-Präfix sind **Bestand**: Sie existieren im ausgelieferten Code
+(Version 3.4.1) und sind nie durch die SDD-Kette gelaufen. Das Präfix hält das dauerhaft
+sichtbar — bei einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst
+falsch sein. Einträge ohne Präfix sind regulär durch die Kette gebaut.
 
 | ID | Feature | Prio | Status | Abhängig von | Zuletzt |
 |---|---|---|---|---|---|
@@ -23,9 +24,16 @@ einem Fehler in `B04` ist die Spec eine Rekonstruktion und kann selbst falsch se
 | B13 | Automatischer Start bei Login | P2 | approved | B11, B12 | 2026-08-25 · QA bestanden |
 | B14 | Automatische Updates | P1 | approved | B11, B15 | 2026-08-25 · QA bestanden |
 | B15 | Menüleisten-Hub & Programminfo | P0 | approved | alle | 2026-08-25 · QA bestanden |
+| 16 | App-Store-Auslieferung | P1 | review | B01, B02, B08, B09, B11, B12, B14 | 2026-09-03 · 0 Befunde, 26 AK ungeprüft |
 
-**Alle fünfzehn Features sind rückerfasst und geprüft.** Je Feature liegen `spec.md`,
-`design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung von 3.5.0.
+**Alle fünfzehn Bestandsfeatures sind rückerfasst und geprüft.** Je Feature liegen
+`spec.md`, `design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung
+von 3.5.0.
+
+**16 ist das erste reguläre Feature der Kette.** Es hebt eine PRD-Entscheidung auf
+(App-Store-Vertrieb stand unter *Nicht im Scope*, OF-01) und berührt sieben
+Bestandsfeatures, ohne eines davon zu ersetzen. Das PRD ist noch nicht nachgeführt —
+bis dahin widersprechen sich `docs/prd.md` und `features/16-app-store-auslieferung/spec.md`.
 
 ## Stand
 
@@ -84,15 +92,38 @@ erfasst. Sie existiert jetzt.
 
 ## Nächster Schritt
 
+**Auslieferung von 3.5.0 als DMG — am 2026-09-03 bestätigt und vorgezogen.** Sie hängt
+nicht am App Store: 3.5.0 enthält den Fix, dass eine Zensur nicht mehr das unbearbeitete
+Original im Verlaufsordner zurücklässt. Wer heute auf 3.4.1 ein Passwort verpixelt, hat es
+weiterhin im Klartext auf der Platte. Die Store-Fassung kommt später als **3.6.0**,
+gemeinsam mit dem DMG derselben Nummer.
+
 **Auslieferung von 3.5.0.** Reihenfolge nach `README.md`, Abschnitt *Auto-Update*:
 
 1. `bash build.sh` — erledigt, Bundle liegt unter `build/`
-2. `bash scripts/notarize.sh` — **ausstehend und zwingend.** Nachgewiesen: Das gebaute DMG
+2. `bash scripts/notarize.sh` — **erledigt am 2026-09-03.** Aus dem Stand von `main`
+   gebaut, nicht aus dem Feature-Branch: Der trägt zwar dieselbe Versionsnummer, enthält
+   aber 604 Zeilen Feature-16-Code, deren Laufzeitverhalten nie geprüft wurde.
+
+   | Prüfung | Ergebnis |
+   |---|---|
+   | Notarisierung | `status: Accepted`, Vorgang `e3f78aeb-1bb7-473a-8787-dedb0e2d139f` |
+   | Ticket angeheftet | `stapler validate` — *The validate action worked!* |
+   | `spctl -a -vv -t install` | **`accepted` · `source=Notarized Developer ID`** |
+   | Signatur | `Developer ID Application: Michael Rodrigues (CWJM4J4HFN)` |
+   | Datei | `installer/Mika+ScreenSnap-v3.5.0.dmg`, 2042057 Bytes (appcast-`length`) |
+
+   Damit ist der Befund von der Erfassung geschlossen: Die Anwendung startet jetzt auf
+   fremden Rechnern.
+
+   ~~**ausstehend und zwingend.** Nachgewiesen: Das gebaute DMG
    ist ad-hoc signiert, und `spctl -a -vv -t install` antwortet
    `rejected — source=no usable signature`. Auf einem fremden Rechner startet die Anwendung
-   damit nicht. Der Schritt braucht ein Notary-Profil im Schlüsselbund, das einmalig
-   interaktiv angelegt wird (`xcrun notarytool store-credentials`) — ein
-   app-spezifisches Passwort, das niemand außer dem Autor eingeben kann
+   damit nicht. **Korrigiert am 2026-09-03:** Das nötige Notary-Profil `MikaScreenSnap`
+   liegt bereits im Schlüsselbund — `xcrun notarytool history` beantwortet damit und
+   zeigt die Einreichung von 3.4.1 vom 2026-08-09. Auch das Zertifikat
+   `Developer ID Application` ist vorhanden. **Es fehlt nichts; der Schritt wurde nur
+   nie ausgeführt**
 3. GitHub-Release mit dem beglaubigten DMG
 4. `sign_update` über das **von GitHub geladene** DMG
 5. `appcast.xml` ergänzen, mergen, `main:master` mitpushen

@@ -77,7 +77,15 @@ final class ScreenshotHistoryManager {
     // MARK: - Load History
 
     func loadHistory() {
-        let saveDir = preferences.saveLocation
+        // Everything below runs inside the bracket, not after it. `resolve` alone hands
+        // back a URL and closes the access again in the same call — reading the folder
+        // afterwards fails under the sandbox, and the history stays empty with no error.
+        SaveLocationStore.readingSaveFolder(preferences) { saveDir in
+            loadHistory(from: saveDir)
+        }
+    }
+
+    private func loadHistory(from saveDir: URL) {
         let fm = FileManager.default
 
         guard let files = try? fm.contentsOfDirectory(
@@ -114,9 +122,27 @@ final class ScreenshotHistoryManager {
     // MARK: - Delete
 
     func deleteItem(_ item: HistoryItem) {
-        let fm = FileManager.default
-        try? fm.removeItem(at: item.url)
-        try? fm.removeItem(at: item.thumbnailURL)
+        let removed = SaveLocationStore.withSaveFolder(preferences, action: "Deleting screenshot") { _ -> Bool in
+            let fm = FileManager.default
+            do {
+                try fm.removeItem(at: item.url)
+            } catch let error as NSError
+                where error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError {
+                // Deleting has three outcomes, and only two are failures: the folder is
+                // unreachable, the file could not be removed — or the file was already
+                // gone, which is what the user wanted. Treating the third as an error left
+                // entries that could never be cleared from the history.
+            }
+            // The capture is what the user asked to delete; a missing thumbnail is not a
+            // failure worth reporting.
+            try? fm.removeItem(at: item.thumbnailURL)
+            return true
+        }
+
+        // A delete that fails must not leave the entry gone from the list while the file
+        // is still on disk — that is how a user comes to believe a screenshot is deleted
+        // when it is not.
+        guard removed == true else { return }
         items.removeAll { $0.id == item.id }
     }
 
@@ -127,21 +153,25 @@ final class ScreenshotHistoryManager {
     /// Files that were not picked up at launch used to survive "Clear History" while the
     /// user was told everything had been deleted.
     func clearAll() {
-        let fm = FileManager.default
-        let saveDir = preferences.saveLocation
+        let cleared = SaveLocationStore.withSaveFolder(preferences, action: "Clearing history") { saveDir -> Bool in
+            let fm = FileManager.default
 
-        if let files = try? fm.contentsOfDirectory(
-            at: saveDir,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
-        ) {
-            for url in files where ScreenshotHistoryManager.imageExtensions.contains(url.pathExtension.lowercased()) {
-                try? fm.removeItem(at: url)
+            if let files = try? fm.contentsOfDirectory(
+                at: saveDir,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+            ) {
+                for url in files where ScreenshotHistoryManager.imageExtensions.contains(url.pathExtension.lowercased()) {
+                    try? fm.removeItem(at: url)
+                }
             }
+
+            let thumbnailDir = saveDir.appendingPathComponent(".thumbnails", isDirectory: true)
+            try? fm.removeItem(at: thumbnailDir)
+            return true
         }
 
-        let thumbnailDir = saveDir.appendingPathComponent(".thumbnails", isDirectory: true)
-        try? fm.removeItem(at: thumbnailDir)
+        guard cleared == true else { return }
         items.removeAll()
     }
 
@@ -150,6 +180,12 @@ final class ScreenshotHistoryManager {
     /// Thumbnails used to be left out, so the figure shown in Preferences was always too
     /// small.
     func storageUsage() -> Int64 {
+        SaveLocationStore.readingSaveFolder(preferences) { _ in
+            measureStorage()
+        } ?? 0
+    }
+
+    private func measureStorage() -> Int64 {
         let fm = FileManager.default
         var total: Int64 = 0
         for item in items {
@@ -172,7 +208,17 @@ final class ScreenshotHistoryManager {
     // MARK: - Thumbnail Generation
 
     private func generateThumbnail(for image: NSImage, originalURL: URL) -> URL? {
-        let thumbnailDir = preferences.saveLocation.appendingPathComponent(".thumbnails", isDirectory: true)
+        // Same bracket as everywhere else: the thumbnail lands next to the capture, in
+        // the folder the sandbox only opens on request.
+        // A thumbnail is a by-product, not something the user asked for — its failure is
+        // not worth a notice, and the capture itself already reported if it went wrong.
+        return SaveLocationStore.readingSaveFolder(preferences) { saveDir -> URL? in
+            writeThumbnail(for: image, originalURL: originalURL, in: saveDir)
+        } ?? nil
+    }
+
+    private func writeThumbnail(for image: NSImage, originalURL: URL, in saveDir: URL) -> URL? {
+        let thumbnailDir = saveDir.appendingPathComponent(".thumbnails", isDirectory: true)
         try? FileManager.default.createDirectory(at: thumbnailDir, withIntermediateDirectories: true)
 
         let thumbURL = thumbnailDir.appendingPathComponent(originalURL.lastPathComponent)

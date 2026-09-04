@@ -35,7 +35,7 @@ echo "==> Generating the demo canvas"
 swift scripts/GenerateDemoCanvas.swift
 
 echo "==> Restarting the app so no stale overlay panels are left over"
-osascript -e 'tell application id "com.mika.mikaplusscreensnap" to quit' 2>/dev/null || true
+osascript -e 'tell application id "lu.daumedia.screensnap" to quit' 2>/dev/null || true
 sleep 1.5
 pkill -f "Mika+ScreenSnap.app" 2>/dev/null || true
 sleep 1
@@ -46,7 +46,7 @@ sleep 3.5
 # The menu bar item is owned by Control Center and titled with the bundle id,
 # so it is located by coordinate: read its frame, then click its centre.
 echo "==> Capturing the menu bar dropdown"
-MENU_FRAME=$("$UID_BIN" list | awk -F'\t' '$5 ~ /com.mika.mikaplusscreensnap/ {print $2; exit}')
+MENU_FRAME=$("$UID_BIN" list | awk -F'\t' '$5 ~ /lu.daumedia.screensnap/ {print $2; exit}')
 if [ -n "$MENU_FRAME" ]; then
   MX=$(echo "$MENU_FRAME" | awk -F, '{print $1 + $3/2}')
   MY=$(echo "$MENU_FRAME" | awk -F, '{print $2 + $4/2}')

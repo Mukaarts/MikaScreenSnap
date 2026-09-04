@@ -4,6 +4,8 @@
 // Sparkle auto-update wrapper for checking and installing updates.
 // Swift 6.0 strict concurrency, macOS 14+
 
+#if !APPSTORE
+
 import AppKit
 @preconcurrency import Sparkle
 
@@ -86,3 +88,5 @@ extension SparkleUpdater: SPUUpdaterDelegate {
         }
     }
 }
+
+#endif

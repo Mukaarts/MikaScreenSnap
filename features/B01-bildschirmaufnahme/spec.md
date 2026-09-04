@@ -112,7 +112,7 @@ Aufnahme landet unmittelbar im Annotationseditor.
   im Bild.
 - **AK-22** · Angenommen, die Aufnahme schlägt fehl, wenn der Fehler auftritt, dann
   erscheint eine Kurzmeldung am Bildschirm und der Fehler steht unter dem Subsystem
-  `com.mika.mikaplusscreensnap` in der Konsole.
+  `lu.daumedia.screensnap` in der Konsole.
 - **AK-23** · Angenommen, die Bildschirmaufnahme-Berechtigung fehlt, wenn das Menü geöffnet
   wird, dann sind **alle Aufnahmeeinträge deaktiviert** und der Warneintrag führt in die
   Systemeinstellungen; wird eine Aufnahme dennoch über eine Tastenkombination ausgelöst,

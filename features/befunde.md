@@ -1,6 +1,7 @@
 # Befunde — projektweit
 
-Stand: 2026-08-25 · Quelle: Rückerfassung (`sdd-erfassen` Phase 2) **und QA** (`sdd-qa`, alle 15 Features)
+Stand: 2026-09-03 · Quelle: Rückerfassung (`sdd-erfassen` Phase 2), QA der fünfzehn
+Bestandsfeatures **und** QA von Feature `16` (2026-09-03)
 
 > Die Einträge BF-01 bis BF-23 und BF-A1 bis BF-A15 stammen aus der Rückerfassung — sie
 > entstanden beim **Lesen** des Codes. BF-24 und BF-25 stammen aus der QA, also aus dem
@@ -8,7 +9,126 @@ Stand: 2026-08-25 · Quelle: Rückerfassung (`sdd-erfassen` Phase 2) **und QA** 
 
 ## Offen
 
-Keine Befunde. **Aber offene Nachweise:** Die QA konnte 145 von 269 Kriterien nicht
+### Aus der QA von Feature 16 (2026-09-03)
+
+Alle fünf am **noch nicht ausgelieferten** Store-Build. Sie berühren den DMG-Vertrieb
+nicht — das ist nachgewiesen (16/AK-38).
+
+| ID | Feature | Befund | Grad | Fundstelle |
+|---|---|---|---|---|
+
+**Alle Codebefunde an Feature 16 sind behoben** (Stand Runde 3, 2026-09-03):
+BF-26 (war *hoch*), BF-27, BF-28, BF-29, BF-30, BF-32, BF-33. Zwei davon — BF-26 und
+BF-33 — sind per **Umkehrprobe** verifiziert: die Behebung wurde zurückgedreht, der
+zugehörige Test fiel durch, nach Wiederherstellung war er grün.
+
+**Das Muster über drei Runden, und warum es diesmal aufgehört hat.**
+BF-26 war derselbe Fehlertyp wie in der Erfassung: *einmal behoben, an vier Stellen
+stehengeblieben.* Seine Behebung erzeugte ihrerseits zwei neue Befunde — BF-32 und BF-33
+waren **Folgen der Korrektur**, keine Altlasten: Dass die neue Klammer *meldet* und dass
+Löschen dreierlei bedeuten kann (Ordner weg · Datei gelöscht · Datei war schon weg), wurde
+nicht mitgedacht.
+
+Runde 3 hat **keinen neuen Codebefund** gefunden. Der Unterschied war ein expliziter
+Schritt vor der Behebung: aufzuschreiben, welche anderen Aufrufer sich mitändern. Die
+beiden verbleibenden Befunde BF-34 und BF-35 liegen außerhalb des Codes.
+
+**Alle Befunde an Feature 16 sind behoben** (Stand Runde 7, 2026-09-03): BF-26 bis BF-30,
+BF-32 bis BF-39. Dreizehn Stück über sieben Prüfrunden.
+
+**BF-31 löst sich mit 3.6.0 von selbst — unter einer Bedingung.** Der Wechsel auf
+`lu.daumedia.screensnap` legt eine neue Preferences-Domain an, in der kein `SUFeedURL`
+steht; `LegacyDefaultsImport` überträgt ihn nicht, weil kein `SU*`-Schlüssel in
+`ownedDefaultsKeys` steht. Sparkle fällt damit auf die `Info.plist` zurück, also auf
+`daumedia`. **Damit das greift, muss `appcast.xml` für 3.6.0 ein letztes Mal auch nach
+`Mukaarts` gepusht werden** — sonst sieht eine betroffene Installation das Update nie und
+bleibt für immer auf 3.5.0. Die Reihenfolge steht im Testbericht.
+
+### Aus der QA-Runde 6 (2026-09-03)
+
+| ID | Feature | Befund | Grad | Fundstelle |
+|---|---|---|---|---|
+| BF-37 | 16 | Die Versionshinweise sagen, Einstellungen gingen beim Kennungswechsel verloren — `LegacyDefaultsImport` übernimmt sie im Direktvertrieb seit T35. **Der Nutzer richtet daraufhin vorsorglich neu ein und überschreibt genau das, was gerettet wurde** | mittel | `CHANGELOG.md` gegen `LegacyDefaultsImport.swift` |
+| BF-38 | 16 | Die Versionshinweise sagen, angeheftete Bilder gingen verloren — der Ordner heißt `MikaScreenSnap/PinnedScreenshots` und hängt nicht an der Bundle-Kennung. Der Satz stimmt nur für den Wechsel zum App Store; der Abschnitt vermengt zwei Übergänge | mittel | `CHANGELOG.md` gegen `PinnedScreenshotManager.swift:16` |
+| BF-39 | 16 | `checkScreenCapturePermission()` ist seit T36 toter Code — die einzige Aufrufstelle wurde ersetzt | niedrig | `MikaScreenSnapApp.swift:132` |
+
+**Dasselbe Muster zum dritten Mal, und diesmal in die andere Richtung.** BF-36 versprach
+*mehr*, als belegt war; BF-37 und BF-38 versprechen *weniger*, als gebaut wurde. Die
+Ursache ist beide Male dieselbe: Ein Text wird geschrieben, danach ändert sich das
+Verhalten, und niemand liest den Text erneut gegen den Code.
+
+Bei BF-38 kommt eine zweite Ursache dazu, die es vorher nicht gab: eine **ungeprüfte
+technische Annahme** — dass der Pin-Ordner wie `UserDefaults` an der Bundle-Kennung hängt.
+Ein Blick in `PinnedScreenshotManager.swift:16` hätte gereicht.
+
+**Zuvor galt:** Kein offener Befund mehr an Feature 16. BF-26 bis BF-30, BF-32 bis BF-36 sind alle
+behoben; BF-36 zuletzt am 2026-09-03, indem die Zusage in `CHANGELOG.md` auf das
+abgeschwächt wurde, was das Messprotokoll zu TE-07 hergibt.
+
+**Was das nicht heißt.** Feature 16 ist damit **nicht abgenommen**: 26 seiner 53 Kriterien
+und alle acht Randfälle konnten nie ausgeführt werden. Ein Feature ohne offenen Befund und
+ein geprüftes Feature sind zwei verschiedene Dinge — die Befundliste sagt, was gefunden
+wurde, nicht was geprüft werden konnte.
+
+**BF-34 und BF-35 behoben am 2026-09-03** — BF-35 in zwei Schritten: `design.md` über
+`/sdd-architektur 16`, `tasks.md` über `/sdd-tasks 16`. Die Abdeckung ist danach
+ausführend geprüft: 53 von 53 Kriterien zugeordnet, keine Zeile verweist mehr auf eine
+entfallene Aufgabe.
+
+**BF-34 behoben am 2026-09-03** (Abschnitt *Mac App Store edition* in `CHANGELOG.md`).
+
+**Das eigentliche Muster zeigt sich erst über vier Runden.** Runde 1 fand fünf Codefehler,
+Runde 2 zwei Folgefehler ihrer Behebung, Runde 3 und 4 keinen einzigen im Code. Was seither
+gefunden wird, sitzt **zwischen** den Artefakten:
+
+| Befund | Was passierte |
+|---|---|
+| BF-35 | Eine Anforderungsänderung (OF-04) wurde in `spec.md` nachgezogen und im Code zurückgebaut — `design.md` und `tasks.md` blieben stehen |
+| BF-36 | Eine Aussage wanderte vom Entwurf in die Versionshinweise und **verlor dabei ihren Vorbehalt** |
+
+Beide Male hat kein Werkzeug versagt. `sdd-build` darf `design.md` nicht ändern, `sdd-qa`
+auch nicht, und keiner der Skills liest beim Schreiben eines Texts nach, welche
+Einschränkung an der Quelle stand. **Der Kette fehlt die Stelle, die nach einer Änderung
+prüft, was sonst noch davon abhängt** — bei Artefakten wie bei Aussagen.
+
+Für ein Projekt, dessen aufschlussreichster Befund aus der Erfassung lautete *„ein Fehler
+wurde einmal behoben und blieb an drei anderen Stellen stehen"*, ist das dieselbe Lücke
+eine Ebene höher.
+
+### Nebenbefund an einem Bestandsfeature
+
+| ID | Feature | Befund | Grad | Fundstelle |
+|---|---|---|---|---|
+| BF-31 | B14, B11 | Die installierte Fassung trägt `SUFeedURL = …/Mukaarts/…` in den Einstellungen, während `Resources/Info.plist` `…/daumedia/…` nennt. Sparkle bevorzugt den Wert aus `UserDefaults` — **diese Installation prüft gegen ein anderes Repository als das im Code hinterlegte.** Keiner der `SU*`-Schlüssel steht in `ownedDefaultsKeys`, sie überleben also „Reset All Preferences" | **zu bewerten** | `Resources/Info.plist:31` gegen die installierte Einstellungsdatei |
+
+BF-31 stammt nicht aus einer Prüfung von B14, sondern fiel beim Sichern der Nutzerdaten
+für Feature 16 auf.
+
+**Nachgemessen am 2026-09-03:** Beide Adressen antworten mit `200`, und die beiden
+`appcast.xml` sind **byte-identisch** (`9b445e7b…`). Die installierte Fassung bekommt also
+dieselben Updates wie jede andere — akute Gefahr besteht nicht. **Was bleibt, ist eine
+dritte Pflegestelle, die nirgends dokumentiert ist:** `docs/prd.md` kennt unter OF-03 nur
+die Doppelpflege `main`/`master` innerhalb von `daumedia`, nicht das zweite Repository.
+**Entschieden am 2026-09-03 (PRD/OF-10): `Mukaarts` läuft aus.** Dabei ist ein Detail
+entscheidend, das die Entscheidung sonst in ihr Gegenteil verkehrt: **Sparkle bevorzugt
+`SUFeedURL` aus `UserDefaults` gegenüber `Info.plist`, und die Anwendung löscht diesen
+Schlüssel nirgends** — nachgeprüft, im gesamten `Sources/` kommt er nicht vor. Wer also nur
+aufhört, nach `Mukaarts` zu pushen, leitet die betroffenen Installationen nicht um, sondern
+**schneidet sie ab**.
+
+Die Reihenfolge muss deshalb lauten:
+
+1. Ein Update über `Mukaarts` veröffentlichen, das beim Start `SUFeedURL` aus den
+   Einstellungen entfernt — danach greift wieder `Info.plist` mit `daumedia`.
+2. Erst wenn diese Fassung verbreitet ist, `Mukaarts` einfrieren.
+
+Schritt 1 ist eine Codeänderung an **B14**, nicht an Feature 16. Sie gehört zusammen mit
+der fehlenden Aufnahme der `SU*`-Schlüssel in `ownedDefaultsKeys` in ein eigenes Feature,
+das auf B14 verweist.
+
+### Weiterhin offene Nachweise aus der QA der Bestandsfeatures
+
+**Keine Befunde dort.** Aber: Die QA konnte 145 von 269 Kriterien nicht
 ausführen, weil sie Oberflächenverhalten, eine erteilte Bildschirmaufnahme-Berechtigung
 oder ein zweites Display brauchen. Sie stehen in den Testberichten unter *nicht prüfbar* —
 ausdrücklich **nicht** unter *bestanden*.

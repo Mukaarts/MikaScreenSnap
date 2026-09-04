@@ -17,9 +17,24 @@ struct OnboardingView: View {
         !CGPreflightScreenCaptureAccess()
     }
 
-    private var pageCount: Int {
-        needsPermission ? 3 : 2
+    /// The App Store build adds a save-location step; the direct build writes to
+    /// ~/Pictures without asking and does not need one.
+    private var needsSaveLocation: Bool {
+        #if APPSTORE
+        return SaveLocationStore.isSandboxed && preferences.saveLocationBookmark == nil
+        #else
+        return false
+        #endif
     }
+
+    private var pageCount: Int {
+        2 + (needsPermission ? 1 : 0) + (needsSaveLocation ? 1 : 0)
+    }
+
+    /// Page index of each step, so adding one does not mean renumbering the rest by hand.
+    private var permissionPage: Int { 1 }
+    private var saveLocationPage: Int { needsPermission ? 2 : 1 }
+    private var shortcutsPage: Int { saveLocationPage + (needsSaveLocation ? 1 : 0) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,24 +46,26 @@ struct OnboardingView: View {
 
                 if needsPermission {
                     PermissionScreen(preferences: preferences) {
-                        withAnimation { currentPage = 2 }
+                        withAnimation { currentPage = saveLocationPage }
                     }
-                    .tag(1)
-
-                    ShortcutsScreen(
-                        launchAtLoginManager: launchAtLoginManager,
-                        preferences: preferences,
-                        onDismiss: onDismiss
-                    )
-                    .tag(2)
-                } else {
-                    ShortcutsScreen(
-                        launchAtLoginManager: launchAtLoginManager,
-                        preferences: preferences,
-                        onDismiss: onDismiss
-                    )
-                    .tag(1)
+                    .tag(permissionPage)
                 }
+
+                #if APPSTORE
+                if needsSaveLocation {
+                    SaveLocationScreen(preferences: preferences) {
+                        withAnimation { currentPage = shortcutsPage }
+                    }
+                    .tag(saveLocationPage)
+                }
+                #endif
+
+                ShortcutsScreen(
+                    launchAtLoginManager: launchAtLoginManager,
+                    preferences: preferences,
+                    onDismiss: onDismiss
+                )
+                .tag(shortcutsPage)
             }
             .tabViewStyle(.automatic)
 

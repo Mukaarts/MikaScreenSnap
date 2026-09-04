@@ -1,6 +1,6 @@
 # Mika+ScreenSnap — Product Requirements Document
 
-Stand: 2026-08-25 · Stufe Datenschutz: A · Stack-Profil: `swiftui-macos` · Fassung 3.5.0
+Stand: 2026-09-03 · Stufe Datenschutz: A · Stack-Profil: `swiftui-macos` · Fassung 3.5.0
 Artefaktpfad: `docs/`
 
 > **Rückwirkend erfasst.** Dieses Dokument beschreibt, was Version 3.4.1 tut — nicht,
@@ -43,6 +43,8 @@ Features für die zweite Gruppe fordert, argumentiert gegen den Zweck.
 - Ausschlussliste: benannte Apps erscheinen in keiner Aufnahme
 - Ersteinrichtung, die durch die Bildschirmaufnahme-Berechtigung führt
 - Selbstaktualisierung über Sparkle, Direktvertrieb als notarisiertes DMG
+- Zweiter Vertriebsweg über den Mac App Store, aus derselben Quelle und mit Sandbox
+  (aufgenommen 2026-09-03, Feature `16` — siehe *Nicht im Scope* unten)
 
 ## Nicht im Scope
 
@@ -58,9 +60,15 @@ Features für die zweite Gruppe fordert, argumentiert gegen den Zweck.
 - **Bildbearbeitung über Annotation hinaus** (bestätigt 2026-08-25) — keine Filter, keine
   Ebenen, kein Zuschneiden, keine Farbkorrektur. Der Editor ist ein Durchgangsschritt
   zwischen Aufnahme und Ergebnis, kein Arbeitsplatz.
-- **App-Store-Vertrieb** (bestätigt 2026-08-25) — ausgeschlossen, solange die Anwendung
-  ohne Sandbox arbeitet, und die braucht sie für ScreenCaptureKit über fremde Fenster und
-  für Carbon-Tastenkombinationen. Direktvertrieb über DMG und Sparkle bleibt der Weg.
+- **App-Store-Vertrieb — Ausschluss aufgehoben am 2026-09-03.** Die Begründung von
+  2026-08-25 lautete, die Anwendung brauche den Verzicht auf die Sandbox für
+  ScreenCaptureKit über fremde Fenster und für Carbon-Tastenkombinationen. **Sie war in
+  beiden Punkten falsch:** ScreenCaptureKit arbeitet im Sandbox mit
+  `com.apple.security.screen-capture` — dem Entitlement, das
+  `Resources/MikaScreenSnap.entitlements:7` seit jeher auf `true` setzt — und
+  `RegisterEventHotKey` ist die einzige im Sandbox funktionierende Hotkey-API und
+  verlangt dort gar kein Entitlement. Der Eintrag bleibt hier stehen, damit die
+  Fehlannahme auffindbar bleibt. Umfang und Kriterien: `features/16-app-store-auslieferung/spec.md`.
 
 ## Erfolgskriterien
 
@@ -81,12 +89,12 @@ Features für die zweite Gruppe fordert, argumentiert gegen den Zweck.
 | Backend | **keins** |
 | Umgebungen | nur lokal — es gibt keine Test- oder Produktivumgebung, nur gebaute Bundles |
 | Datenhaltung | `UserDefaults` für Einstellungen · `~/Pictures/MikaScreenSnap/` für Aufnahmen · `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/` für angeheftete Bilder |
-| Sandbox | **aus** (`com.apple.security.app-sandbox = false`) — nötig für ScreenCaptureKit über Fremdfenster und Carbon-Hotkeys; schließt den App Store aus und macht Direktvertrieb zur Folge, nicht zur Wahl |
+| Sandbox | **je Ausgabe verschieden** (seit 2026-09-03): DMG-Build ohne Sandbox wie bisher, Store-Build mit Sandbox und ohne Ausnahme-Entitlements. Beide aus derselben Quelle |
 | Berechtigungen | Bildschirmaufnahme (Screen Recording) — ohne sie ist die App funktionslos |
 | Externe Dienste | **Sparkle-Appcast** auf `raw.githubusercontent.com` — überträgt beim Update-Check das, was Sparkle standardmäßig sendet; empfängt Feed und DMG. Sonst kein Netzwerkverkehr |
-| Vertrieb | notarisiertes DMG als GitHub-Release, Update über Sparkle-Appcast auf `main` |
+| Vertrieb | **zwei Wege:** notarisiertes DMG als GitHub-Release mit Update über Sparkle-Appcast auf `main` (unverändert, OF-03 gilt unbefristet) · Mac App Store, arm64-only, ohne Sparkle, Kategorie *Utilities*, Team `CWJM4J4HFN`. **Nächste gemeinsame Fassung: 3.6.0** (beide Ausgaben tragen dieselbe Nummer, AK-37). 3.5.0 wird davor noch als DMG allein ausgeliefert |
 | Sprachen | Oberfläche englisch · OCR erkennt Deutsch, Englisch, Französisch |
-| Monetarisierung | keine — MIT-Lizenz, kostenlos |
+| Monetarisierung | keine — MIT-Lizenz, kostenlos, auch im App Store. Einzige laufende Kosten: Apple Developer Program, 99 $/Jahr |
 
 ## Datenschutz — Kurzfassung
 
@@ -119,6 +127,14 @@ Daraus folgen App-weite Regeln, die in jeder Feature-Spec konkretisiert werden:
   Export nicht rekonstruierbar sein — und kein Nebenpfad darf das unbearbeitete Original
   ablegen. Seit 3.5.0 wird die automatisch gesicherte Datei bei jedem Export ersetzt und
   bei jeder Zensur auch dann, wenn nicht exportiert wurde.
+- **Der Store-Vertrieb bringt einen Empfänger, den es vorher nicht gab: Apple.** Die
+  Anwendung selbst erhebt weiterhin nichts. Bei Installation über den App Store erhält
+  Apple jedoch eigene Absturz- und Nutzungsdaten, sofern der Nutzer das in den
+  Systemeinstellungen erlaubt hat — sichtbar für den Autor in App Store Connect. Das ist
+  keine Erhebung der Anwendung, aber wie bei der Zwischenablage eine Folge ihres
+  Vertriebswegs. `web/app/privacy/page.tsx:10` sagt heute „collects nothing" und muss
+  vor der Einreichung präzisiert werden (Feature `16`, AK-46). Im Store-Eintrag wird
+  „keine Daten erfasst" deklariert, weil sich das auf die Anwendung bezieht (AK-47).
 - **Die Ausschlussliste ist eine Zusage, keine Bequemlichkeit.** Eine dort eingetragene
   App darf in keiner Aufnahme auftauchen — auch nicht in der Farbpipette, auch nicht im OCR.
 - **Lokale Ablagen sind unverschlüsselt und haben ein Gegenstück.** Aufnahmen liegen im
@@ -132,9 +148,10 @@ weil die Frage „landen Daten in Logs" hier trotz Stufe A scharf gestellt werde
 
 ## Feature-Roadmap
 
-Kein Plan, sondern ein **Inventar**: Alle 15 Einträge existieren im ausgelieferten Code
-und stehen auf Status `bestand`. Die Prioritäten beschreiben, was die App ohne den
-jeweiligen Eintrag noch wäre.
+Die fünfzehn `B`-Einträge sind kein Plan, sondern ein **Inventar**: Sie existieren im
+ausgelieferten Code. Die Prioritäten beschreiben, was die App ohne den jeweiligen Eintrag
+noch wäre. Ab `16` ist es wieder eine Roadmap — reguläre Features, die vor dem Bauen
+spezifiziert werden.
 
 | ID | Feature | Prio | Kurzbeschreibung | Abhängig von |
 |---|---|---|---|---|
@@ -153,6 +170,7 @@ jeweiligen Eintrag noch wäre.
 | B13 | Automatischer Start bei Login | P2 | Anmeldeobjekt über `SMAppService` | — |
 | B14 | Automatische Updates | P1 | Sparkle prüft den Appcast und installiert neue Versionen | — |
 | B15 | Menüleisten-Hub & Programminfo | P0 | Statusleistensymbol als einziger Einstiegspunkt, „Über"-Fenster | alle |
+| 16 | App-Store-Auslieferung | P1 | zweite Ausgabe mit Sandbox, ohne Sparkle, mit Ordnerwahl und Umzug — bis zur Einreichung | B01, B02, B08, B09, B11, B12, B14 |
 
 **Erfassungsreihenfolge:** B01 → B02 → B04 → B09 → B05 → B06 → B08 → B14 → B12 → B03 → B10 → B11 → B13 → B07 → B15
 
@@ -161,13 +179,24 @@ der Nummer.
 
 ## Offene Punkte
 
-Keine offen. Die sechs Punkte der Erfassung sind am 2026-08-25 entschieden:
+Die sechs Punkte der Erfassung sind am 2026-08-25 entschieden (OF-01 und OF-02 am
+2026-09-03 fortgeschrieben). **Die drei Punkte aus Feature `16` sind am 2026-09-03
+ebenfalls entschieden** — offen ist davon nur noch eine Beschaffung, keine Frage:
+
+| # | Frage | Stand |
+|---|---|---|
+| OF-07 | Welches Konto trägt den Store-Eintrag? | **Entschieden am 2026-09-03: Team `CWJM4J4HFN`** — dasselbe, das den Direktvertrieb signiert. **Offen bleibt die Beschaffung:** App-ID unter dieser Team-ID registrieren, `Apple Distribution` und `3rd Party Mac Developer Installer` erzeugen. Im Schlüsselbund liegt heute nur `Developer ID Application` |
+| OF-08 | Welche Store-Kategorie und Alterseinstufung? | **Entschieden am 2026-09-03: *Utilities*, 4+.** Dort suchen Nutzer Screenshot-Werkzeuge; 4+, weil die Anwendung keine fremden Inhalte anzeigt |
+| OF-09 | Die MIT-Lizenz erlaubt jedem, dasselbe Binary unter eigenem Namen einzureichen — bleibt es dabei? | **Entschieden am 2026-09-03: MIT bleibt.** Kein Umsatz zu schützen; Apple prüft bei der Einreichung Rechte an Name und Symbol, nicht die Codelizenz |
+| OF-10 | Was geschieht mit dem zweiten Update-Repository `Mukaarts/MikaScreenSnap`? | **Entschieden am 2026-09-03: auslaufen lassen.** Beide `appcast.xml` sind heute byte-identisch. **Die Entscheidung hat eine Vorbedingung, ohne die sie das Gegenteil bewirkt:** Sparkle bevorzugt `SUFeedURL` aus `UserDefaults` gegenüber `Info.plist`, und die Anwendung löscht diesen Schlüssel nirgends. Wer nur aufhört, nach `Mukaarts` zu pushen, schneidet diese Installationen ab, statt sie umzuleiten. Nötig ist **zuerst** ein Update über `Mukaarts`, das den Schlüssel entfernt — erst danach greift `Info.plist` mit `daumedia`. Gehört zu B14, nicht zu Feature 16 |
+
+Die entschiedenen Punkte der Erfassung:
 
 | # | Frage | Entscheidung |
 |---|---|---|
-| OF-01 | Sind Bildschirmvideo, weitergehende Bildbearbeitung und App-Store-Vertrieb bewusste Nicht-Ziele? | **Ja, alle drei** — aufgenommen unter *Nicht im Scope*. Video und Bildbearbeitung würden aus einem Aufnahmewerkzeug ein zweites Produkt machen; der App Store scheidet aus, solange die Anwendung ohne Sandbox arbeitet, und die braucht sie für ScreenCaptureKit über fremde Fenster |
-| OF-02 | Ist Intel-Unterstützung aufgegeben? | **Nicht beabsichtigt gewesen.** Das Programmpaket ist arm64-only, die Website sagt das ehrlich. Ein Universal-Build wäre möglich, hat aber keinen bekannten Adressaten |
-| OF-03 | Bis wann muss `main:master` mitgepusht werden? | **Unbefristet.** Die Feed-Adresse älterer Installationen ist einkompiliert; ein Ende wäre nur über eine Zählung begründbar, und die soll es nicht geben. Der Schritt steht in `README.md` |
+| OF-01 | Sind Bildschirmvideo, weitergehende Bildbearbeitung und App-Store-Vertrieb bewusste Nicht-Ziele? | **Video und Bildbearbeitung ja** — sie würden aus einem Aufnahmewerkzeug ein zweites Produkt machen. **App Store nein, korrigiert am 2026-09-03:** Die Antwort von 2026-08-25 beruhte auf einer falschen technischen Annahme (Begründung unter *Nicht im Scope*). Der Store ist seither Feature `16` |
+| OF-02 | Ist Intel-Unterstützung aufgegeben? | **Nicht beabsichtigt gewesen.** Das Programmpaket ist arm64-only, die Website sagt das ehrlich. Ein Universal-Build wäre möglich, hat aber keinen bekannten Adressaten. **Am 2026-09-03 erneut gestellt und bestätigt:** Der Store schafft zwar erstmals sichtbare Intel-Nutzer, aber keine der 269 Bestandsprüfungen wäre auf Intel nachweisbar — es gibt kein Testgerät. Der Store blendet die App dort aus |
+| OF-03 | Bis wann muss `main:master` mitgepusht werden? | **Unbefristet.** Die Feed-Adresse älterer Installationen ist einkompiliert; ein Ende wäre nur über eine Zählung begründbar, und die soll es nicht geben. Der Schritt steht in `README.md`. **Präzisiert am 2026-09-03:** Das gilt für `main:master` innerhalb von `daumedia`. Für das zweite Repository `Mukaarts/MikaScreenSnap` gilt es **nicht** — siehe OF-10 |
 | OF-04 | Soll `swift test` etabliert werden? | **Ja, geschehen.** 28 Tests decken ab, was rechnet: Mehrschirm-Koordinaten, Tastenkombinationen, Farbumrechnung, Zensurstärke, Namenskollisionen. UI-Verhalten bleibt manuell nachzuweisen, wie im Stack-Profil vorgesehen |
 | OF-05 | Zwischenablage als vertraulich kennzeichnen? | **Für Text ja** (erledigt in 3.5.0), für Bilder nicht möglich — macOS kennt dafür keine Kennzeichnung. Als Einschränkung oben unter *Datenschutz* ausgewiesen |
 | OF-06 | Berechtigung anfordern statt nur abfragen? | **Ja, erledigt in 3.5.0.** Die Ersteinrichtung ruft `CGRequestScreenCaptureAccess`, und die Aufnahmeeinträge sind ohne Berechtigung gesperrt |

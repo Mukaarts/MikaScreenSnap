@@ -1,5 +1,68 @@
 # Changelog
 
+## [Unreleased] — Mac App Store edition
+
+Mika+ScreenSnap is now built in two editions from the same source: the direct download you
+already have, and a sandboxed one distributed through the Mac App Store.
+
+**Both change with this release**, and not in the same way. The direct download keeps
+everything except the Screen Recording permission, which has to be granted again. The App
+Store edition starts fresh. The two sections at the bottom say exactly what happens in each
+case — they are not interchangeable.
+
+### Added
+
+- **Mac App Store edition, sandboxed.** Screen capture, global hotkeys, the annotation
+  editor, OCR, the colour picker and pinning all work the same — none of them needed the
+  app to run outside the sandbox
+- **You choose the screenshot folder once**, during first-run setup. The sandbox has no
+  path to `~/Pictures` the app can take on its own, and writing into a hidden container
+  folder would leave your screenshots somewhere you would never find them. The permission
+  survives restarts, so you are asked exactly once. You can change the folder later in
+  Settings
+
+### Changed — App Store edition only
+
+- **Updates come from the App Store**, not from the app. The bundled updater is gone
+  entirely: the App Store edition contains no updater, checks no feed, and makes no
+  network connection of its own. Settings shows a note where the update controls used to be
+- **Apple collects its own crash reports and usage figures** for apps installed from the
+  App Store, if you have allowed that under System Settings › Privacy & Security ›
+  Analytics & Improvements. The app still collects nothing itself, and the developer never
+  sees anything that identifies you. The direct download has no equivalent — see the
+  privacy page for the full wording
+
+### Updating the direct download
+
+The app moves to a new bundle identifier with this release — `lu.daumedia.screensnap`. That
+matters because macOS uses the identifier to find both an app's settings and its Screen
+Recording permission.
+
+- **You will be asked for Screen Recording permission again.** The permission is tied to the
+  old identifier and does not transfer. Without it the app cannot capture anything, so
+  first-run setup runs once more and walks you through granting it. This is the one thing
+  that unavoidably resets
+- **Your settings do come with you.** On first launch under the new identifier the app reads
+  the old ones once and carries over hotkeys, the exclusion list, drawing defaults and your
+  save location. You should not have to set anything up again
+- **So do your pinned screenshots.** They live in
+  `~/Library/Application Support/MikaScreenSnap/`, which is not tied to the identifier —
+  they reappear as they were
+
+### Moving to the App Store edition
+
+Different situation, different answer: the sandbox is what changes here, not the identifier.
+
+- **Nothing carries over.** A sandboxed app cannot read another app's settings, and it
+  cannot see the folder holding your pinned screenshots — not even to check whether any
+  exist. So it does not ask, and starts with defaults
+- **This is expected, not a failure.** Everything you had is untouched where it was: your
+  captures in their folder, your pinned images in
+  `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`. Pin them again from
+  there if you want them back
+- Both editions carry the same version number and the same bundle identifier, so installing
+  one replaces the other rather than running alongside it
+
 ## [3.5.0] - 2026-08-25
 
 Everything here came out of the SDD reconstruction (#31, #32), which read the shipped code
