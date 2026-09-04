@@ -33,6 +33,17 @@ Runde 3 hat **keinen neuen Codebefund** gefunden. Der Unterschied war ein expliz
 Schritt vor der Behebung: aufzuschreiben, welche anderen Aufrufer sich mitändern. Die
 beiden verbleibenden Befunde BF-34 und BF-35 liegen außerhalb des Codes.
 
+**Alle Befunde an Feature 16 sind behoben** (Stand Runde 7, 2026-09-03): BF-26 bis BF-30,
+BF-32 bis BF-39. Dreizehn Stück über sieben Prüfrunden.
+
+**BF-31 löst sich mit 3.6.0 von selbst — unter einer Bedingung.** Der Wechsel auf
+`lu.daumedia.screensnap` legt eine neue Preferences-Domain an, in der kein `SUFeedURL`
+steht; `LegacyDefaultsImport` überträgt ihn nicht, weil kein `SU*`-Schlüssel in
+`ownedDefaultsKeys` steht. Sparkle fällt damit auf die `Info.plist` zurück, also auf
+`daumedia`. **Damit das greift, muss `appcast.xml` für 3.6.0 ein letztes Mal auch nach
+`Mukaarts` gepusht werden** — sonst sieht eine betroffene Installation das Update nie und
+bleibt für immer auf 3.5.0. Die Reihenfolge steht im Testbericht.
+
 ### Aus der QA-Runde 6 (2026-09-03)
 
 | ID | Feature | Befund | Grad | Fundstelle |

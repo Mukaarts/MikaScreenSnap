@@ -1,13 +1,42 @@
 # 16 · App-Store-Auslieferung — Testbericht
 
-Stand: 2026-09-03 · **Runde 6**, nach dem Kennungswechsel und den Aufgaben T35/T36 ·
-Geprüft gegen `spec.md` mit 55 Kriterien
+Stand: 2026-09-03 · **Runde 7**, nach Behebung von BUG-11 bis BUG-13 · Geprüft gegen
+`spec.md` mit 55 Kriterien
 
 ## Fazit
 
-**Production-ready: nein.**
+**Production-ready: nein — aber kein offener Befund mehr.**
 
-**Drei neue Befunde, und zwei davon zeigen dasselbe Muster zum dritten Mal.** Der
+**Alle dreizehn Befunde sind erledigt.** Runde 7 findet keinen neuen: Der `CHANGELOG`
+beschreibt jetzt zwei getrennte Übergänge, und beide stimmen mit dem gebauten Verhalten
+überein — `restorePins` liest den Ordner direkt und ist nicht an die Kennung gebunden, der
+Import überträgt genau die Schlüssel, die der Text nennt. Der tote Code samt verwaistem
+Import ist weg. Der Angriffsdurchlauf ist sauber: kein Netzwerkpfad im Store-Binary, keine
+Ausnahme-Entitlements, keine Geheimnisse in der Historie, und der Import liest **genau
+eine** fremde Domain.
+
+### Ein Zusammenhang, den niemand geplant hat — und eine Bedingung daran
+
+Beim Prüfen ist aufgefallen, dass der Kennungswechsel **BF-31 von selbst löst**. Deine
+Installation prüft heute gegen `Mukaarts`, weil Sparkle die Feed-Adresse in `UserDefaults`
+ablegt und diese Vorrang vor der `Info.plist` hat. Nach dem Wechsel liest die Anwendung
+unter `lu.daumedia.screensnap` — dort steht kein `SUFeedURL`, und `LegacyDefaultsImport`
+überträgt ihn auch nicht, weil kein `SU*`-Schlüssel in `ownedDefaultsKeys` steht. Sparkle
+fällt damit auf die `Info.plist` zurück, also auf `daumedia`.
+
+**Das ist eleganter als jede Codeänderung — hat aber eine Bedingung, ohne die es sich
+umkehrt:** Damit eine betroffene Installation überhaupt zu 3.6.0 kommt, muss sie das Update
+sehen. Sie sieht nur `Mukaarts`. Wird `appcast.xml` also **nur** nach `daumedia` gepusht,
+erreicht 3.6.0 genau die Installationen nicht, die es heilen würde — und sie bleiben für
+immer auf 3.5.0.
+
+**Die Auslieferung von 3.6.0 muss ein letztes Mal über `Mukaarts` laufen.** Danach ist das
+Repository wirklich entbehrlich, und die Entscheidung *auslaufen lassen* greift ohne
+Nebenwirkung.
+
+---
+
+**Aus Runde 6: Drei Befunde, zwei davon dasselbe Muster zum dritten Mal.** Der
 Kennungswechsel und die Aufgabe T35 haben das Verhalten geändert; die Versionshinweise,
 die vorher geschrieben wurden, sagen weiterhin das Alte. In Runde 4 versprach der Text
 **mehr**, als belegt war (BF-36). Diesmal verspricht er **weniger**, als gebaut wurde —
@@ -86,7 +115,7 @@ sandboxed Programm mit erteilter Bildschirmaufnahme-Berechtigung.
 | Akzeptanzkriterien | **55** (AK-54 und AK-55 neu) |
 | davon bestanden | 25 |
 | davon durchgefallen | 0 |
-| **offene Befunde** | **3** (BUG-11 bis BUG-13) |
+| **offene Befunde** | **0** — alle dreizehn erledigt |
 | **nicht prüfbar** | 27 |
 | trifft nicht zu (begründet) | 3 |
 | Edge Cases belegt | 0 von 8 (EC-05 entfallen) |
@@ -481,6 +510,24 @@ noch nicht gibt. **Der ausgelieferte Store-Build ist damit in keiner seiner
 Kernfunktionen geprüft.** Was hier grün steht, betrifft die Verpackung, nicht das Verhalten.
 
 ## Nächster Schritt
+
+**Keiner in dieser Kette — endgültig.** Sieben QA-Runden, dreizehn Befunde, alle behoben.
+Was bleibt, sind 26 Kriterien und alle acht Randfälle, die ein signiertes, sandboxed
+Programm brauchen, und drei Aufgaben, die an Zertifikaten hängen.
+
+**Die Reihenfolge für die Auslieferung, mit der einen Bedingung aus dem Fazit:**
+
+1. **3.6.0 als DMG** — und `appcast.xml` ein letztes Mal **auch nach `Mukaarts`**, sonst
+   erreicht das Update die Installationen nicht, die es von der falschen Feed-Adresse
+   befreien würde.
+2. **Zertifikate unter `CWJM4J4HFN`** — `Apple Distribution` und
+   `3rd Party Mac Developer Installer`, dazu die App-ID `lu.daumedia.screensnap`.
+3. **T27 bis T30** — paketieren, hochladen, Eintrag füllen, einreichen.
+4. **Dann die eigentliche Prüfung:** T19, T20, T22, T25, T26 am installierten Paket. Erst
+   dort zeigt sich, ob Aufnahme, Ausschlussliste und Zensur unter Sandbox tun, was sie
+   sollen.
+
+## Aus Runde 6
 
 `/sdd-build 16` mit dem Auftrag **BUG-11 bis BUG-13**. Alle drei sind Text- und
 Aufräumarbeit, keine braucht ein Zertifikat.

@@ -24,7 +24,7 @@ falsch sein. Einträge ohne Präfix sind regulär durch die Kette gebaut.
 | B13 | Automatischer Start bei Login | P2 | approved | B11, B12 | 2026-08-25 · QA bestanden |
 | B14 | Automatische Updates | P1 | approved | B11, B15 | 2026-08-25 · QA bestanden |
 | B15 | Menüleisten-Hub & Programminfo | P0 | approved | alle | 2026-08-25 · QA bestanden |
-| 16 | App-Store-Auslieferung | P1 | building | B01, B02, B08, B09, B11, B12, B14 | 2026-09-03 · BUG-11–13 behoben, QA offen |
+| 16 | App-Store-Auslieferung | P1 | review | B01, B02, B08, B09, B11, B12, B14 | 2026-09-03 · 0 Befunde, 26 AK ungeprüft |
 
 **Alle fünfzehn Bestandsfeatures sind rückerfasst und geprüft.** Je Feature liegen
 `spec.md`, `design.md` und `qa-report.md` vor. Nächster Schritt ist die Auslieferung
