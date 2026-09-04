@@ -30,21 +30,23 @@ App Store. Which edition you have decides what applies below.
 
 ### Moving from the direct download
 
-- **Your settings should come with you.** When the bundle identifier is unchanged, macOS
-  copies an app's existing preferences into its sandbox container the first time it runs
-  sandboxed — so hotkeys, the exclusion list and drawing defaults are expected to be there
-  on first launch. Nothing asks you to import anything, because nothing needs to. **We have
-  measured this, but not yet with a build signed for the App Store**, so treat anything
-  missing as a bug worth reporting rather than as intended — re-entering a hotkey takes a
-  moment, and your old install is untouched either way
+- **Your settings do not come with you, and neither do pinned screenshots.** The app moves
+  to a new bundle identifier with this release — `lu.daumedia.screensnap` — which is what
+  macOS uses to find an app's preferences and its Screen Recording permission. Both are
+  therefore starting fresh: **you will be asked for Screen Recording access again, and
+  hotkeys, the exclusion list and drawing defaults return to their defaults.** Everything
+  you saved is untouched; it is the configuration that resets, not your screenshots
 - **Pinned screenshots do not come with you.** They live outside the sandbox container,
   where the App Store edition cannot reach them — not even to check whether any exist. So
   it does not ask, and they do not reappear. **This is expected, not a failure:** the
   originals are untouched in
   `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/`, and so are all your
   captures in their old folder. Pin them again from there if you want them back
-- Both editions carry the same version number and the same bundle identifier, so
-  installing one replaces the other rather than running alongside it
+- **You will be asked for Screen Recording permission again.** macOS ties that permission
+  to the bundle identifier, and this release changes it. Without it the app cannot capture
+  anything, so first-run setup walks you through granting it once more
+- Both editions carry the same version number and the same bundle identifier, so installing
+  one replaces the other rather than running alongside it
 
 ## [3.5.0] - 2026-08-25
 

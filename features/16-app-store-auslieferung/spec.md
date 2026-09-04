@@ -73,7 +73,7 @@ müssen. Die sieben oben genannten ändern ihr Verhalten sichtbar.
   werden, dann enthält die Liste keinen Schlüssel, der mit
   `com.apple.security.temporary-exception` beginnt.
 - **AK-03** · Angenommen, die Store-Fassung wurde einmal gestartet, wenn im Finder
-  `~/Library/Containers/com.mika.mikaplusscreensnap/` geöffnet wird, dann existiert
+  `~/Library/Containers/lu.daumedia.screensnap/` geöffnet wird, dann existiert
   dieser Ordner.
 - **AK-04** · Angenommen, die Store-Fassung ist gebaut, wenn ihr Programmpaket auf
   `Contents/Frameworks/Sparkle.framework` geprüft wird, dann ist dieser Pfad nicht
@@ -171,10 +171,13 @@ müssen. Die sieben oben genannten ändern ihr Verhalten sichtbar.
 > `tasks.md` und `qa-report.md` auf sie verweisen; der Inhalt beschreibt jetzt, was
 > tatsächlich geschieht.
 
-- **AK-31** · Angenommen, eine DMG-Installation mit sieben belegten Tastenkürzeln,
-  gefüllter Ausschlussliste und geänderten Zeichen-Standards ist vorhanden, wenn die
-  Store-Fassung zum ersten Mal gestartet wird, dann sind alle drei unverändert vorhanden —
-  **ohne dass gefragt wurde**.
+- **AK-31** · ~~Einstellungen wandern mit~~ → **gegenstandslos seit dem Wechsel der
+  Bundle-Kennung am 2026-09-03 (OF-05).** Die Container-Übernahme, die T01 gemessen hat,
+  greift ausschließlich bei gleicher Kennung. Mit `lu.daumedia.screensnap` findet macOS
+  die alten Einstellungen nicht mehr — sie wandern nicht, und das ist gewollt. Ersetzt
+  durch: **Angenommen, eine Vorgängerinstallation ist vorhanden, wenn die neue Fassung zum
+  ersten Mal gestartet wird, dann läuft die Ersteinrichtung vollständig, einschließlich der
+  Abfrage der Bildschirmaufnahme-Berechtigung.**
 - **AK-32** · Angenommen wie AK-31, wenn die Ersteinrichtung durchlaufen wird, dann
   erscheint an keiner Stelle eine Frage nach der Übernahme alter Daten.
 - **AK-33** · Angenommen, eine DMG-Installation mit zwei angehefteten Bildern ist
@@ -275,8 +278,12 @@ Abschnitt 4 und 6, hier erweitert um Abschnitt 1 (`docs/prd.md`, *Datenschutz*).
   (2026-09-03).** Die Anwendung liest keine fremde Einstellungsdatei mehr; die Übernahme
   macht macOS. Ein beschädigter Bestand wäre damit ein Fehler des Betriebssystems, nicht
   dieser Anwendung.
-- **EC-06** · Store-Fassung wird über eine laufende DMG-Fassung installiert (gleiche
-  Bundle-ID) → Die alte Fassung wird ersetzt. Beim nächsten Start greift AK-31.
+- **EC-06** · Store-Fassung wird über eine laufende DMG-Fassung installiert → Beide tragen
+  seit 2026-09-03 dieselbe **neue** Kennung `lu.daumedia.screensnap`, die alte Fassung wird
+  also weiterhin ersetzt. **Wer dagegen von einer Installation mit der alten Kennung
+  kommt**, hat danach zwei Programme im Ordner *Programme*: das alte
+  `com.mika.mikaplusscreensnap` und das neue. Das alte muss von Hand entfernt werden,
+  sonst laufen zwei Menüleisten-Symbole nebeneinander.
 - **EC-07** · Nutzer installiert nach der Store-Fassung wieder das DMG → Der Store
   aktualisiert diese Installation nicht mehr, Sparkle übernimmt wieder. Kein
   Datenverlust, aber der Speicherort fällt auf `~/Pictures/MikaScreenSnap/` zurück.
@@ -292,7 +299,7 @@ Abschnitt 4 und 6, hier erweitert um Abschnitt 1 (`docs/prd.md`, *Datenschutz*).
 - **OF-01** · ~~Welches Konto trägt den Store-Eintrag?~~ **Entschieden am 2026-09-03:
   Team `CWJM4J4HFN`** — dasselbe, das den Direktvertrieb signiert. Ein Konto für beide
   Wege. **Was daraus folgt und noch aussteht:** Unter dieser Team-ID müssen
-  `com.mika.mikaplusscreensnap` als App-ID registriert und die Zertifikate
+  `lu.daumedia.screensnap` als App-ID registriert und die Zertifikate
   `Apple Distribution` und `3rd Party Mac Developer Installer` erzeugt werden; im
   Schlüsselbund liegt heute nur `Developer ID Application`. Das ist Beschaffung, keine
   Entscheidung mehr — **beschafft: der Autor, vor T27.**
@@ -309,6 +316,15 @@ Abschnitt 4 und 6, hier erweitert um Abschnitt 1 (`docs/prd.md`, *Datenschutz*).
   neu gefasst. **Folge für den Code:** `MigrationImporter`, `migrationOffered` und der
   eingebettete `MigrationPrompt` werden nicht gebraucht; T14, T16 und T20 entfallen.
 
+- **OF-05** · **Der Wechsel auf `lu.daumedia.screensnap` (2026-09-03) lässt bestehende
+  Installationen ohne Konfiguration zurück.** `UserDefaults` und die
+  TCC-Bildschirmaufnahme-Berechtigung hängen beide an der Bundle-Kennung; beide sind nach
+  dem Update leer beziehungsweise nicht erteilt. Die Versionshinweise sagen das inzwischen
+  ausdrücklich, aber die Frage bleibt: **Soll es einen Übernahmepfad geben**, der die alten
+  Einstellungen beim ersten Start einliest — im DMG-Build ohne Sandbox technisch
+  unproblematisch, im Store-Build nur über eine Nutzerauswahl? Ohne ihn verliert jeder
+  bestehende Nutzer sieben Tastenkürzel und seine Ausschlussliste. **Entscheidet: der Autor,
+  vor der Auslieferung von 3.6.0.**
 - **OF-03** · ~~Lizenz ändern?~~ **Entschieden am 2026-09-03: MIT bleibt.** Es gibt
   keinen Umsatz zu schützen, und Apple verlangt bei der Einreichung ohnehin den Nachweis
   der Rechte an Name und Symbol — die Marke schützt hier, nicht die Lizenz.

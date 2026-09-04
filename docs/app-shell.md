@@ -119,7 +119,7 @@ die einzige Art, wie die App ohne Fenster spricht. In einem `LSUIElement`-Bundle
 `print()` ins Leere — Fehler, die keinen Toast auslösen, erreichen niemanden.
 
 **Protokoll.** `CaptureLog` schreibt über `OSLog` unter dem Subsystem
-`com.mika.mikaplusscreensnap`, Kategorien `capture` und `hotkey`. Lesbar in Console.app.
+`lu.daumedia.screensnap`, Kategorien `capture` und `hotkey`. Lesbar in Console.app.
 
 **Zustand.** `AppState` ist der gemeinsame Halter: Manager, Controller, offene Pin-Panels
 und Einstellungen. Alle UI-Klassen sind `@MainActor`, Zustand ist `@Observable`.

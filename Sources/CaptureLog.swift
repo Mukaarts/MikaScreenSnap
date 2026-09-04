@@ -12,7 +12,7 @@ import OSLog
 /// bundle launched from Finder. Everything routes through here instead, so the same
 /// failure is both greppable in Console.app and visible to the user.
 enum CaptureLog {
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.mika.mikaplusscreensnap"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "lu.daumedia.screensnap"
 
     static let engine = Logger(subsystem: subsystem, category: "capture")
     static let hotkey = Logger(subsystem: subsystem, category: "hotkey")

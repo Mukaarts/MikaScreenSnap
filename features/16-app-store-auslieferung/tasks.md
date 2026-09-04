@@ -283,7 +283,7 @@ laufen seriell — sie fassen die Logikdateien aus Ebene 2 an oder setzen einand
 
 - [ ] Feature-Branch: `git checkout -b feature/16-app-store-auslieferung`
 - [ ] **OF-07 beschafft** — aktive Mitgliedschaft im Apple Developer Program und
-      `com.mika.mikaplusscreensnap` unter der Team-ID registriert. **Blockiert T27 bis
+      `lu.daumedia.screensnap` unter der Team-ID registriert. **Blockiert T27 bis
       T30**, sonst nichts
 - [ ] **OF-08 entschieden** — Store-Kategorie und Alterseinstufung. Blockiert T29
 - [ ] Verteilungszertifikat und Installer-Zertifikat im Schlüsselbund, App-Store-Connect-

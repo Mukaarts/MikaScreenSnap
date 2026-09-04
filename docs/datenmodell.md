@@ -11,7 +11,7 @@ Listen in `UserDefaults`, die eigentlich Daten sind. Dieses Dokument nimmt alle 
 
 ## 1 · `UserDefaults` — Einstellungen
 
-Alle Schlüssel liegen in der Standard-Suite unter `com.mika.mikaplusscreensnap`.
+Alle Schlüssel liegen in der Standard-Suite unter `lu.daumedia.screensnap`.
 Geschrieben ausschließlich über `AppPreferences` (`Sources/AppPreferences.swift`),
 jeweils per `didSet`.
 
