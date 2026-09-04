@@ -167,6 +167,10 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 
 - [x] **T27** · `scripts/package-appstore.sh`: Signatur mit der Verteilungsidentität,
       Paket über `productbuild` mit der Installer-Identität — `AK-40`
+- [x] **T37** · `project.yml` für XcodeGen: ein App-Ziel für den Store, Quelle bleibt
+      `Sources/`, `APPSTORE`-Merkmal über `SWIFT_ACTIVE_COMPILATION_CONDITIONS`,
+      Info.plist per Build-Phase abgeleitet. `.xcodeproj` bleibt ungetrackt —
+      `AK-01, AK-04, AK-05, AK-37, AK-53, AK-54`
 - [ ] **T28** · Paket nach App Store Connect hochladen. Klärt zugleich OP-01 des
       Entwurfs: ob ein Bereitstellungsprofil verlangt wird — `AK-41`
 - [ ] **T29** · Store-Eintrag füllen: Name, Untertitel, Beschreibung, Stichworte,
@@ -182,11 +186,11 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 
 | AK | Aufgaben |
 |---|---|
-| AK-01 | T03, T06 |
+| AK-01 | T03, T06, T37 |
 | AK-02 | T03 |
 | AK-03 | T06 |
-| AK-04 | T02, T06 |
-| AK-05 | T04 |
+| AK-04 | T02, T06, T37 |
+| AK-05 | T04, T37 |
 | AK-06 | T26 |
 | AK-07 | T26 |
 | AK-08 | T26 |
