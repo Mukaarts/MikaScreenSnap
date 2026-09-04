@@ -4,7 +4,16 @@ import AppKit
 final class AreaSelectionPanel: NSPanel {
     private var selectionView: AreaSelectionView!
 
-    init(screen: NSScreen, onSelection: @escaping @MainActor (CGRect) -> Void) {
+    /// - Parameter onCancel: called when the user backs out — Escape, or a click that
+    ///   turns out to be too small to be a selection.
+    ///
+    ///   The panel used to answer a cancel by ordering *itself* out. On a second display
+    ///   that left the other panel standing: a dimmed screen that swallows every click,
+    ///   with no visible way back. Cancelling has to reach whoever opened the set, so the
+    ///   caller passes the dismissal in.
+    init(screen: NSScreen,
+         onSelection: @escaping @MainActor (CGRect) -> Void,
+         onCancel: @escaping @MainActor () -> Void) {
         super.init(
             contentRect: screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -20,9 +29,9 @@ final class AreaSelectionPanel: NSPanel {
         self.acceptsMouseMovedEvents = true
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-        selectionView = AreaSelectionView(frame: screen.frame, onSelection: onSelection, onCancel: { [weak self] in
-            self?.orderOut(nil)
-        })
+        selectionView = AreaSelectionView(frame: screen.frame,
+                                          onSelection: onSelection,
+                                          onCancel: onCancel)
         self.contentView = selectionView
 
         self.setFrame(screen.frame, display: true)
@@ -68,72 +77,86 @@ final class AreaSelectionView: NSView {
         NSColor.black.withAlphaComponent(0.3).setFill()
         bounds.fill()
 
-        // If we have a selection, cut it out
-        if let start = startPoint, let current = currentPoint {
-            let selectionRect = makeRect(from: start, to: current)
+        guard let start = startPoint, let current = currentPoint else { return }
+        let selectionRect = makeRect(from: start, to: current)
+        guard selectionRect.width > 1, selectionRect.height > 1 else { return }
 
-            if selectionRect.width > 1 && selectionRect.height > 1 {
-                // Clear the selected area
-                NSGraphicsContext.current?.compositingOperation = .copy
-                NSColor.clear.setFill()
-                selectionRect.fill()
+        // Punching the hole switches the context to .copy. That used to be undone by a
+        // plain assignment further down, which made every stroke after it depend on one
+        // line being reached; save/restore scopes the change to the fill that needs it.
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current?.compositingOperation = .copy
+        NSColor.clear.setFill()
+        selectionRect.fill()
+        NSGraphicsContext.restoreGraphicsState()
 
-                // Reset compositing
-                NSGraphicsContext.current?.compositingOperation = .sourceOver
+        // Dashed border
+        let borderPath = NSBezierPath(rect: selectionRect)
+        borderPath.lineWidth = 1.5
+        let dashPattern: [CGFloat] = [6, 4]
+        borderPath.setLineDash(dashPattern, count: 2, phase: 0)
+        NSColor.white.setStroke()
+        borderPath.stroke()
 
-                // Dashed border
-                let borderPath = NSBezierPath(rect: selectionRect)
-                borderPath.lineWidth = 1.5
-                let dashPattern: [CGFloat] = [6, 4]
-                borderPath.setLineDash(dashPattern, count: 2, phase: 0)
-                NSColor.white.setStroke()
-                borderPath.stroke()
-
-                // Size label
-                drawSizeLabel(for: selectionRect)
-            }
-        }
+        Self.drawSizeLabel(for: selectionRect, in: bounds)
     }
 
-    private func drawSizeLabel(for rect: NSRect) {
-        let w = Int(rect.width)
-        let h = Int(rect.height)
-        let text = "\(w) \u{00D7} \(h) px"
+    // MARK: - Size readout
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium),
-            .foregroundColor: NSColor.white,
-        ]
+    static let sizeLabelFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)
+    static let sizeLabelPadding: CGFloat = 6
+    /// Distance between the selection edge and the readout.
+    static let sizeLabelGap: CGFloat = 4
 
-        let textSize = (text as NSString).size(withAttributes: attributes)
-        let padding: CGFloat = 6
-        let labelWidth = textSize.width + padding * 2
-        let labelHeight = textSize.height + padding * 2
+    static func sizeLabelText(for rect: NSRect) -> String {
+        "\(Int(rect.width)) \u{00D7} \(Int(rect.height)) px"
+    }
 
-        // Position below and to the right of the selection
-        var labelOrigin = NSPoint(
-            x: rect.maxX - labelWidth,
-            y: rect.minY - labelHeight - 4
-        )
+    static func sizeLabelSize(for text: String) -> NSSize {
+        let textSize = (text as NSString).size(withAttributes: [.font: sizeLabelFont])
+        return NSSize(width: textSize.width + sizeLabelPadding * 2,
+                      height: textSize.height + sizeLabelPadding * 2)
+    }
 
-        // Keep on screen
-        if labelOrigin.y < bounds.minY {
-            labelOrigin.y = rect.maxY + 4
+    /// Where the readout sits for a given selection — pure, so it can be tested.
+    ///
+    /// One case was wrong, and it is the common one: **a selection that reaches the top
+    /// of the screen.** With no room below, the old code moved the label to
+    /// `rect.maxY + 4` — past `bounds.maxY`, off the view. A label drawn outside the view
+    /// is indistinguishable from one that was never drawn, which is why nobody noticed.
+    /// Dragging from the menu bar downwards hits it every time.
+    ///
+    /// Order matters: below the selection, else above it, else inside it at the top (a
+    /// selection spanning the whole height has no outside left), and a clamp on both axes
+    /// as the last word. The clamp is what makes the property hold rather than four
+    /// separate cases each holding by itself.
+    static func sizeLabelRect(for selection: NSRect, in bounds: NSRect, labelSize: NSSize) -> NSRect {
+        var origin = NSPoint(x: selection.maxX - labelSize.width,
+                             y: selection.minY - labelSize.height - sizeLabelGap)
+
+        if origin.y < bounds.minY {
+            origin.y = selection.maxY + sizeLabelGap
         }
-        if labelOrigin.x < bounds.minX {
-            labelOrigin.x = rect.minX
+        if origin.y + labelSize.height > bounds.maxY {
+            origin.y = selection.maxY - labelSize.height - sizeLabelGap
         }
 
-        let labelRect = NSRect(x: labelOrigin.x, y: labelOrigin.y, width: labelWidth, height: labelHeight)
+        origin.x = min(max(origin.x, bounds.minX), max(bounds.minX, bounds.maxX - labelSize.width))
+        origin.y = min(max(origin.y, bounds.minY), max(bounds.minY, bounds.maxY - labelSize.height))
+        return NSRect(origin: origin, size: labelSize)
+    }
 
-        // Background
-        let bgPath = NSBezierPath(roundedRect: labelRect, xRadius: 4, yRadius: 4)
+    static func drawSizeLabel(for rect: NSRect, in bounds: NSRect) {
+        let text = sizeLabelText(for: rect)
+        let labelRect = sizeLabelRect(for: rect, in: bounds, labelSize: sizeLabelSize(for: text))
+
         NSColor.black.withAlphaComponent(0.7).setFill()
-        bgPath.fill()
+        NSBezierPath(roundedRect: labelRect, xRadius: 4, yRadius: 4).fill()
 
-        // Text
-        let textOrigin = NSPoint(x: labelRect.minX + padding, y: labelRect.minY + padding)
-        (text as NSString).draw(at: textOrigin, withAttributes: attributes)
+        (text as NSString).draw(
+            at: NSPoint(x: labelRect.minX + sizeLabelPadding, y: labelRect.minY + sizeLabelPadding),
+            withAttributes: [.font: sizeLabelFont, .foregroundColor: NSColor.white]
+        )
     }
 
     private func makeRect(from p1: NSPoint, to p2: NSPoint) -> NSRect {
@@ -170,10 +193,16 @@ final class AreaSelectionView: NSView {
             let screenRect = window.convertToScreen(selectionRect)
             onSelection?(screenRect)
         } else {
-            // Too small, treat as cancel
+            // Too small to mean anything — treat it as a cancel, and actually cancel.
+            //
+            // This branch used to clear the two points and stop. `onCancel` is what takes
+            // the panels down, so a stray click left the screen dimmed and swallowing
+            // every click, on every display at once, with Escape the only way out. It
+            // reads exactly like a hang.
             startPoint = nil
             currentPoint = nil
             needsDisplay = true
+            onCancel?()
         }
     }
 

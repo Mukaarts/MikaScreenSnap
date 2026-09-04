@@ -323,6 +323,8 @@ final class CaptureEngine {
                     try? await Task.sleep(for: .milliseconds(100))
                     await self.captureArea(rect: rect, appState: appState)
                 }
+            } onCancel: { [weak self] in
+                self?.dismissAreaSelection()
             }
             panel.makeKeyAndOrderFront(nil)
             areaSelectionPanels.append(panel)
@@ -350,6 +352,8 @@ final class CaptureEngine {
                     try? await Task.sleep(for: .milliseconds(100))
                     await self.captureAreaForOCR(rect: rect, appState: appState)
                 }
+            } onCancel: { [weak self] in
+                self?.dismissAreaSelection()
             }
             panel.makeKeyAndOrderFront(nil)
             areaSelectionPanels.append(panel)
