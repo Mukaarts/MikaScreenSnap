@@ -76,6 +76,19 @@ beide Punkte hängen als offene Aufgaben in [CHECKLISTE.md](CHECKLISTE.md).
 | — | Farblupe | die Werkzeugtiefe | `highlight` | dunkel | Bildschirm | offen |
 | — | Angeheftetes Bild | der Alltag | `frame-top` | hell | Bildschirm | offen |
 
+**Was am 2026-09-05 über die drei offenen Motive herauskam.** Es liegt nicht an den
+Hotkeys: `⇧⌘6` legt nachweislich zwei Auswahl-Overlays an (`layer=1000`, eines je
+Bildschirm). Danach reißt es ab — nach dem Ziehen erscheint kein Fenster „Extracted
+Text", auch nicht bei isoliertem Nachstellen mit laufender Kulisse und langen Wartezeiten.
+`04_colour` liefert eine Aufnahme, auf der die Lupe fehlt, und der Klick auf *Pin* in der
+Fußleiste des Editors erzeugt kein angeheftetes Fenster.
+
+**Ein Verdacht, der noch zu prüfen ist:** Die Aufnahmemaschine hat **zwei Bildschirme**
+(`0,0,1920,1080` und `-1920,0,1920,1080`). Die Overlays entstehen auf beiden, die
+Vollbildmotive nehmen aber Display 1 auf, und die Züge des Skripts zielen auf dessen
+Koordinaten. Wer das weiterverfolgt, prüft zuerst, auf welchem Bildschirm die Panels
+tatsächlich landen — mit einem zweiten Bildschirm ist das Skript nie gelaufen.
+
 Apple verlangt mindestens ein Bild; zwei tragen den Eintrag, drei bis fünf wären besser.
 Wer nachliefert, trägt das Motiv in `tools/shots.json` ein — `StoreAssetTests` verlangt
 dann von selbst Rohaufnahme und Text dazu.

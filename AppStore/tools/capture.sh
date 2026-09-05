@@ -284,9 +284,13 @@ else
                $((EX + EW * $4 / 100)) $((EY + EH * $5 / 100))
     sleep 3
   }
+  # Die Anteile sind am Editorfenster gemessen und hängen deshalb am Aufbau der
+  # Demo-Leinwand. Als dort der Motion-Absatz dem Imagery-Abschnitt wich, rutschte
+  # die Hervorhebung auf den Rand des Zugangsdaten-Kastens und der Pfeil zeigte
+  # ins Leere. Wer die Leinwand umbaut, misst diese drei Züge nach.
   zug x 12 52 48 60     # Zugangsdaten verpixeln
-  zug h 12 44 38 47     # eine Zeile Fließtext hervorheben
-  zug a 70 66 78 60     # Pfeil auf die Kennzahl
+  zug h 12 36 38 39     # eine Zeile Fließtext hervorheben
+  zug a 72 64 82 53     # Pfeil auf die Kennzahl 94 %
 
   ring_weg
   "$UI" shot "Mika+ScreenSnap" "$OUT/01_annotate.png" 400 1000
