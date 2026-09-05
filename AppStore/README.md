@@ -203,9 +203,24 @@ codesign --force --sign "Developer ID Application: … (CWJM4J4HFN)" \
 Die Sandbox bleibt dabei an — die Entitlements werden mitgegeben. Für die Einreichung
 ändert das nichts: `package-appstore.sh` übersigniert ohnehin mit *Apple Distribution*.
 Stehen schon mehrere Karteileichen in der Liste, räumt
-`tccutil reset ScreenCapture lu.daumedia.screensnap` sie alle ab — danach fordert die App
-die Freigabe einmal neu an, und es gibt genau einen Eintrag. Es trifft auch die
+`tccutil reset ScreenCapture lu.daumedia.screensnap` sie alle ab. Es trifft auch die
 Direktfassung; die fragt beim nächsten Start neu.
+
+**Ungelöst, Stand 2026-09-05: Die Store-Fassung war so trotzdem nicht freizuschalten.**
+In der Liste steht **ein** Eintrag „Mika+ScreenSnap", und er gehört der Direktfassung aus
+`/Applications` — nachweisbar daran, dass sie mit ihm Zugriff hat, während die
+Store-Fassung weiter ihr Einrichtungsfenster zeigt. Beide tragen dieselbe Bundle-Kennung.
+Nach einem `tccutil reset` verschwand der Eintrag, und **kein** Weg brachte einen für die
+Store-Fassung zurück: weder „Grant Access" im Einrichtungsfenster (das
+`CGRequestScreenCaptureAccess()` aufruft und danach die Einstellungen öffnet — die Liste
+blieb leer), noch dasselbe mit echt signierter Fassung, noch nachdem die Direktfassung
+vorübergehend aus `/Applications` weggeschoben war.
+
+Der Kommentar in `Sources/Onboarding/PermissionScreen.swift` sagt, `CGRequestScreenCaptureAccess`
+registriere die App in der Liste. Für die Direktfassung mag das stimmen; für die
+sandboxed Store-Fassung neben einer installierten Direktfassung galt es an diesem Tag
+nicht. **Wer die drei fehlenden Motive nachliefern will, muss zuerst das klären** — bis
+dahin bleibt es bei den zwei Motiven aus der Direktfassung.
 
 ### Bildmaterial
 
