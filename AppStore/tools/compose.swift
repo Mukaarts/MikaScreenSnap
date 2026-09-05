@@ -40,6 +40,7 @@ let werkzeuge = URL(fileURLWithPath: CommandLine.arguments[0])
 let appStore = werkzeuge.deletingLastPathComponent()
 let roh = appStore.appendingPathComponent("screenshots/raw")
 let ausgabe = appStore.appendingPathComponent("screenshots")
+let gruende = appStore.appendingPathComponent("assets/backdrops")
 
 // MARK: - Markenpalette (Spiegel von Sources/MikaPlusColors.swift)
 //
@@ -134,34 +135,58 @@ let SPRACHE: [String: String] = ["en-US": "en"]
 
 // MARK: - Zeichenhilfen
 
-func verlauf(_ von: NSColor, _ nach: NSColor, in rect: NSRect, winkel: CGFloat = -90) {
-    NSGradient(colors: [von, nach])?.draw(in: rect, angle: winkel)
+/// Lädt einen Bildgrund und behält ihn — beide Motive eines Laufs teilen sich
+/// dieselbe Datei.
+var grundCache: [String: NSImage] = [:]
+
+func grundbild(_ thema: String) -> NSImage {
+    if let da = grundCache[thema] { return da }
+    let datei = gruende.appendingPathComponent("\(thema).jpg")
+    guard let bild = NSImage(contentsOf: datei) else {
+        fehler("Bildgrund fehlt: assets/backdrops/\(thema).jpg")
+    }
+    grundCache[thema] = bild
+    return bild
 }
 
-/// Punktraster und ein weicher Schein hinter der Headline — gibt der leeren
-/// Fläche Struktur, ohne vom Fenster abzulenken.
-func hintergrund(_ p: Palette, _ l: Layout) {
-    let alles = NSRect(x: 0, y: 0, width: l.w, height: l.h)
-    verlauf(p.grundOben, p.grundUnten, in: alles)
-
+/// Zeichnet ein Bild formatfüllend: Es deckt `rect` ganz ab, das Seitenverhältnis
+/// bleibt, überstehende Seiten werden mittig beschnitten.
+func fuellend(_ bild: NSImage, in rect: NSRect) {
+    let q = bild.size
+    guard q.width > 0, q.height > 0 else { return }
+    let skala = max(rect.width / q.width, rect.height / q.height)
+    let z = NSSize(width: q.width * skala, height: q.height * skala)
     NSGraphicsContext.current?.saveGraphicsState()
-    NSGradient(colors: [teal.withAlphaComponent(0.16), teal.withAlphaComponent(0)])?
-        .draw(in: NSRect(x: l.w/2 - l.w*0.49, y: l.h - l.h*0.67,
-                         width: l.w*0.98, height: l.h*0.78),
-              relativeCenterPosition: .zero)
+    NSBezierPath(rect: rect).addClip()
+    bild.draw(in: NSRect(x: rect.midX - z.width / 2, y: rect.midY - z.height / 2,
+                         width: z.width, height: z.height),
+              from: .zero, operation: .sourceOver, fraction: 1)
     NSGraphicsContext.current?.restoreGraphicsState()
+}
 
-    teal.withAlphaComponent(0.07).setFill()
-    let schritt = round(l.w * 0.025)
-    var y = schritt / 2
-    while y < l.h {
-        var x = schritt / 2
-        while x < l.w {
-            NSBezierPath(ovalIn: NSRect(x: x, y: y, width: l.w*0.0017, height: l.w*0.0017)).fill()
-            x += schritt
-        }
-        y += schritt
-    }
+/// Der Grund: ein Bild aus `assets/backdrops/`, darüber ein Schleier an den
+/// beiden Kanten, an denen Text stehen kann.
+///
+/// Der Schleier ist kein Schmuck. `text-top` setzt die Headline an den oberen
+/// Rand, `frame-top` an den unteren, und ein Bildgrund ist dort — anders als der
+/// frühere Verlauf — nicht überall gleich hell. Ohne ihn hinge die Lesbarkeit
+/// davon ab, wo das Grundbild zufällig seine helle Stelle hat.
+///
+/// Ein Rückfall auf einen gezeichneten Verlauf, wenn die Datei fehlt, wäre hier
+/// falsch: Er sähe dem Bildgrund flüchtig ähnlich genug, dass er unbemerkt in den
+/// Store liefe — und dort stünden zwei Motive nebeneinander, deren Grund sich
+/// unterscheidet. `grundbild` bricht deshalb ab.
+func hintergrund(_ thema: String, _ p: Palette, _ l: Layout) {
+    let alles = NSRect(x: 0, y: 0, width: l.w, height: l.h)
+    fuellend(grundbild(thema), in: alles)
+
+    let saum = round(l.h * 0.34)
+    let schleier = [p.grundUnten.withAlphaComponent(0.62),
+                    p.grundUnten.withAlphaComponent(0)]
+    NSGradient(colors: schleier)?
+        .draw(in: NSRect(x: 0, y: l.h - saum, width: l.w, height: saum), angle: -90)
+    NSGradient(colors: schleier)?
+        .draw(in: NSRect(x: 0, y: 0, width: l.w, height: saum), angle: 90)
 }
 
 func mitSchatten(_ farbe: NSColor, radius: CGFloat, versatz: CGFloat, _ block: () -> Void) {
@@ -458,7 +483,7 @@ for locale in locales {
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
         let p = palette(motiv.theme)
-        hintergrund(p, layout)
+        hintergrund(motiv.theme, p, layout)
         rendere(bild, motiv, text, p, layout)
         NSGraphicsContext.restoreGraphicsState()
 

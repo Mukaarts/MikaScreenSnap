@@ -35,6 +35,12 @@
 #   * die Store-Fassung muss ihre Ersteinrichtung hinter sich haben: einmal
 #     Bildschirmaufnahme erlaubt (TCC, eigener Eintrag — sie ist ein anderes
 #     Binary als die Direktfassung) und einmal einen Speicherordner gewählt
+#   * und sie muss VOR dieser Freigabe echt signiert sein. build-appstore.sh
+#     signiert ad-hoc; TCC erkennt eine ad-hoc signierte App am CDHash, und der
+#     ändert sich bei jedem Bau. Die Freigabe gilt dann der App von gestern, und
+#     die neue steht als weiterer, gleichnamiger Eintrag daneben — nicht
+#     unterscheidbar. Wie man das abstellt, steht in README.md unter
+#     „Vor der Freigabe echt signieren"
 #
 set -euo pipefail
 
@@ -171,11 +177,21 @@ if [ "$DIREKT" = "0" ]; then
   synthetische Eingaben auf den Berechtigungsdialogen nicht zulässt:
 
     1. Bildschirmaufnahme erlauben. Systemeinstellungen › Datenschutz &
-       Sicherheit › Bildschirm- & Systemtonaufnahme. Dort stehen ZWEI Einträge
-       namens „Mika+ScreenSnap": Der eingeschaltete ist die Direktfassung aus
-       /Applications, der ausgeschaltete diese hier. Sie ist ein anderes Binary
-       und bekommt einen eigenen Eintrag; danach verlangt macOS einen Neustart
-       der Anwendung.
+       Sicherheit › Bildschirm- & Systemtonaufnahme.
+
+       ACHTUNG, hier liegt eine Falle: Dort steht **ein** Eintrag namens
+       „Mika+ScreenSnap", und der gehört der Direktfassung aus /Applications.
+       Beide Fassungen tragen dieselbe Bundle-Kennung; solange die Direktfassung
+       installiert ist, bekam die Store-Fassung in einem Versuch am 2026-09-05
+       keinen eigenen Eintrag — auch nicht, nachdem „Grant Access" im
+       Einrichtungsfenster `CGRequestScreenCaptureAccess()` ausgelöst hatte.
+       Den vorhandenen Schalter umzulegen hilft der Store-Fassung nicht: Sie
+       zeigt danach weiter ihr Einrichtungsfenster.
+
+       Was in diesem Versuch NICHT geholfen hat: die Fassung echt zu signieren,
+       `tccutil reset ScreenCapture lu.daumedia.screensnap`, und die
+       Direktfassung vorübergehend aus /Applications wegzuschieben. Wer das
+       löst, trägt den Weg hier ein.
     2. Im Einrichtungsfenster einen Ordner für die Bildschirmfotos wählen. Die
        Sandbox kennt keinen Weg nach ~/Pictures, den die Anwendung selbst nehmen
        dürfte.

@@ -181,6 +181,75 @@ die Direktfassung und bekommt einen eigenen TCC-Eintrag; beides lässt sich nich
 skripten. `capture.sh` prüft es und bricht mit einer Anleitung ab, statt fünf Bilder mit
 einem Einrichtungsfenster darauf zu erzeugen.
 
+**Vor der Freigabe echt signieren — sonst hält sie keinen Tag.** `build-appstore.sh`
+signiert ad-hoc, und TCC erkennt eine ad-hoc signierte App an ihrem CDHash. Der ändert
+sich bei **jedem** Bau: Die gestern erteilte Freigabe gilt der App von gestern, die neu
+gebaute steht als weiterer, gleichnamiger Eintrag daneben. In der Liste sind sie nicht
+auseinanderzuhalten — beide heißen „Mika+ScreenSnap", beide tragen
+`lu.daumedia.screensnap`. Wer den falschen schaltet, sieht keinen Fehler, nur ein
+Einrichtungsfenster, das nicht weggeht. (Bei einem Lauf lagen drei solcher Leichen
+übereinander.)
+
+Deshalb vor der Aufnahme einmal mit einem echten Zertifikat übersignieren — dann
+identifiziert TCC die App über Team- und Bundle-ID, und die Freigabe überlebt jeden
+weiteren Bau:
+
+```bash
+codesign --force --sign "Developer ID Application: … (CWJM4J4HFN)" \
+    --entitlements Resources/MikaScreenSnap-AppStore.entitlements \
+    --options runtime build-appstore/Mika+ScreenSnap.app
+```
+
+Die Sandbox bleibt dabei an — die Entitlements werden mitgegeben. Für die Einreichung
+ändert das nichts: `package-appstore.sh` übersigniert ohnehin mit *Apple Distribution*.
+Stehen schon mehrere Karteileichen in der Liste, räumt
+`tccutil reset ScreenCapture lu.daumedia.screensnap` sie alle ab. Es trifft auch die
+Direktfassung; die fragt beim nächsten Start neu.
+
+**Ungelöst, Stand 2026-09-05: Die Store-Fassung war so trotzdem nicht freizuschalten.**
+In der Liste steht **ein** Eintrag „Mika+ScreenSnap", und er gehört der Direktfassung aus
+`/Applications` — nachweisbar daran, dass sie mit ihm Zugriff hat, während die
+Store-Fassung weiter ihr Einrichtungsfenster zeigt. Beide tragen dieselbe Bundle-Kennung.
+Nach einem `tccutil reset` verschwand der Eintrag, und **kein** Weg brachte einen für die
+Store-Fassung zurück: weder „Grant Access" im Einrichtungsfenster (das
+`CGRequestScreenCaptureAccess()` aufruft und danach die Einstellungen öffnet — die Liste
+blieb leer), noch dasselbe mit echt signierter Fassung, noch nachdem die Direktfassung
+vorübergehend aus `/Applications` weggeschoben war.
+
+Der Kommentar in `Sources/Onboarding/PermissionScreen.swift` sagt, `CGRequestScreenCaptureAccess`
+registriere die App in der Liste. Für die Direktfassung mag das stimmen; für die
+sandboxed Store-Fassung neben einer installierten Direktfassung galt es an diesem Tag
+nicht. **Wer die drei fehlenden Motive nachliefern will, muss zuerst das klären** — bis
+dahin bleibt es bei den zwei Motiven aus der Direktfassung.
+
+### Bildmaterial
+
+Zwei Sorten Bild liegen unter `assets/`, und beide sind **generiert** (Higgsfield,
+Nano Banana Pro) — nicht fotografiert und nicht aufgenommen:
+
+| Datei | Wo es landet | Wozu |
+|---|---|---|
+| `assets/backdrops/dark.jpg`, `light.jpg` | der Grund jeder Kachel, `compose.swift` | 3200 × 1800 — genau das, was 2880 × 1800 formatfüllend braucht, damit nichts hochskaliert wird |
+| `assets/imagery/a.jpg`, `b.jpg` | der Abschnitt *Imagery* der Demo-Leinwand | gibt dem fiktiven Dokument Bildmaterial, damit es sich wie ein Dokument liest und nicht wie ein Wireframe |
+
+**Wo die Grenze verläuft.** Generiert werden darf, was *hinter* und *im* Fenster liegt:
+der Grund der Kachel und der Inhalt des erfundenen Dokuments. Die Oberfläche der
+Anwendung selbst wird ausschließlich aufgenommen — jedes Pixel des Fensters kommt aus
+`capture.sh`. Ein gemaltes Fenster verspräche eine Anwendung, die es nicht gibt
+(Guideline 2.3, Accurate Metadata), und genau daran hängt auch die Regel, dass aus der
+Store- und nicht aus der Direktfassung aufgenommen wird.
+
+**Warum der Grund ein Bild ist und kein Verlauf.** Vorher zeichnete `compose.swift` ihn
+aus zwei Farben plus Punktraster. Das trug eine Kachel, aber fünf nebeneinander sahen
+nach Vorlage aus. Fehlt eine der beiden Dateien, bricht `compose.swift` ab und fällt
+**nicht** auf den alten Verlauf zurück: Der sähe flüchtig ähnlich genug, dass er
+unbemerkt in den Store liefe — und dort stünden dann Motive nebeneinander, deren Grund
+sich unterscheidet. `GenerateDemoCanvas.swift` hält es mit den Imagery-Platten genauso.
+
+Über dem Bildgrund liegt an Ober- und Unterkante ein Schleier in der Grundfarbe. Er ist
+kein Schmuck: `text-top` setzt die Headline an den oberen Rand, `frame-top` an den
+unteren, und ein Bildgrund ist dort — anders als ein Verlauf — nicht überall gleich hell.
+
 ### Texte ändern
 
 Headlines und Sublines stehen in `tools/shots.json`, nach Sprache getrennt.
