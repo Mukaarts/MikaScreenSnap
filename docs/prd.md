@@ -85,7 +85,7 @@ Features für die zweite Gruppe fordert, argumentiert gegen den Zweck.
 | Stack-Profil | `swiftui-macos` — Details in `~/.claude/sdd/stacks/swiftui-macos.md` |
 | Sprache/Version | Swift 6.0, strict concurrency, `@MainActor`-Isolation durchgehend |
 | Zielplattform | macOS 14.0 (Sonoma) aufwärts, **arm64 ausschließlich** (das ausgelieferte Binary ist nicht universal) |
-| Projektform | reines Swift Package, kein Xcode-Projekt |
+| Projektform | Swift Package als Quelle · **seit 2026-09-04 zusätzlich ein erzeugtes Xcode-Projekt allein für die App-Store-Auslieferung** (`project.yml`, XcodeGen). Der Direktvertrieb wird weiterhin ausschließlich über `scripts/build.sh` gebaut |
 | Backend | **keins** |
 | Umgebungen | nur lokal — es gibt keine Test- oder Produktivumgebung, nur gebaute Bundles |
 | Datenhaltung | `UserDefaults` für Einstellungen · `~/Pictures/MikaScreenSnap/` für Aufnahmen · `~/Library/Application Support/MikaScreenSnap/PinnedScreenshots/` für angeheftete Bilder |

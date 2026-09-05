@@ -1,6 +1,6 @@
 # 16 · App-Store-Auslieferung — Aufgabenplan
 
-Status: `tasked` · Stand: 2026-09-03
+Status: `tasked` · Stand: 2026-09-04
 
 Ebenen laufen in Reihenfolge. `[P]` heißt: innerhalb dieser Ebene unabhängig von den
 anderen `[P]`-Aufgaben, darf parallel an einen Subagenten gehen.
@@ -159,20 +159,47 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 - [x] **T36** · Ersteinrichtung erneut auslösen, wenn die Aufnahmeberechtigung fehlt,
       obwohl sie als abgeschlossen gilt. Nutzt den Ablauf aus B12 mit neuer
       Auslösebedingung — `AK-55`
-- [ ] **T34** · Version auf **3.6.0** anheben: `Resources/Info.plist` (beide Ausgaben lesen
+- [x] **T34** · Version auf **3.6.0** anheben: `Resources/Info.plist` (beide Ausgaben lesen
       daraus, AK-37) und die Überschrift `[Unreleased]` in `CHANGELOG.md`. **Entschieden am
       2026-09-03.** Erst nach der Auslieferung von 3.5.0 als DMG — `AK-37`
+      **Ausgeführt am 2026-09-04 auf Anweisung, ohne diese Vorbedingung.** Die
+      DMG-Auslieferung von 3.5.0 ist erst zur Hälfte durch (notarisiert, aber ohne
+      GitHub-Release, `sign_update` und `appcast.xml`). Solange sie offen ist, erzeugt
+      `scripts/create-dmg.sh` ein DMG mit 3.6.0. Steht als erster Punkt in
+      `AppStore/CHECKLISTE.md`. Mitgezogen: `README.md`. **Nicht** mitgezogen:
+      `web/lib/content.ts` — dort leitet sich die Download-Adresse aus der Nummer ab und
+      liefe auf ein Release, das es nicht gibt
 
 ### Einreichung — braucht OF-07
 
-- [ ] **T27** · `scripts/package-appstore.sh`: Signatur mit der Verteilungsidentität,
+- [x] **T27** · `scripts/package-appstore.sh`: Signatur mit der Verteilungsidentität,
       Paket über `productbuild` mit der Installer-Identität — `AK-40`
+- [x] **T37** · `project.yml` für XcodeGen: ein App-Ziel für den Store, Quelle bleibt
+      `Sources/`, `APPSTORE`-Merkmal über `SWIFT_ACTIVE_COMPILATION_CONDITIONS`,
+      Info.plist per Build-Phase abgeleitet. `.xcodeproj` bleibt ungetrackt —
+      `AK-01, AK-04, AK-05, AK-37, AK-53, AK-54`
 - [ ] **T28** · Paket nach App Store Connect hochladen. Klärt zugleich OP-01 des
       Entwurfs: ob ein Bereitstellungsprofil verlangt wird — `AK-41`
-- [ ] **T29** · Store-Eintrag füllen: Name, Untertitel, Beschreibung, Stichworte,
-      Support-Adresse und Datenschutz-Link auf die Projektadressen, Kategorie,
-      Alterseinstufung, Bildschirmfotos, Datenschutzangabe „keine Daten erfasst" — alles
-      englisch. Braucht OF-08 — `AK-42, AK-43, AK-47`
+- [x] **T29a** · Alles, was der Store-Eintrag braucht, im Repository anlegen: Texte nach
+      Fastlane-Konvention unter `AppStore/metadata/en-US/`, Grunddaten, Kategorie,
+      Prüfungshinweise und die Datenschutzangabe in `AppStore/APP_STORE_CONNECT.md`, die
+      24 Antworten des Alterfreigabe-Fragebogens mit Codebeleg in
+      `AppStore/ALTERSFREIGABEN.md`, die Einreichungsliste in `AppStore/CHECKLISTE.md`.
+      Abgesichert durch `Tests/StoreAssetTests.swift`: Zeichenlimits, Adressen,
+      Kategorie gegen `Info.plist`, Netzfreiheit der Quellen. Aufgebaut wie die Pakete
+      von Mika+Grid und Mika+FileScope — `AK-42, AK-43, AK-47`
+- [~] **T29b** · Screenshots erzeugen. Werkzeuge liegen unter `AppStore/tools/`
+      (`capture.sh`, `compose.swift`, `shots.json`). **Zwei von fünf Motiven fertig**
+      (`01_annotate`, `02_select`), damit ist AK-42 erfüllt — es verlangt *mindestens ein*
+      Bildschirmfoto. Offen: Texterkennung, Farblupe, angeheftetes Bild.
+      **Zwei Hindernisse, beide dokumentiert:** Die Store-Fassung braucht einen eigenen
+      TCC-Eintrag für die Bildschirmaufnahme und einen gewählten Speicherordner; macOS
+      lässt auf beiden Dialogen keine synthetische Eingabe zu — aufgenommen wurde deshalb
+      mit `--direct` aus der Direktfassung, was unbedenklich ist, solange kein Motiv das
+      Menü der Menüleiste zeigt. Und: Auf der Aufnahmemaschine kamen synthetische
+      Mausereignisse mit Sekundenverzug an; `capture.sh` wartet deshalb auf Fenster statt
+      fest zu schlafen — `AK-42`
+- [ ] **T29c** · Die Texte und Bilder in App Store Connect eintragen. Braucht Kontozugang
 - [ ] **T30** · Zur Prüfung einreichen. Bei Ablehnung: Gründe als Befunde aufnehmen,
       Status auf `building` zurücksetzen und abarbeiten — eine Ablehnung ist ein
       Rückschritt in der Bearbeitung, kein Fehlschlag des Features —
@@ -182,11 +209,11 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 
 | AK | Aufgaben |
 |---|---|
-| AK-01 | T03, T06 |
+| AK-01 | T03, T06, T37 |
 | AK-02 | T03 |
 | AK-03 | T06 |
-| AK-04 | T02, T06 |
-| AK-05 | T04 |
+| AK-04 | T02, T06, T37 |
+| AK-05 | T04, T37 |
 | AK-06 | T26 |
 | AK-07 | T26 |
 | AK-08 | T26 |
@@ -223,12 +250,12 @@ Kriterien ohne Aufgabe da, und genau das war BF-35.
 | AK-39 | T21 |
 | AK-40 | T27 |
 | AK-41 | T28 |
-| AK-42 | T29 |
-| AK-43 | T29 |
+| AK-42 | T29a, T29b, T29c |
+| AK-43 | T29a, T29c |
 | AK-44 | T30 |
 | AK-45 | T22 |
 | AK-46 | T23 |
-| AK-47 | T29 |
+| AK-47 | T29a, T29c |
 | AK-48 | T25 |
 | AK-49 | T24 |
 | AK-50 | T24 |
@@ -720,3 +747,38 @@ von 3.5.0), **T19, T20, T22, T25, T26** (laufendes sandboxed Programm), **T27–
 **Und die Einschränkung aus Baubericht VI gilt unverändert:** Ob eine echte
 3.5.0-Installation nach dem Update ihre Tastenkürzel behält, ist im Test belegt, nicht am
 Programm. Das gehört zu T26.
+
+
+## Baubericht VIII — T27, 2026-09-04
+
+`scripts/package-appstore.sh` gebaut: signiert mit `Apple Distribution`, paketiert über
+`productbuild` mit der Installer-Identität, und **prüft vor dem Hochladen** gegen App Store
+Connect (`altool --validate-app`) — das fängt abgelehnte Entitlements und eine nicht
+registrierte Bundle-Kennung ab, bevor eine Einreichung daran scheitert.
+
+**Ausführbar ist es noch nicht**, und das meldet es verständlich: Beide Zertifikate fehlen
+unter `CWJM4J4HFN`. Statt abzubrechen, listet es auf, was tatsächlich im Schlüsselbund
+liegt, und sagt, dass `Apple Development` dafür nicht genügt.
+
+### Ein Fehler, den ich zweimal gemacht habe
+
+Der erste Entwurf starb **still**: Unter `set -e` beendet ein `grep` ohne Treffer das
+Skript — und zwar bevor die Fehlermeldung erscheint, die erklärt, was fehlt. Genau dieser
+Fehler steckte schon in der Selbstprüfung von `build-appstore.sh` (Baubericht I). Dass er
+sich wiederholt hat, steht hier, weil ein `|| true` an einer Zertifikatssuche sonst wie
+Dekoration aussieht — es ist der Unterschied zwischen einer Fehlermeldung und einem
+Programm, das kommentarlos nichts tut. Der Kommentar im Skript sagt das jetzt auch.
+
+### Verifikation
+
+| Prüfung | Ergebnis |
+|---|---|
+| `bash -n` | Syntax ok |
+| Lauf ohne Zertifikate | Exit 1, beide fehlenden Zertifikate benannt, vorhandene aufgelistet |
+| Code | unberührt — reines Skript |
+
+### Was noch fehlt
+
+T28–T30 brauchen die Zertifikate. Der Import der vorhandenen `.p12` ist ein Doppelklick des
+Autors: Sie ist passwortgeschützt, und `security import` verlangt das Passwort als
+Argument.

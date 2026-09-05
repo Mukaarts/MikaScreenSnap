@@ -1,0 +1,89 @@
+# XcodeGen — nur für die App-Store-Auslieferung (Feature 16, T37).
+#
+# Der Direktvertrieb wird NICHT von hier gebaut. Er läuft weiter über scripts/build.sh,
+# das getestet ist und AK-38 erfüllt. Dieses Projekt existiert allein, weil Xcode drei
+# Dinge kann, die ein reines Swift Package nicht kann: die App-ID selbst registrieren,
+# Zertifikate verwalten und über den Organizer hochladen.
+#
+# `.xcodeproj` wird daraus erzeugt und ist in `.gitignore` — eine XML-Datei, die niemand
+# liest, taugt nicht als Quelle für Zusammenführungen.
+#
+# Erzeugen:  xcodegen generate
+# Bauen:     xcodebuild -scheme "Mika+ScreenSnap (App Store)" \
+#                -derivedDataPath build/xcode-mas -configuration Release build
+#
+# GETRENNTER ABLEITUNGSORDNER, und zwar nicht aus Ordnungsliebe: In MikaGrid wurde
+# beobachtet, dass ein gemeinsamer Ordner dazu führt, dass das Store-Bundle
+# Sparkle.framework aus dem Direktbau erbt. Hier wäre das AK-04 — das Kriterium, das
+# genau dies ausschließt.
+#
+# Signaturangaben stehen hier bewusst NICHT: Zertifikate und Profile kommen aus dem
+# Schlüsselbund und aus Xcode, nie aus dem Repository (Decision Log 10).
+
+name: MikaScreenSnap
+options:
+  bundleIdPrefix: lu.daumedia
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+targets:
+  Mika+ScreenSnap (App Store):
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+      - path: Resources/MenubarIconTemplate.png
+        buildPhase: resources
+      - path: Resources/MenubarIconTemplate@2x.png
+        buildPhase: resources
+    settings:
+      base:
+        # Dieselbe Info.plist wie der Direktbau — die beiden Sparkle-Schlüssel entfernt
+        # die Build-Phase unten. Zwei Dateien würden auseinanderlaufen, und AK-37
+        # verlangt identische Versionsnummern in beiden Ausgaben.
+        INFOPLIST_FILE: Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: lu.daumedia.screensnap
+        PRODUCT_NAME: MikaScreenSnap
+        WRAPPER_NAME: Mika+ScreenSnap.app
+        SWIFT_VERSION: "6.0"
+        # Schaltet denselben Code aus, den MIKA_APPSTORE=1 im Package-Bau ausschaltet:
+        # Sparkle, LegacyDefaultsImport, den Update-Bereich der Einstellungen.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: APPSTORE
+        ENABLE_HARDENED_RUNTIME: true
+        CODE_SIGN_ENTITLEMENTS: Resources/MikaScreenSnap-AppStore.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: CWJM4J4HFN
+    dependencies:
+      - sdk: ScreenCaptureKit.framework
+      - sdk: Carbon.framework
+      - sdk: Vision.framework
+      - sdk: UniformTypeIdentifiers.framework
+    postBuildScripts:
+      - name: Remove Sparkle keys from Info.plist
+        # Läuft absichtlich bei jedem Bau: Die Info.plist wird jedes Mal neu kopiert, und
+        # eine Ausgabedatei zu deklarieren würde den Schritt überspringen lassen, sobald
+        # Xcode ihn für aktuell hält — dann trüge das Bundle die Sparkle-Schlüssel wieder.
+        basedOnDependencyAnalysis: false
+        script: |
+          # Dieselbe Ableitung wie in scripts/build-appstore.sh: eine Info.plist als
+          # Quelle, die Store-Fassung entsteht daraus. Ohne diesen Schritt trüge das
+          # Store-Bundle SUFeedURL und SUPublicEDKey und verstieße gegen AK-05.
+          PLIST="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME/Contents/Info.plist"
+          for key in SUFeedURL SUPublicEDKey; do
+            /usr/libexec/PlistBuddy -c "Delete :$key" "$PLIST" 2>/dev/null || true
+          done
+
+schemes:
+  Mika+ScreenSnap (App Store):
+    build:
+      targets:
+        Mika+ScreenSnap (App Store): all
+    run:
+      config: Debug
+    archive:
+      config: Release

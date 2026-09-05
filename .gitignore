@@ -11,3 +11,7 @@ installer/demo-canvas.png
 # App Store signing credentials — never committed
 scripts/appstore-credentials.sh
 build-appstore/
+
+# Aus project.yml erzeugt — die YAML ist die Quelle
+*.xcodeproj
+build/xcode-mas/

@@ -11,9 +11,9 @@
     <key>CFBundleExecutable</key>
     <string>MikaScreenSnap</string>
     <key>CFBundleVersion</key>
-    <string>3.5.0</string>
+    <string>3.6.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>3.5.0</string>
+    <string>3.6.0</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -28,6 +28,17 @@
     <true/>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <!-- Must match the category picked in App Store Connect (Utilities). A mismatch
+         bounces the upload with error 90242. A test checks that this value and
+         AppStore/APP_STORE_CONNECT.md still say the same thing. -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 Michael Ferreira · daumedia.lu · MIT licence</string>
+    <!-- Answers the export compliance question once, in the bundle, instead of on
+         every single upload. True for this app: it encrypts nothing. -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>SUFeedURL</key>
     <string>https://raw.githubusercontent.com/daumedia/MikaScreenSnap/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
