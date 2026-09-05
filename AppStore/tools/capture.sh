@@ -35,6 +35,12 @@
 #   * die Store-Fassung muss ihre Ersteinrichtung hinter sich haben: einmal
 #     Bildschirmaufnahme erlaubt (TCC, eigener Eintrag — sie ist ein anderes
 #     Binary als die Direktfassung) und einmal einen Speicherordner gewählt
+#   * und sie muss VOR dieser Freigabe echt signiert sein. build-appstore.sh
+#     signiert ad-hoc; TCC erkennt eine ad-hoc signierte App am CDHash, und der
+#     ändert sich bei jedem Bau. Die Freigabe gilt dann der App von gestern, und
+#     die neue steht als weiterer, gleichnamiger Eintrag daneben — nicht
+#     unterscheidbar. Wie man das abstellt, steht in README.md unter
+#     „Vor der Freigabe echt signieren"
 #
 set -euo pipefail
 

@@ -12,6 +12,7 @@
 //   - hard-edged cards          -> measurement tool
 //   - a "sensitive" credentials row -> blur / pixelate demo
 //   - open space                -> arrows, highlights, text annotations
+//   - photographic plates       -> a document that reads like a real one
 //
 // Usage: swift scripts/GenerateDemoCanvas.swift
 
@@ -100,6 +101,41 @@ func draw(_ text: String, in rect: NSRect, _ attributes: [NSAttributedString.Key
     NSAttributedString(string: text, attributes: attributes).draw(in: rect)
 }
 
+// MARK: - Photography
+
+// The only pixels on this canvas that aren't drawn here. Everything else is code
+// and therefore reproducible; these two plates live in the repository instead.
+let imageryDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    .appendingPathComponent("AppStore/assets/imagery")
+
+/// Loads one imagery plate, or stops.
+///
+/// No silent fallback to a drawn placeholder: the canvas is the stage for every
+/// store screenshot, and a run that quietly produced a different document would
+/// ship that difference to the App Store without anyone noticing.
+func plate(_ name: String) -> NSImage {
+    let url = imageryDir.appendingPathComponent("\(name).jpg")
+    guard let image = NSImage(contentsOf: url) else {
+        print("ERROR: imagery plate missing: \(url.path)")
+        exit(1)
+    }
+    return image
+}
+
+/// Draws an image so it covers `rect` completely, cropping the overflowing axis
+/// centred. The plate keeps its aspect ratio whatever the slot's ratio is.
+func drawFilling(_ image: NSImage, in rect: NSRect, radius: CGFloat) {
+    let size = image.size
+    guard size.width > 0, size.height > 0 else { return }
+    let scale = max(rect.width / size.width, rect.height / size.height)
+    let w = size.width * scale, h = size.height * scale
+    NSGraphicsContext.current?.saveGraphicsState()
+    NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).addClip()
+    image.draw(in: NSRect(x: rect.midX - w / 2, y: rect.midY - h / 2, width: w, height: h),
+               from: .zero, operation: .sourceOver, fraction: 1.0)
+    NSGraphicsContext.current?.restoreGraphicsState()
+}
+
 // MARK: - Canvas
 
 func generateCanvas() -> NSImage {
@@ -185,16 +221,23 @@ func generateCanvas() -> NSImage {
     draw(para2, in: tl(colX, 1270, colW, 260),
          attrs(size: 38, weight: .regular, color: ink, lineHeight: 62))
 
-    draw("Motion", in: tl(colX, 1580, colW, 60),
+    // --- Imagery (the photographic plates)
+    //
+    // Took the place of a third body paragraph. Two paragraphs above are already
+    // more OCR material than any capture region uses, and a design system review
+    // that shows no imagery at all reads like a wireframe, not like a document
+    // somebody would actually annotate.
+    draw("Imagery", in: tl(colX, 1560, colW, 60),
          attrs(size: 52, weight: .semibold, color: ink))
 
-    let para3 = """
-    Transitions run at two hundred milliseconds with a standard ease-out curve. \
-    Anything longer starts to feel sluggish once the same animation repeats \
-    dozens of times in a working session.
-    """
-    draw(para3, in: tl(colX, 1680, colW, 260),
-         attrs(size: 38, weight: .regular, color: ink, lineHeight: 62))
+    let plateGap: CGFloat = 40
+    let plateW = (colW - plateGap) / 2
+    let plateH: CGFloat = 370
+    for (i, name) in ["a", "b"].enumerated() {
+        let rect = tl(colX + CGFloat(i) * (plateW + plateGap), 1650, plateW, plateH)
+        drawFilling(plate(name), in: rect, radius: 24)
+        strokeRounded(rect, radius: 24, color: hairline, width: 2)
+    }
 
     // MARK: Right column — swatches, cards, chart
 
