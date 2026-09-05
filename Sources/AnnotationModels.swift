@@ -1066,7 +1066,7 @@ final class AnnotationStore {
         annotations.append(annotation)
         hasUnsavedChanges = true
 
-        undoManager.registerUndo(withTarget: self) { [weak self] store in
+        undoManager.registerUndo(withTarget: self) { store in
             MainActor.assumeIsolated {
                 store.removeAnnotationWithoutUndo(id: id)
                 // Register redo
